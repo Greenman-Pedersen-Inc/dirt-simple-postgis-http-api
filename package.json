@@ -4,12 +4,14 @@
   "description": "The Dirt-Simple PostGIS HTTP API exposes PostGIS functionality to your applications over HTTP.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "doc-it": "jsdoc2md --template README.hbs index.js > README.md"
   },
   "author": "Tobin Bradley",
   "license": "MIT",
   "dependencies": {
     "fastify": "^3.15.1",
+    "fastify-auth": "^1.1.0",
     "fastify-autoload": "^3.7.0",
     "fastify-caching": "^6.1.0",
     "fastify-compress": "^3.4.2",

@@ -3,7 +3,7 @@
  * Get X and Y of (potentially) geographically transformed geometry
  * @param {*} params 
  * @param {*} query 
- * @returns 
+ * @returns a formated sql query
  */
 const sql = (params, query) => {
   return `

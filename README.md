@@ -123,6 +123,18 @@ map.on('load', function() {
 <dt><a href="#verifyToken">verifyToken(request, reply, done)</a></dt>
 <dd><p>Verifies a pre-existing token.</p>
 </dd>
+<dt><a href="#sql">sql(params, query)</a> ⇒ <code>*</code></dt>
+<dd><p>generates the sql statment to make calculate the bounding box</p>
+</dd>
+<dt><a href="#sql">sql(params, query)</a> ⇒</dt>
+<dd><p>Get X and Y of (potentially) geographically transformed geometry</p>
+</dd>
+<dt><a href="#logRequest">logRequest(request, reply, done)</a></dt>
+<dd><p>Log requests made to the server in an administrative database for further analysis.</p>
+</dd>
+<dt><a href="#verifyToken">verifyToken(request, reply, done)</a></dt>
+<dd><p>Verifies a pre-existing token.</p>
+</dd>
 </dl>
 
 <a name="logRequest"></a>
@@ -150,6 +162,101 @@ Verifies a pre-existing token.
 | request | <code>\*</code> | 
 | reply | <code>\*</code> | 
 | done | <code>\*</code> | 
+
+
+* [verifyToken(request, reply, done)](#verifyToken)
+    * [~onConnect(err, client, release)](#verifyToken..onConnect) ⇒ <code>\*</code>
+    * [~onConnect(err, client, release)](#verifyToken..onConnect) ⇒ <code>\*</code>
+
+<a name="verifyToken..onConnect"></a>
+
+### verifyToken~onConnect(err, client, release) ⇒ <code>\*</code>
+**Kind**: inner method of [<code>verifyToken</code>](#verifyToken)  
+
+| Param | Type |
+| --- | --- |
+| err | <code>\*</code> | 
+| client | <code>\*</code> | 
+| release | <code>\*</code> | 
+
+<a name="verifyToken..onConnect"></a>
+
+### verifyToken~onConnect(err, client, release) ⇒ <code>\*</code>
+**Kind**: inner method of [<code>verifyToken</code>](#verifyToken)  
+
+| Param | Type |
+| --- | --- |
+| err | <code>\*</code> | 
+| client | <code>\*</code> | 
+| release | <code>\*</code> | 
+
+<a name="sql"></a>
+
+## sql(params, query) ⇒ <code>\*</code>
+generates the sql statment to make calculate the bounding box
+
+**Kind**: global function  
+**Returns**: <code>\*</code> - parsed query for submission to server  
+
+| Param | Type |
+| --- | --- |
+| params | <code>\*</code> | 
+| query | <code>\*</code> | 
+
+<a name="sql"></a>
+
+## sql(params, query) ⇒
+Get X and Y of (potentially) geographically transformed geometry
+
+**Kind**: global function  
+**Returns**: a formated sql query  
+
+| Param | Type |
+| --- | --- |
+| params | <code>\*</code> | 
+| query | <code>\*</code> | 
+
+<a name="logRequest"></a>
+
+## logRequest(request, reply, done)
+Log requests made to the server in an administrative database for further analysis.
+
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| request | <code>\*</code> | 
+| reply | <code>\*</code> | 
+| done | <code>\*</code> | 
+
+<a name="verifyToken"></a>
+
+## verifyToken(request, reply, done)
+Verifies a pre-existing token.
+
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| request | <code>\*</code> | 
+| reply | <code>\*</code> | 
+| done | <code>\*</code> | 
+
+
+* [verifyToken(request, reply, done)](#verifyToken)
+    * [~onConnect(err, client, release)](#verifyToken..onConnect) ⇒ <code>\*</code>
+    * [~onConnect(err, client, release)](#verifyToken..onConnect) ⇒ <code>\*</code>
+
+<a name="verifyToken..onConnect"></a>
+
+### verifyToken~onConnect(err, client, release) ⇒ <code>\*</code>
+**Kind**: inner method of [<code>verifyToken</code>](#verifyToken)  
+
+| Param | Type |
+| --- | --- |
+| err | <code>\*</code> | 
+| client | <code>\*</code> | 
+| release | <code>\*</code> | 
 
 <a name="verifyToken..onConnect"></a>
 

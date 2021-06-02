@@ -1,4 +1,10 @@
 // route query
+/**
+ * Get X and Y of (potentially) geographically transformed geometry
+ * @param {*} params 
+ * @param {*} query 
+ * @returns 
+ */
 const sql = (params, query) => {
   return `
   SELECT 

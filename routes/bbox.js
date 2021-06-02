@@ -1,4 +1,13 @@
+
+
 // route query
+/**
+ * generates the sql statment to make calculate the bounding box
+ *
+ * @param {*} params
+ * @param {*} query
+ * @return {*} parsed query for submission to server
+ */
 const sql = (params, query) => {
   return `
   SELECT 

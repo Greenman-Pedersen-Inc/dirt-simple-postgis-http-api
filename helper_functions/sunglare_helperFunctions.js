@@ -292,6 +292,80 @@ function GetReportQueries(queryStrings) {
     return reportQueries;
 }
 
+// INPUT: {"travelDirectionCodes": "02,03"}
+// OUTPUT: {"travelDirectionCodes": {name: "Travel Direction", value: "East, West"}, {...}}
+function CreateReportFilterLabels(filterObject) {
+    
+}
+
+function CreateYearLabel(startYear, endYear) {
+    return {"Years": startYear + " - " + endYear};
+}
+
+function CreateSignalLabel(splitCodeArray) {
+    const signalNames = {
+        "trf_ctrl_adult_crossing_guard":"Adult Crossing Guard",
+        "trf_ctrl_channelization_painted":"Channelization (Painted)" ,
+        "trf_ctrl_channelization_physical":"Channelization (Physical)",
+        "trf_ctrl_flagman":"Flagman",
+        "trf_ctrl_flashing_traffic_control":"Flashing Traffic Control",
+        "trf_ctrl_lane_markings":"Lane Markings",
+        "trf_ctrl_no_control_present":"None",
+        "trf_ctrl_other":"Other",
+        "trf_ctrl_police_officer":"Police Officer",
+        "trf_ctrl_school_zone_signs_controls":"School Zone Signs",
+        "trf_ctrl_stop_sign":"Stop Sign",
+        "trf_ctrl_traffic_signal":"Traffic Signal",
+        "trf_ctrl_warning_signal":"Warning Signal",
+        "trf_ctrl_rr_watchman":"Watchman",
+        "trf_ctrl_yield_sign":"Yield Sign" 
+    }
+    if (splitCodeArray.length === 0) return "None";
+    var foundFilters = [];
+    splitCodeArray.forEach(code => {
+        if (code in signalNames) {
+            foundFilters.push(signalNames[code]);
+        }
+    });
+    return foundFilters.join(" OR ");
+}
+
+function CreateDirectionLabel(splitCodeArray){
+    const dirNames = {
+        "01": "North",
+        "03": "South",
+        "02": "East",
+        "04": "West"
+    }
+    if (splitCodeArray.length === 0) return "None";
+    var foundFilters = [];
+    splitCodeArray.forEach(code => {
+        if (code in dirNames) {
+            foundFilters.push(dirNames[code]);
+        }
+    });
+    return foundFilters.join(" OR "); 
+}
+
+function CreateTimeLabels(splitCodeArray) {
+    if (splitCodeArray.length === 0) return "None";
+    var filters = [];
+    splitCodeArray.forEach(timeString => {
+        var timeInt = parseInt(timeString);
+        if (timeInt < 12)
+        {
+            if (timeInt == 0) { filters.push("12 AM"); }
+            else filters.push(timeInt.ToString() + " AM");
+        }
+    });
+    return filters.join(" OR ");
+}
+
+
+// *---------------*
+// Module Exports
+// *---------------*
+
 module.exports = {
     GetQueryStrings: GetQueryStrings,
     CreateLimitSortClause: CreateLimitSortClause,

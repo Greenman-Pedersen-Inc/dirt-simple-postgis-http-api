@@ -22,7 +22,7 @@ function CreateHeader(doc, reportTitle) {
     const pageMarginEnds = 23;
 
     var basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
-    doc.registerFont('Segoe UI Semibold', basePath + 'fonts/SegoeUI/segoeuib.ttf');
+    doc.registerFont('Segoe UI Semibold', basePath + 'fonts/SegoeUI/seguisb.ttf');
 
     doc
     .image(basePath + 'images/njdotSealSmall.png', pageMarginSides, pageMarginEnds, {width: 50})

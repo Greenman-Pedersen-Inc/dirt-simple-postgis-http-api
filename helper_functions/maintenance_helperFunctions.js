@@ -10,26 +10,34 @@ const json2xls = require('json2xls');
 const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
 
 function FileExport(queryStrings, result) {
-    const fileName = "maintenanceReport_" + Date.now() + `.${queryStrings.fileFormat}`;
-    const savePath = path.join('helper_functions/report_maker/output', fileName);
     if (queryStrings.fileFormat == 'pdf') {
-        GeneratePDF(queryStrings, savePath, result);
+        return GeneratePDF(queryStrings, result);
+    } else if (queryStrings.fileFormat == 'csv') {
+        return GenerateCSV(result);
+    } else if (queryStrings.fileFormat == 'xlsx') {
+        return GenerateExcel(result);
+    } else {
+        return 'no file type specified';
     }
-    else if (queryStrings.fileFormat == 'csv') {
-        GenerateCSV(savePath, result);
-    }
-    else if (queryStrings.fileFormat == 'xlsx') {
-        GenerateExcel(savePath, result);
-    }   
-    return savePath;
 }
 
-function GenerateExcel(savePath, result) {
-    var xls = json2xls(result.rows);
-    fs.writeFileSync(savePath, xls, 'binary');
+function GenerateExcel(result) {
+    const fileName = "maintenanceReport_" + Date.now() + `.xlsx`;
+    const savePath = path.join(basePath + 'output', fileName);
+    const xls = json2xls(result.rows);
+
+    fs.writeFileSync(savePath, xls, function (err) {
+        if (err) {
+            console.log(err);
+        }
+    });
+
+    return fileName;
 }
 
-function GenerateCSV(savePath, result) {
+function GenerateCSV(result) {
+    const fileName = "maintenanceReport_" + Date.now() + `.csv`;
+    const savePath = path.join(basePath + 'output', fileName);
     const fields = Object.keys(result.rows[0]);
     const csv = new Parser({ fields });
     fs.writeFile(savePath, csv.parse(result.rows), function (err) {
@@ -39,7 +47,10 @@ function GenerateCSV(savePath, result) {
     });
 }
 
-function GeneratePDF(queryStrings, savePath, result) {
+function GeneratePDF(queryStrings, result) {
+    const fileName = "maintenanceReport_" + Date.now() + `.pdf`;
+    const savePath = path.join(basePath + 'output', fileName);
+
     const doc = new PDFDocument({ margin: 10, size: 'TABLOID', layout: 'landscape', bufferPages: true });      // 1224 x 792
     doc.pipe(fs.createWriteStream(savePath));
     GenerateHeader(doc, queryStrings);
@@ -56,14 +67,14 @@ function GeneratePDF(queryStrings, savePath, result) {
             doc.text(
                 `Page: ${i + 1} of ${pages.count}`,
                 1150,
-                775, // Centered vertically in bottom margin
+                775
             );
             // Add date
             var date = new Date();
             doc.text(
                 `Report Created: ${date.toLocaleDateString()}`,
                 10,
-                775, // Centered vertically in bottom margin
+                775
             );
         }
         else {

@@ -13,23 +13,23 @@ function FileExport(queryStrings, result) {
     const fileName = "maintenanceReport_" + Date.now() + `.${queryStrings.fileFormat}`;
     const savePath = path.join('helper_functions/report_maker/output', fileName);
     if (queryStrings.fileFormat == 'pdf') {
-        GeneratePDF(queryStrings, savePath, result)
+        GeneratePDF(queryStrings, savePath, result);
     }
     else if (queryStrings.fileFormat == 'csv') {
-        GenerateCSV(savePath)
+        GenerateCSV(savePath, result);
     }
     else if (queryStrings.fileFormat == 'xlsx') {
-        GenerateExcel(savePath)
+        GenerateExcel(savePath, result);
     }   
     return savePath;
 }
 
-function GenerateExcel(savePath) {
+function GenerateExcel(savePath, result) {
     var xls = json2xls(result.rows);
     fs.writeFileSync(savePath, xls, 'binary');
 }
 
-function GenerateCSV(savePath) {
+function GenerateCSV(savePath, result) {
     const fields = Object.keys(result.rows[0]);
     const csv = new Parser({ fields });
     fs.writeFile(savePath, csv.parse(result.rows), function (err) {
@@ -52,19 +52,35 @@ function GeneratePDF(queryStrings, savePath, result) {
         doc.switchToPage(i);
 
         //Footer: Add page number
-        doc.text(
-            `Page: ${i + 1} of ${pages.count}`,
-            1150,
-            770, // Centered vertically in bottom margin
-            { align: 'center' }
-        );
-        // Add date
-        var date = new Date();
-        doc.text(
-            `Report Created: ${date.toLocaleDateString()}`,
-            10,
-            770, // Centered vertically in bottom margin
-        );
+        if (i === 0) {
+            doc.text(
+                `Page: ${i + 1} of ${pages.count}`,
+                1150,
+                775, // Centered vertically in bottom margin
+            );
+            // Add date
+            var date = new Date();
+            doc.text(
+                `Report Created: ${date.toLocaleDateString()}`,
+                10,
+                775, // Centered vertically in bottom margin
+            );
+        }
+        else {
+            doc.text(
+                `Page: ${i + 1} of ${pages.count}`,
+                1150,
+                770, // Centered vertically in bottom margin
+                { align: 'center' }
+            );
+            // Add date
+            var date = new Date();
+            doc.text(
+                `Report Created: ${date.toLocaleDateString()}`,
+                10,
+                770, // Centered vertically in bottom margin
+            );
+        }
     }
 
     doc.end();
@@ -82,13 +98,13 @@ function GenerateHeader(doc, queryStrings) {
     .image(basePath + 'images/njdotSealSmall.png', 10, 20, {width: 50})
     .image(basePath + 'images/fhwaSealSmall.png', 70, 20, {width: 50})
     .fontSize(20)
-    .font('Segoe UI Semibold').text('NJ Safety Voyager', 360, 20, {align: 'center right'})
-    .font('Segoe UI Semibold').text('Maintenance Report', 350, 42, {align: 'center right'})
+    .font('Segoe UI Semibold').text('NJ Safety Voyager', 144, 20, {align: 'center right'})
+    .font('Segoe UI Semibold').text('Maintenance Report', 144, 42, {align: 'center right'})
     .fontSize(10)
     .font('Segoe UI Semibold').text('Date Range: ', 10, 80, {continued: true})
     .font('Segoe UI').text(`${queryStrings.startDate} to ${queryStrings.endDate}`, 10, 80)
     .moveTo(130, 70)
-    .lineTo(750, 70)
+    .lineTo(1212, 70)
     .strokeColor('grey')
     .stroke()
 }

@@ -6,6 +6,8 @@ const path = require('path');
 const PDFDocument = require("pdfkit-table");
 const fs = require('fs');
 
+var basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
+
 function CreatePageLayout(layout) {
     const pageLayout = {
         "letter-portrait": { margin: 36, size: 'letter', layout: 'portrait' },  // (612.00 X 792.00)
@@ -21,7 +23,6 @@ function CreateHeader(doc, reportTitle) {
     const pageMarginSides = 55;
     const pageMarginEnds = 23;
 
-    var basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
     doc.registerFont('Segoe UI Semibold', basePath + 'fonts/SegoeUI/seguisb.ttf');
 
     doc

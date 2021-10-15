@@ -35,8 +35,8 @@ const sql = (query) => {
         coalesce(most_harm_event_code, '') AS "MOST HARMFUL EVENT CODE",
         coalesce(other_prop_damage, '') AS "OTHER PROPERTY DAMAGE",
         severity_rating5 AS "SEVERITY RATING"
-        FROM ard_accidents_maintenance 
-        WHERE ard_accidents_maintenance.acc_date between '${query.startDate}' and '${query.endDate}' ${query.limit ? `LIMIT ${query.limit}` : '' }
+        FROM maintenance.report_data
+        WHERE acc_date between '${query.startDate}' and '${query.endDate}' ${query.limit ? `LIMIT ${query.limit}` : '' }
       ;`;
     return accidentQuery;
 }
@@ -77,7 +77,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/crash/maintenanceCheck',
+        url: '/maintenance/report',
         schema: schema,
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)

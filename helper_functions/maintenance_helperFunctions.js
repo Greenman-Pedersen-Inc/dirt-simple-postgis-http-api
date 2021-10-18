@@ -21,95 +21,115 @@ function FileExport(queryStrings, result) {
 }
 
 function generateExcel(result) {
-    const fileName = "maintenanceReport_" + Date.now() + `.xlsx`;
-    const savePath = path.join(basePath + 'output', fileName);
-    const xls = json2xls(result.rows);
-
-    fs.writeFileSync(savePath, xls, function (err) {
-        if (err) {
-            console.log(err);
-        }
-    });
-
-    return Promise.resolve(savePath);
-}
-
-function generateCSV(result) {
-    const fileName = "maintenanceReport_" + Date.now() + `.csv`;
-    const savePath = path.join(basePath + 'output', fileName);
-    const fields = Object.keys(result.rows[0]);
-    const csv = new Parser({ fields });
-
-    fs.writeFileSync(savePath, csv.parse(result.rows), function (err) {
-        if (err) {
-            console.log(err);
-        }
-    });
-
-    return Promise.resolve(savePath);
-}
-
-function generatePDF(queryStrings, result) {
-    const fileName = "maintenanceReport_" + Date.now() + `.pdf`;
-    const savePath = path.join(basePath + 'output', fileName);
-    const doc = new PDFDocument({ margin: 10, size: 'TABLOID', layout: 'landscape', bufferPages: true });      // 1224 x 792
-    const writeStream = fs.createWriteStream(savePath);
-
-    doc.pipe(writeStream);
-    generateHeader(doc, queryStrings);
-    const tableArray = generateTable(doc, result);
-    doc.table(tableArray[0], tableArray[1]);
-    
-    //Global Edits to All Pages (Header/Footer, etc)
-    let pages = doc.bufferedPageRange();
-    const date = new Date();
-
-    for (let i = 0; i < pages.count; i++) {
-        doc.switchToPage(i);
-
-        //Footer: Add page number
-        if (i === 0) {
-            doc.text(
-                `Page: ${i + 1} of ${pages.count}`,
-                1150,
-                775
-            );
-            // Add date
-            doc.text(
-                `Report Created: ${date.toLocaleDateString()}`,
-                10,
-                775
-            );
-        }
-        else {
-            doc.text(
-                `Page: ${i + 1} of ${pages.count}`,
-                1150,
-                770, // Centered vertically in bottom margin
-                { align: 'center' }
-            );
-            // Add date
-            doc.text(
-                `Report Created: ${date.toLocaleDateString()}`,
-                10,
-                770, // Centered vertically in bottom margin
-            );
-        }
-    }
-
-    doc.end();
-
-    // the write stream ends asynchronously
-    // to account for this we return a promise that resolves when it finishes
     return new Promise((resolve, reject) => {
-        writeStream.on('finish', function () {
+        try {
+            const fileName = "maintenanceReport_" + Date.now() + `.xlsx`;
+            const savePath = path.join(basePath + 'output', fileName);
             const fileInfo = {
                 'savePath': savePath,
                 'fileName': fileName
             }
+            const xls = json2xls(result.rows);
+            
+            fs.writeFileSync(savePath, xls, 'binary');
 
             return resolve(fileInfo);
-        });
+        } catch (error) {
+            return reject('file not created')
+        }
+    });
+}
+
+function generateCSV(result) {
+    return new Promise((resolve, reject) => {
+        try {
+            const fileName = "maintenanceReport_" + Date.now() + `.csv`;
+            const savePath = path.join(basePath + 'output', fileName);
+            const fields = Object.keys(result.rows[0]);
+            const csv = new Parser({ fields });
+            const fileInfo = {
+                'savePath': savePath,
+                'fileName': fileName
+            };
+
+            fs.writeFileSync(fileInfo.savePath, csv.parse(result.rows), function (error) {
+                if (error) {
+                    return reject(error)
+                }
+            });
+
+            return resolve(fileInfo);
+        } catch (error) {
+            return reject(error);
+        }
+    });
+}
+
+function generatePDF(queryStrings, result) {
+    return new Promise((resolve, reject) => {
+        try {
+            const fileName = "maintenanceReport_" + Date.now() + `.pdf`;
+            const savePath = path.join(basePath + 'output', fileName);
+            const doc = new PDFDocument({ margin: 10, size: 'TABLOID', layout: 'landscape', bufferPages: true });      // 1224 x 792
+            const writeStream = fs.createWriteStream(savePath);
+
+            doc.pipe(writeStream);
+            generateHeader(doc, queryStrings);
+            const tableArray = generateTable(doc, result);
+            doc.table(tableArray[0], tableArray[1]);
+
+            //Global Edits to All Pages (Header/Footer, etc)
+            let pages = doc.bufferedPageRange();
+            const date = new Date();
+
+            for (let i = 0; i < pages.count; i++) {
+                doc.switchToPage(i);
+
+                //Footer: Add page number
+                if (i === 0) {
+                    doc.text(
+                        `Page: ${i + 1} of ${pages.count}`,
+                        1150,
+                        775
+                    );
+                    // Add date
+                    doc.text(
+                        `Report Created: ${date.toLocaleDateString()}`,
+                        10,
+                        775
+                    );
+                }
+                else {
+                    doc.text(
+                        `Page: ${i + 1} of ${pages.count}`,
+                        1150,
+                        770, // Centered vertically in bottom margin
+                        { align: 'center' }
+                    );
+                    // Add date
+                    doc.text(
+                        `Report Created: ${date.toLocaleDateString()}`,
+                        10,
+                        770, // Centered vertically in bottom margin
+                    );
+                }
+            }
+
+            doc.end();
+
+            // the write stream ends asynchronously
+            // to account for this we return a promise that resolves when it finishes
+            writeStream.on('finish', function () {
+                const fileInfo = {
+                    'savePath': savePath,
+                    'fileName': fileName
+                }
+
+                return resolve(fileInfo);
+            });
+        } catch (error) {
+            return reject(error);
+        }
     });
 }
 
@@ -121,18 +141,18 @@ function generateHeader(doc, queryStrings) {
     doc.registerFont('Segoe UI', basePath + 'fonts/SegoeUI/segoeui.ttf');
 
     doc
-    .image(basePath + 'images/njdotSealSmall.png', 10, 20, {width: 50})
-    .image(basePath + 'images/fhwaSealSmall.png', 70, 20, {width: 50})
-    .fontSize(20)
-    .font('Segoe UI Semibold').text('NJ Safety Voyager', 144, 20, {align: 'center right'})
-    .font('Segoe UI Semibold').text('Maintenance Report', 144, 42, {align: 'center right'})
-    .fontSize(10)
-    .font('Segoe UI Semibold').text('Date Range: ', 10, 80, {continued: true})
-    .font('Segoe UI').text(`${queryStrings.startDate} to ${queryStrings.endDate}`, 10, 80)
-    .moveTo(130, 70)
-    .lineTo(1212, 70)
-    .strokeColor('grey')
-    .stroke()
+        .image(basePath + 'images/njdotSealSmall.png', 10, 20, { width: 50 })
+        .image(basePath + 'images/fhwaSealSmall.png', 70, 20, { width: 50 })
+        .fontSize(20)
+        .font('Segoe UI Semibold').text('NJ Safety Voyager', 144, 20, { align: 'center right' })
+        .font('Segoe UI Semibold').text('Maintenance Report', 144, 42, { align: 'center right' })
+        .fontSize(10)
+        .font('Segoe UI Semibold').text('Date Range: ', 10, 80, { continued: true })
+        .font('Segoe UI').text(`${queryStrings.startDate} to ${queryStrings.endDate}`, 10, 80)
+        .moveTo(130, 70)
+        .lineTo(1212, 70)
+        .strokeColor('grey')
+        .stroke()
 }
 
 function generateTable(docObj, result) {
@@ -146,12 +166,12 @@ function generateTable(docObj, result) {
         var objs = {
             label: fields[i],
             property: fields[i],
-            renderer: ( value, indexColumn, indexRow, row, rectRow, rectCell ) => {
+            renderer: (value, indexColumn, indexRow, row, rectRow, rectCell) => {
                 cellProp = rectCell;
                 return value;
             },
         };
-        
+
         headerArray.push(objs);
     }
 

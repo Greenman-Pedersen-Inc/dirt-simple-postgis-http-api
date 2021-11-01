@@ -115,7 +115,7 @@ function GenerateHeader(doc, queryStrings) {
     .setFontSize(10)
     .text('Date Range: ', 10, 85)
     .setFont("segoeui", "normal")
-    .text(`${queryStrings.startDate} to ${queryStrings.endDate}`, 72, 85)
+    .text(`${queryStrings.startDate.replace(/-/g, '/')} to ${queryStrings.endDate.replace(/-/g, '/')}`, 72, 85)
     .setDrawColor("#808080")
     .line(130, 70, 1212, 70)
 }
@@ -139,8 +139,8 @@ function GenerateTable(doc, result) {
         theme: 'striped',
         styles: { 
             fontSize: 6,       
-            lineColor: [73, 138, 159],
-            lineWidth: 0.2 
+            lineColor: [138, 179, 193],
+            lineWidth: 0.1 
         },
         didDrawPage: function (data) {
             // Footer

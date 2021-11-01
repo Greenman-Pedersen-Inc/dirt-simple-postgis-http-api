@@ -57,7 +57,7 @@ const schema = {
         endDate: {
             type: 'string',
             description: 'unique end date mm-dd-yyyy',
-            default: '02-01-2017'
+            default: '01-05-2017'
         },
         limit: {
             type: 'string',
@@ -84,27 +84,49 @@ module.exports = function (fastify, opts, next) {
 
             function onConnect(err, client, release, queryString) {
                 var queryString = request.query
-                if (queryString.startDate == undefined || queryString.endDate == undefined) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "need start or end date"
-                });
-                if (queryString.fileFormat == undefined) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "need file format"
-                });
-
-                client.query(
-                    sql(request.query),
-                    function onResult(err, result) {
-                        release();
-                        var queryStrings = request.query;    // queryStrings.startDate, queryStrings.endDate
-                        console.log(queryStrings);
-                        var savePath = burgerHelper.FileExport(queryStrings, result);
-                        reply.send(savePath);
-                    }
-                );
+                if (queryString.startDate == undefined) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "need start or end date"
+                    });
+                } else if (queryString.endDate == undefined) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "need start or end date"
+                    });
+                } else if (queryString.fileFormat == undefined) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "need file format"
+                    });
+                } else {
+                    client.query(
+                        sql(request.query),
+                        function onResult(err, result) {
+                            release();
+    
+                            if (err) {
+                                reply.send(err)
+                            } else if (result && result.rowCount > 0) {
+                                const queryStrings = request.query;
+                                const fileInfo = burgerHelper.FileExport(queryStrings, result);
+    
+                                fileInfo.then((createdFile) => {
+                                    console.log(createdFile)
+                                    reply.send({ url: createdFile.fileName });
+    
+                                }).catch((error) => {
+                                    console.log(error);
+                                })
+                            } else {
+                                reply.code(204).send()
+                            }
+                        }
+                    );
+                }
             }
         }
     })

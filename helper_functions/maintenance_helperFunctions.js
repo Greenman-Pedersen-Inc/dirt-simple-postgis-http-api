@@ -4,8 +4,12 @@
 const path = require('path');
 const fs = require('fs');
 const { Parser } = require('json2csv');
-const PDFDocument = require("pdfkit-table");
 const json2xls = require('json2xls');
+const { jsPDF } = require("jspdf"); // will automatically load the node version
+const { autoTable } = require("jspdf-autotable"); // will automatically load the node version
+
+require('./report_maker/fonts/SegoeUI/segoeui-normal');
+require('./report_maker/fonts/SegoeUI/seguisb-normal');
 
 const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
 
@@ -22,138 +26,146 @@ function FileExport(queryStrings, result) {
 }
 
 function GenerateExcel(result) {
-    const fileName = "maintenanceReport_" + Date.now() + `.xlsx`;
-    const savePath = path.join(basePath + 'output', fileName);
-    const xls = json2xls(result.rows);
+    return new Promise((resolve, reject) => {
+        try {
+            const fileName = "maintenanceReport_" + Date.now() + `.xlsx`;
+            const savePath = path.join(basePath + 'output', fileName);
+            const fileInfo = {
+                'savePath': savePath,
+                'fileName': fileName
+            }
+            const xls = json2xls(result.rows);
 
-    fs.writeFileSync(savePath, xls, function (err) {
-        if (err) {
-            console.log(err);
+            fs.writeFileSync(savePath, xls, 'binary');
+
+            return resolve(fileInfo);
+        } catch (error) {
+            return reject('file not created')
         }
     });
-
-    return fileName;
 }
 
 function GenerateCSV(result) {
-    const fileName = "maintenanceReport_" + Date.now() + `.csv`;
-    const savePath = path.join(basePath + 'output', fileName);
-    const fields = Object.keys(result.rows[0]);
-    const csv = new Parser({ fields });
-    fs.writeFile(savePath, csv.parse(result.rows), function (err) {
-        if (err) {
-            console.log(err);
+    return new Promise((resolve, reject) => {
+        try {
+            const fileName = "maintenanceReport_" + Date.now() + `.csv`;
+            const savePath = path.join(basePath + 'output', fileName);
+            const fields = Object.keys(result.rows[0]);
+            const csv = new Parser({ fields });
+            const fileInfo = {
+                'savePath': savePath,
+                'fileName': fileName
+            };
+
+            fs.writeFileSync(fileInfo.savePath, csv.parse(result.rows), function (error) {
+                if (error) {
+                    return reject(error)
+                }
+            });
+
+            return resolve(fileInfo);
+        } catch (error) {
+            return reject(error);
         }
     });
 }
 
 function GeneratePDF(queryStrings, result) {
-    const fileName = "maintenanceReport_" + Date.now() + `.pdf`;
-    const savePath = path.join(basePath + 'output', fileName);
+    return new Promise((resolve, reject) => {
+        try {
+            const fileName = "maintenanceReport_" + Date.now() + `.pdf`;
+            const savePath = path.join(basePath + 'output', fileName);
+            const fileInfo = {
+                'savePath': savePath,
+                'fileName': fileName
+            }
+        
+            const doc = new jsPDF({
+                orientation: "landscape",
+                format: "tabloid",
+                unit: "pt"
+            });
+        
+            GenerateHeader(doc, queryStrings);
+            GenerateTable(doc, result);
 
-    const doc = new PDFDocument({ margin: 10, size: 'TABLOID', layout: 'landscape', bufferPages: true });      // 1224 x 792
-    doc.pipe(fs.createWriteStream(savePath));
-    GenerateHeader(doc, queryStrings);
-    var tableArray = GenerateTable(doc, result);
-    doc.table(tableArray[0], tableArray[1]);
-    
-    //Global Edits to All Pages (Header/Footer, etc)
-    let pages = doc.bufferedPageRange();
-    for (let i = 0; i < pages.count; i++) {
-        doc.switchToPage(i);
+            doc.save(savePath);
+            return resolve(fileInfo);
 
-        //Footer: Add page number
-        if (i === 0) {
-            doc.text(
-                `Page: ${i + 1} of ${pages.count}`,
-                1150,
-                775
-            );
-            // Add date
-            var date = new Date();
-            doc.text(
-                `Report Created: ${date.toLocaleDateString()}`,
-                10,
-                775
-            );
+        } catch (error) {
+            return reject(error);
         }
-        else {
-            doc.text(
-                `Page: ${i + 1} of ${pages.count}`,
-                1150,
-                770, // Centered vertically in bottom margin
-                { align: 'center' }
-            );
-            // Add date
-            var date = new Date();
-            doc.text(
-                `Report Created: ${date.toLocaleDateString()}`,
-                10,
-                770, // Centered vertically in bottom margin
-            );
-        }
-    }
-
-    doc.end();
+    });
 }
-
 
 // *---------------*
 //  PDF Helpers
 // *---------------*
 function GenerateHeader(doc, queryStrings) {
-    doc.registerFont('Segoe UI Semibold', basePath + 'fonts/SegoeUI/seguisb.ttf');
-    doc.registerFont('Segoe UI', basePath + 'fonts/SegoeUI/segoeui.ttf');
+    var njdotLogo = fs.readFileSync(basePath + 'images/njdotSealSmall.png', 'base64');
+    var fhwaLogo = fs.readFileSync(basePath + 'images/fhwaSealSmall.png', 'base64');
 
     doc
-    .image(basePath + 'images/njdotSealSmall.png', 10, 20, {width: 50})
-    .image(basePath + 'images/fhwaSealSmall.png', 70, 20, {width: 50})
-    .fontSize(20)
-    .font('Segoe UI Semibold').text('NJ Safety Voyager', 144, 20, {align: 'center right'})
-    .font('Segoe UI Semibold').text('Maintenance Report', 144, 42, {align: 'center right'})
-    .fontSize(10)
-    .font('Segoe UI Semibold').text('Date Range: ', 10, 80, {continued: true})
-    .font('Segoe UI').text(`${queryStrings.startDate} to ${queryStrings.endDate}`, 10, 80)
-    .moveTo(130, 70)
-    .lineTo(1212, 70)
-    .strokeColor('grey')
-    .stroke()
+    .addImage(njdotLogo, "PNG", 10 , 20, 50, 50, undefined, 'FAST')     // FAST to compress image
+    .addImage(fhwaLogo, "PNG", 70 , 20, 50, 50, undefined, 'FAST')
+    .setFontSize(24)
+    .setFont("seguisb", "normal")
+    .text('NJ Safety Voyager', 144, 40)
+    .text('Maintenance Report', 144, 62)
+    .setFontSize(10)
+    .text('Date Range: ', 10, 85)
+    .setFont("segoeui", "normal")
+    .text(`${queryStrings.startDate} to ${queryStrings.endDate}`, 72, 85)
+    .setDrawColor("#808080")
+    .line(130, 70, 1212, 70)
 }
 
-function GenerateTable(docObj, result) {
+function GenerateTable(doc, result) {
+    var totalPagesExp = '{total_pages_count_string}'
     const fields = Object.keys(result.rows[0]);
     var tableData = result.rows;
-    var headerArray = [];
-    var cellProp = null;
+    var headers = {};
     //for each Fieldname in fields:
     for (let i = 0; i < fields.length; i++) {
-        var objs = {
-            label: fields[i],
-            property: fields[i],
-            renderer: ( value, indexColumn, indexRow, row, rectRow, rectCell ) => {
-                cellProp = rectCell;
-                return value;
-            },
-        };
-        headerArray.push(objs);
+        var fieldName = fields[i];
+        headers[fieldName] = fieldName;
     }
 
-    const tableJson = {
-        "headers": headerArray,
-        "datas": tableData,
-    };
+    doc.autoTable({
+        head: [headers],
+        body: tableData,
+        startY: 94,
+        margin: 10,
+        theme: 'striped',
+        styles: { 
+            fontSize: 6,       
+            lineColor: [73, 138, 159],
+            lineWidth: 0.2 
+        },
+        didDrawPage: function (data) {
+            // Footer
+            var str = 'Page ' + doc.internal.getNumberOfPages()
+            // Total page number plugin only available in jspdf v1.0+
+            if (typeof doc.putTotalPages === 'function') {
+                str = str + ' of ' + totalPagesExp
+            }
+            doc.setFontSize(6)
 
-    var options = {
-        y: 105,
-        prepareHeader: () => docObj.font('Segoe UI Semibold').fontSize(6),
-        prepareRow: (row, indexColumn, indexRow, rectRow) => {
-            docObj.font('Segoe UI').fontSize(5);
-            indexColumn === 0 && docObj.addBackground(rectRow, (indexRow % 2 ? 'grey' : 'white'), 0.1);
-            //console.log(rectRow);
-            //docObj.rect(rectRow.x, rectRow.y, rectRow.width, rectRow.height).strokeOpacity(.3).stroke();
+            // jsPDF 1.4+ uses getWidth, <1.4 uses .width
+            var pageSize = doc.internal.pageSize
+            var pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight()
+            var pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth()
+            doc.text(str, data.settings.margin.left, pageHeight - 10);
+
+            const date = new Date();
+            doc.text(`Report Created: ${date.toLocaleString()}`, pageWidth - 10, pageHeight - 10, null, null, "right");
         }
+    });
+
+    // Total page number plugin only available in jspdf v1.0+
+    if (typeof doc.putTotalPages === 'function') {
+        doc.putTotalPages(totalPagesExp)
     }
-    return [tableJson, options];
 }
 
 

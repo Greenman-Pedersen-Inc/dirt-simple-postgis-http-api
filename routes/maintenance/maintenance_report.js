@@ -82,7 +82,7 @@ module.exports = function (fastify, opts, next) {
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)
 
-            function onConnect(err, client, release, queryString) {
+            function onConnect(err, client, release) {
                 var queryString = request.query
                 if (queryString.startDate == undefined) {
                     return reply.send({

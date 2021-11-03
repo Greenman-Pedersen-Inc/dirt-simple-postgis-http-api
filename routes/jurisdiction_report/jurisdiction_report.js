@@ -28,6 +28,15 @@ const schema = {
     }
 }
 
+async function getReportData(query) {
+    try {
+        const res = await client.query(query)
+        console.log(res.rows[0])
+    } catch (err) {
+        console.log(err.stack)
+    }
+}
+
 // *---------------*
 // create route
 // *---------------*
@@ -40,55 +49,95 @@ module.exports = function (fastify, opts, next) {
             fastify.pg.connect(onConnect)
 
             function onConnect(err, client, release) {
-                var queryString = request.query;
-                if (queryString.startDate == undefined) {
+                var queryArgs = request.query;
+                if (queryArgs.startYear == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
-                        "message": "need start or end date"
+                        "message": "need start or end year"
                     });
-                } else if (queryString.endDate == undefined) {
+                } else if (queryArgs.endYear == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
-                        "message": "need start or end date"
+                        "message": "need start or end year"
                     });
-                } else if (queryString.jurisdictionCode == undefined) {
+                } else if (queryArgs.jurisdictionCode == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
                         "message": "need jurisdiction code"
                     });
                 } else {
+                    const nestedWhere = burgerHelper.getNestedWhere(queryArgs.jurisdictionCode);
+                    var pedQueries = burgerHelper.getPedestrianQueries(nestedWhere, queryArgs.startYear, queryArgs.endYear);
+                    var reportData = {};
 
-                    const nestedWhere = burgerHelper.getNestedWhere();
 
-
-
-
-                    client.query(
-                        sql(request.query),
-                        function onResult(err, result) {
-                            release();
-    
-                            if (err) {
-                                reply.send(err)
-                            } else if (result && result.rowCount > 0) {
-                                const queryStrings = request.query;
-                                const fileInfo = burgerHelper.FileExport(queryStrings, result);
-    
-                                fileInfo.then((createdFile) => {
-                                    console.log(createdFile)
-                                    reply.send({ url: createdFile.fileName });
-    
-                                }).catch((error) => {
-                                    console.log(error);
-                                })
-                            } else {
-                                reply.code(204).send()
+                    const promise = new Promise((resolve, reject) => {
+                        try {
+                            for (const queryObj of pedQueries) {
+                                console.log(queryObj.name);
+                                const res = client.query(queryObj.query);
+                                return resolve(res);
+                                //reportData[queryObj.name] = res.rows;
                             }
                         }
-                    );
+                        catch(err) {
+                            console.log(err.stack);
+                            return reject(error);
+                        }
+
+                        //return resolve(reportData);
+                    });
+
+                    Promise.all([promise]).then((values) => {
+                        console.log("promise done");
+                        console.log(values[0].rows);
+                        
+                    });
+
+                    // for (const queryObj of pedQueries) {}
+
+                    // pedQueries.forEach(queryObj => {
+                    //     console.log(queryObj.name);
+                    //     client.query(queryObj.query)
+                    //         .then(res => {
+                    //             reportData[queryObj.name] = res.rows;
+                    //         })
+                    //         .catch(e => console.error(e.stack))
+                    //         .finally(() => {
+                    //             console.log(reportData);
+                    //         });
+                    // });
+
+
+                    // client.query(
+                    //     sql(request.query),
+                    //     function onResult(err, result) {
+                    //         release();
+    
+                    //         if (err) {
+                    //             reply.send(err)
+                    //         } else if (result && result.rowCount > 0) {
+                    //             const queryStrings = request.query;
+                    //             const fileInfo = burgerHelper.FileExport(queryStrings, result);
+    
+                    //             fileInfo.then((createdFile) => {
+                    //                 console.log(createdFile)
+                    //                 reply.send({ url: createdFile.fileName });
+    
+                    //             }).catch((error) => {
+                    //                 console.log(error);
+                    //             })
+                    //         } else {
+                    //             reply.code(204).send()
+                    //         }
+                    //     }
+                    // );
+
+
+
                 }
             }
         }

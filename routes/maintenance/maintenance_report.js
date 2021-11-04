@@ -1,6 +1,8 @@
 // readMaintenanceData: queries accident data between a time frame for NJDOT Maintenance for insurance claims
 
-const burgerHelper = require('../../helper_functions/maintenance_helperFunctions');
+const burgerHelper = require('../../helper_functions/maintenance_helper');
+const codeTranslator = require('../../helper_functions/code_translator');
+
 
 // *---------------*
 // route query
@@ -8,36 +10,36 @@ const burgerHelper = require('../../helper_functions/maintenance_helperFunctions
 const sql = (query) => {
     // --- QUERY crash data based on time frame
     let accidentQuery =
-        `
-        SELECT  
-        dln AS "DLN",
-        year AS "YEAR",
-        acc_case AS "CASE #",
-        road_sys_code AS "ROAD SYSTEM CODE",
-        mun_cty_co AS "COUNTY",
-        mun_mu AS "MUNICIPALITY",
-        cast(acc_date as char(11)) AS "CRASH DATE",
-        dept_name AS "DEPARTMENT NAME",
-        dept_num AS "DEPARTMENT #",
+    `
+    SELECT  
+        dln,
+        year,
+        acc_case,
+        road_sys_code,
+        mun_cty_co,
+        mun_mu,
+        cast(acc_date as char(11)),
+        dept_name,
+        dept_num,
         coalesce(station, '') AS "STATION",
-        location AS "LOCATION",
-        coalesce(cast(route_num as char(4)),'') AS "ROUTE",
+        location,
+        coalesce(cast(route_num as char(4)),'') AS "route_num",
         sri AS "SRI",
         coalesce(cast(milepost as char(7)),'') AS "MILEPOST",
         coalesce(xstreet_name, '') AS "CROSS STREET",
         coalesce(is_ramp, '') AS "IS RAMP?",
         coalesce(ramp_route, '') AS "RAMP ROUTE",
         coalesce(state, '') AS "STATE",
-        coalesce(first_event_code, '') AS "FIRST EVENT CODE",
-        coalesce(second_event_code, '') AS "SECOND EVENT CODE",
-        coalesce(third_event_code, '') AS "THIRD EVENT CODE",
-        coalesce(fourth_event_code, '') AS "FOURTH EVENT CODE",
-        coalesce(most_harm_event_code, '') AS "MOST HARMFUL EVENT CODE",
+        coalesce(first_event_code, '') AS "first_event_code",
+        coalesce(second_event_code, '') AS "second_event_code",
+        coalesce(third_event_code, '') AS "third_event_code",
+        coalesce(fourth_event_code, '') AS "fourth_event_code",
+        coalesce(most_harm_event_code, '') AS "most_harm_event_code",
         coalesce(other_prop_damage, '') AS "OTHER PROPERTY DAMAGE",
-        severity_rating5 AS "SEVERITY RATING"
+        severity_rating5
         FROM maintenance.report_data
-        WHERE acc_date between '${query.startDate}' and '${query.endDate}' ${query.limit ? `LIMIT ${query.limit}` : '' }
-      ;`;
+        WHERE acc_date between '${query.startDate}' and '${query.endDate}' ${query.limit ? `LIMIT ${query.limit}` : ''}
+    ;`;
     return accidentQuery;
 }
 
@@ -112,7 +114,30 @@ module.exports = function (fastify, opts, next) {
                                 reply.send(err)
                             } else if (result && result.rowCount > 0) {
                                 const queryStrings = request.query;
-                                const fileInfo = burgerHelper.FileExport(queryStrings, result);
+                                //console.log(result.rows);
+                                var data = [];
+
+                                result.rows.forEach(row => {
+                                    var dataRow = {};
+                                    for (const key in row) {
+                                        var code = row[key];
+                                        const title = codeTranslator.resolveFieldAlias(key).toUpperCase();
+                                        if (key === "mun_mu") code = row["mun_cty_co"] + code;
+                                        
+                                        if (key === "acc_date") {
+                                            const date = new Date(row["acc_date"].trim());
+                                            dataRow[title] = date.toLocaleDateString("en-US");
+                                        }
+                                        else {
+                                            const value = codeTranslator.convertCodeDescription(key, code);
+                                            dataRow[title] = value;                                            
+                                        }
+                                    }
+                                    data.push(dataRow);
+                                });
+
+                                //console.log(data[0]);
+                                const fileInfo = burgerHelper.FileExport(queryStrings, data);
     
                                 fileInfo.then((createdFile) => {
                                     console.log(createdFile)

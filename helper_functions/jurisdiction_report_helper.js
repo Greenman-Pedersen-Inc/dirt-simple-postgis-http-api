@@ -1,6 +1,35 @@
+const { jsPDF } = require("jspdf"); // will automatically load the node version
+const { autoTable } = require("jspdf-autotable"); // will automatically load the node version
+const reportHelper = require('./report_maker/report_layout');
+const codeTranslator = require('./code_translator');
+
+
 // *---------------*
-//  Jurisdiction Report Helpers
+//  Jurisdiction Report Helper Functions
 // *---------------*
+function makeJurisdictionReport(queryArgs, reportData) {
+    const juriName = getJurisdictionName(queryArgs.jurisdictionCode);
+    const filterObject = getFilterObject(queryArgs);
+    console.log(filterObject);
+    const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, juriName + " - Comparision Summary"); 
+    getPedestrianReportTable(doc, reportData);
+    return reportHelper.saveReportPdf(doc, "jurisdictionReport");
+}
+
+// translates the input filters for the report
+function getFilterObject(queryArgs){
+    return {"Year Range": queryArgs.startYear + " - " + queryArgs.endYear};
+}
+
+function getJurisdictionName(jurisdictionCode) {
+    if (jurisdictionCode.length === 4) {
+        return(codeTranslator.convertCodeDescription("mun_mu", jurisdictionCode));
+    }
+    else {
+        return(codeTranslator.convertCodeDescription("mun_cty_co", jurisdictionCode));
+    }
+}
+
 function getNestedWhere(jurisdictionCode) {
     if (jurisdictionCode.length === 4) {
         const countyCode = jurisdictionCode.slice(0, 2);
@@ -12,19 +41,22 @@ function getNestedWhere(jurisdictionCode) {
     }
 }
 
+function getTableHeader(doc, yPos) {
+    doc.autoTable({
+        startY: yPos,
+        head: [['CRASH CHARACTERISTIC', 'MUNICIPALITY #', 'MUNICIPALITY %', 'STATE %']],
+    });
+    return doc;
+}
+
 // *---------------*
 //  PEDESTRIAN TABLES
 // *---------------*
 function getPedestrianQueries(nestedWhere, startYear, endYear) {
-    // const queries = {
-    //     "age": getPedestrianAgeQuery(nestedWhere, startYear, endYear),
-    //     "gender": getPedestrianGenderQuery(nestedWhere, startYear, endYear),
-    //     "precrash": getPedestrianPreCrashQuery(nestedWhere, startYear, endYear)
-    // }
     var queries = [
-        {name: "age", query: getPedestrianAgeQuery(nestedWhere, startYear, endYear)},
-        {name: "gender", query: getPedestrianGenderQuery(nestedWhere, startYear, endYear)},
-        {name: "precrash", query: getPedestrianPreCrashQuery(nestedWhere, startYear, endYear)}
+        {name: "GENDER", query: getPedestrianGenderQuery(nestedWhere, startYear, endYear)},
+        {name: "AGE", query: getPedestrianAgeQuery(nestedWhere, startYear, endYear)},
+        {name: "PRE-CRASH ACTION", query: getPedestrianPreCrashQuery(nestedWhere, startYear, endYear)}
     ];
     return queries;
 }
@@ -41,7 +73,7 @@ function getPedestrianGenderQuery(nestedWhere, startYear, endYear) {
 	CASE 
 		WHEN juriCount > 0 THEN juriCount
 		ELSE 0
-	END AS juriCount, 
+	END AS juriCount, JuriTotal,
 	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference FROM (    SELECT State.code, JuriCount, StateCount AS StateCount FROM
     (SELECT (CASE sex
                 WHEN 'F' THEN 'Female'
@@ -73,7 +105,7 @@ function getPedestrianAgeQuery(nestedWhere, startYear, endYear) {
 	CASE 
 		WHEN juriCount > 0 THEN juriCount
 		ELSE 0
-	END AS juriCount, 
+	END AS juriCount, JuriTotal,
 	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference FROM (    SELECT State.code, JuriCount, StateCount AS StateCount FROM
     (
         SELECT AgeBucket AS Code, count(*) AS JuriCount FROM (
@@ -117,7 +149,7 @@ function getPedestrianPreCrashQuery(nestedWhere, startYear, endYear) {
 	CASE 
 		WHEN juriCount > 0 THEN juriCount
 		ELSE 0
-	END AS juriCount, 
+	END AS juriCount, JuriTotal,
 	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference FROM (        SELECT State.type AS Code, JuriCount, StateCount AS StateCount FROM 
         (
             SELECT * FROM (
@@ -144,10 +176,50 @@ function getPedestrianPreCrashQuery(nestedWhere, startYear, endYear) {
     return query;
 }
 
+function getPedestrianReportTable(doc, reportData) {
+    getTableHeader(doc, 25);
+    for (var tableType in reportData){
+        if (reportData.hasOwnProperty(tableType)) {
+            const fields = Object.keys(reportData[tableType][0]);
+            var columnArray = [];
+            //for each Fieldname in fields:
+            for (let i = 0; i < fields.length; i++) {
+                var fieldName = fields[i];
+                columnArray.push(
+                    { 
+                        dataKey: fieldName,
+                        header: fieldName
+                    }
+                );
+            }
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY,
+                head: [
+                    [
+                        {
+                            content: tableType,
+                            colSpan: 4,
+                            styles: { 
+                                halign: 'center', 
+                                fillColor: [32, 178, 170],
+                                textColor: 255
+                            },
+                        },
+                    ],
+                ],
+                columns: columnArray,
+                body: reportData[tableType]
+            });
+        }
+    }
+}
+
 // *---------------*
 // Module Exports
 // *---------------*
 module.exports = {
     getNestedWhere: getNestedWhere,
-    getPedestrianQueries: getPedestrianQueries
+    getPedestrianQueries: getPedestrianQueries,
+    makeJurisdictionReport: makeJurisdictionReport
 };

@@ -3,15 +3,24 @@
 // Look into the module specific helperFunction files for that.
 
 const path = require('path');
-const PDFDocument = require("pdfkit-table");
 const fs = require('fs');
+const { jsPDF } = require("jspdf"); // will automatically load the node version
+const { autoTable } = require("jspdf-autotable"); // will automatically load the node version
 
-var basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
+require('./fonts/SegoeUI/segoeui-normal');     // SegoiUI normal
+require('./fonts/SegoeUI/seguisb-normal');     // SegoiUI semi bold
 
-function CreatePageLayout(layout) {
+const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
+
+const pageMarginSides = 19;
+const pageMarginEnds = 7;
+var currentX = 0;
+var currentY = 0;
+
+function createPageLayout(layout) {
     const pageLayout = {
-        "letter-portrait": { margin: 36, size: 'letter', layout: 'portrait' },  // (612.00 X 792.00)
-        "letter-landscape": { margin: 36, size: 'letter', layout: 'landscape' }     // (792.00 X 612.00)
+        "letter-portrait": { format: 'letter', orientation: 'portrait', unit: 'mm' },  // (215.9 X 279.4) mm
+        "letter-landscape": { format: 'letter', orientation: 'landscape', unit: 'mm' }     // (279.4 X 215.9) mm
     }
     if (layout in pageLayout) {
         return pageLayout[layout];
@@ -19,45 +28,86 @@ function CreatePageLayout(layout) {
     else return pageLayout["letter-portrait"];
 }
 
-function CreateHeader(doc, reportTitle) {
-    const pageMarginSides = 55;
-    const pageMarginEnds = 23;
+function createHeader(doc, reportTitle) {
+    const pageSize = doc.internal.pageSize
+    const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight()
+    const pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth()
 
-    doc.registerFont('Segoe UI Semibold', basePath + 'fonts/SegoeUI/seguisb.ttf');
-
-    doc
-    .image(basePath + 'images/njdotSealSmall.png', pageMarginSides, pageMarginEnds, {width: 50})
-    .image(basePath + 'images/fhwaSealSmall.png', pageMarginSides+50+5, pageMarginEnds, {width: 50})
+    const njdotLogo = fs.readFileSync(basePath + 'images/njdotSealSmall.png', 'base64');
+    const fhwaLogo = fs.readFileSync(basePath + 'images/fhwaSealSmall.png', 'base64');
 
     doc
-    .fontSize(16)
-    .font('Segoe UI Semibold').text('NJ Safety Voyager', 145, pageMarginEnds, {width: 431, align: 'center'})
-    .font('Segoe UI Semibold').text(reportTitle, 145, pageMarginEnds+20, {width: 431, align: 'center'})
+    .addImage(njdotLogo, "PNG", pageMarginSides , pageMarginEnds, 15, 15, undefined, 'FAST')     // FAST to compress image
+    .addImage(fhwaLogo, "PNG", pageMarginSides + 15 + 3, pageMarginEnds, 15, 15, undefined, 'FAST')
+    .setFontSize(18)
+    .setFont("seguisb", "normal")
+    .text('NJ Safety Voyager', 71.5 + 52, 13, null, null, "center")
+    .text(reportTitle, 71.5 + 52, 20, null, null, "center")
+    .setDrawColor("#808080")
+    .setLineWidth(.5)
+    .line(54, 23, pageWidth - pageMarginSides, 23);
 
-    doc
-    .moveTo(150, 74)
-    .lineTo(612-pageMarginSides, 74)
-    .strokeColor('grey')
-    .stroke()
+    currentX = pageMarginSides;
+    currentY = 30;
+
+    return doc;
 }
 
-function CreateFiltersSection(filterObject) {
+// {"Year Range": "2019 - 2020"}
+function createFiltersSection(doc, filterObject) {
+    const fontSize = 10;
+    var startX = pageMarginSides;
+    doc.setFontSize(fontSize);
 
+    for(var filterTitle in filterObject) {
+        if (filterObject.hasOwnProperty(filterTitle)) {
+            const filterLabel = filterTitle + ": ";
+            const filterValue = filterObject[filterTitle];
+            doc
+            .setFont("seguisb", "normal")
+            .text(filterLabel, pageMarginSides, currentY);
+
+            startX = pageMarginSides + doc.getStringUnitWidth(filterLabel) + 2;
+            
+            doc
+            .setFont("segoeui", "normal")
+            .text(filterValue, startX, currentY);
+
+            currentY += 2;
+        }
+    }
+    return doc;
 }
 
-function GenerateReportPdf(layout, reportTitle) {
-    const fileName = "reportSample_" + Date.now() + `.pdf`;
-    const savePath = path.join(__dirname, './output', fileName);
-    const doc = new PDFDocument(CreatePageLayout(layout));
-    doc.pipe(fs.createWriteStream(savePath));
-    CreateHeader(doc, reportTitle);
+function generateReportPdf(layout, filters, reportTitle) {
+    const docLayout = createPageLayout(layout);
+    const doc = new jsPDF(docLayout);
+    createHeader(doc, reportTitle);
+    if (filters) createFiltersSection(doc, filters);
+    return doc;
+}
 
-    // done
-    doc.end();
-    return savePath;
+function saveReportPdf(doc, saveTitle){
+    return new Promise((resolve, reject) => {
+        try {
+            const fileName = saveTitle + "_" + Date.now() + `.pdf`;
+            const savePath = path.join(__dirname, './output', fileName);
+            const fileInfo = {
+                'savePath': savePath,
+                'fileName': fileName
+            }
+
+            doc.save(savePath);
+            return resolve(fileInfo);
+
+        } catch (error) {
+            return reject(error);
+        }
+    });
 }
 
 module.exports = {
-    GenerateReportPdf: GenerateReportPdf,
+    generateReportPdf: generateReportPdf,
+    saveReportPdf: saveReportPdf
 };
 

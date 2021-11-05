@@ -19,27 +19,27 @@ const filters = [
         title: 'County',
         fieldName: 'mun_cty_co',
         values: [
-            { code: '01', description: 'Atlantic County' },
-            { code: '02', description: 'Bergen County' },
-            { code: '03', description: 'Burlington County' },
-            { code: '04', description: 'Camden County' },
-            { code: '05', description: 'Cape May County' },
-            { code: '06', description: 'Cumberland County' },
-            { code: '07', description: 'Essex County' },
-            { code: '08', description: 'Gloucester County' },
-            { code: '09', description: 'Hudson County' },
-            { code: '10', description: 'Hunterdon County' },
-            { code: '11', description: 'Mercer County' },
-            { code: '12', description: 'Middlesex County' },
-            { code: '13', description: 'Monmouth County' },
-            { code: '14', description: 'Morris County' },
-            { code: '15', description: 'Ocean County' },
-            { code: '16', description: 'Passaic County' },
-            { code: '17', description: 'Salem County' },
-            { code: '18', description: 'Somerset County' },
-            { code: '19', description: 'Sussex County' },
-            { code: '20', description: 'Union County' },
-            { code: '21', description: 'Warren County' }
+            { code: '01', description: 'Atlantic' },
+            { code: '02', description: 'Bergen' },
+            { code: '03', description: 'Burlington' },
+            { code: '04', description: 'Camden' },
+            { code: '05', description: 'Cape May' },
+            { code: '06', description: 'Cumberland' },
+            { code: '07', description: 'Essex' },
+            { code: '08', description: 'Gloucester' },
+            { code: '09', description: 'Hudson' },
+            { code: '10', description: 'Hunterdon' },
+            { code: '11', description: 'Mercer' },
+            { code: '12', description: 'Middlesex' },
+            { code: '13', description: 'Monmouth' },
+            { code: '14', description: 'Morris' },
+            { code: '15', description: 'Ocean' },
+            { code: '16', description: 'Passaic' },
+            { code: '17', description: 'Salem' },
+            { code: '18', description: 'Somerset' },
+            { code: '19', description: 'Sussex' },
+            { code: '20', description: 'Union' },
+            { code: '21', description: 'Warren' }
         ]
     },
     {
@@ -616,8 +616,8 @@ const filters = [
             { code: '2123', description: 'White Township' }
         ]
     },
-    { title: 'Case Number', fieldName: 'acc_case' },
-    { title: 'Document Locator Number', fieldName: 'dln' },
+    { title: 'Case #', fieldName: 'acc_case' },
+    { title: 'Document Locator #', fieldName: 'dln' },
     {
         title: 'Department Type',
         fieldName: 'dept_num',
@@ -632,9 +632,9 @@ const filters = [
     },
     { title: 'Police Department Name', fieldName: 'dept_name' },
     { title: 'Station', fieldName: 'station' },
-    { title: 'Accident Date', fieldName: 'acc_date' },
-    { title: 'Accident DOW', fieldName: 'acc_dow' },
-    { title: 'Accident Time', fieldName: 'acc_time' },
+    { title: 'Crash Date', fieldName: 'acc_date' },
+    { title: 'Crash DOW', fieldName: 'acc_dow' },
+    { title: 'Crash Time', fieldName: 'acc_time' },
     {
         title: 'Severity',
         fieldName: 'severity_code',
@@ -699,7 +699,7 @@ const filters = [
             { code: '-20', description: 'Not Recorded' }
         ]
     },
-    { title: 'Route Number', fieldName: 'route_num' },
+    { title: 'Route #', fieldName: 'route_num' },
     { title: 'Route Suffix', fieldName: 'route_sx' },
     { title: 'SRI', fieldName: 'sri' },
     { title: 'Milepost', fieldName: 'milepost' },
@@ -943,8 +943,8 @@ const filters = [
         ]
     },
     { title: 'Other Property Damage', fieldName: 'other_prop_damage' },
-    { title: 'Report Badge Number', fieldName: 'report_badge_num' },
-    { title: 'Review Badge Number', fieldName: 'review_badge_num' },
+    { title: 'Report Badge #', fieldName: 'report_badge_num' },
+    { title: 'Review Badge #', fieldName: 'review_badge_num' },
     { title: 'Cellphone In Use', fieldName: 'flg_cell_in_use' },
     {
         title: 'Crash Month',
@@ -1134,7 +1134,7 @@ const filters = [
         fieldName: 'sbrty_test_code'
     },
     {
-        title: 'Blood Alcohol Number',
+        title: 'Blood Alcohol #',
         fieldName: 'bld_alchl_num'
     },
     {
@@ -1142,7 +1142,7 @@ const filters = [
         fieldName: 'alchl_pndng_code'
     },
     {
-        title: 'Multiple Accident Code',
+        title: 'Multiple Crash Code',
         fieldName: 'mltpl_acdnt_code'
     },
     {
@@ -1172,27 +1172,27 @@ const filters = [
         fieldName: 'Year'
     },
     {
-        title: 'Case Number',
-        fieldName: 'Case Number'
+        title: 'Case #',
+        fieldName: 'Case #'
     },
     {
         title: 'Day',
         fieldName: 'Day of Week'
     },
     {
-        title: 'Milepost Number',
+        title: 'Milepost #',
         fieldName: 'mlpst_num'
     },
     {
-        title: 'Route Number ID',
+        title: 'Route # ID',
         fieldName: 'stndrd_rt_id'
     },
     {
-        title: 'Accident Year',
+        title: 'Crash Year',
         fieldName: 'acdnt_yr_num'
     },
     {
-        title: 'Accident Case Number',
+        title: 'Crash Case #',
         fieldName: 'acdnt_case_num'
     },
     {
@@ -1240,7 +1240,7 @@ const filters = [
         fieldName: 'isng_state_abrvtn_code'
     },
     {
-        title: 'Identification Number',
+        title: 'Identification #',
         fieldName: 'idntfctn_num'
     },
     {
@@ -1333,7 +1333,7 @@ const filters = [
 
     {
         title: 'First Event',
-        fieldName: 'First Event',
+        fieldName: 'first_event_code',
         values: [
             { code: '01', description: 'Overturn / Rollover' },
             { code: '02', description: 'Fire / Explosion' },
@@ -1392,7 +1392,7 @@ const filters = [
     },
     {
         title: 'Second Event',
-        fieldName: 'Second Event',
+        fieldName: 'second_event_code',
         values: [
             { code: '01', description: 'Overturn / Rollover' },
             { code: '02', description: 'Fire / Explosion' },
@@ -1454,7 +1454,7 @@ const filters = [
     },
     {
         title: 'Third Event',
-        fieldName: 'Third Event',
+        fieldName: 'third_event_code',
         values: [
             { code: '01', description: 'Overturn / Rollover' },
             { code: '02', description: 'Fire / Explosion' },
@@ -1515,7 +1515,7 @@ const filters = [
     },
     {
         title: 'Fourth Event',
-        fieldName: 'Fourth Event',
+        fieldName: 'fourth_event_code',
         values: [
             { code: '01', description: 'Overturn / Rollover' },
             { code: '02', description: 'Fire / Explosion' },
@@ -1574,7 +1574,67 @@ const filters = [
             { code: '20', description: 'Value Unknown' }
         ]
     },
+    {
+        title: 'Most Harmful Event',
+        fieldName: 'most_harm_event_code',
+        values: [
+            { code: '01', description: 'Overturn / Rollover' },
+            { code: '02', description: 'Fire / Explosion' },
+            { code: '03', description: 'Immersion' },
+            { code: '04', description: 'Jackknife' },
+            { code: '05', description: 'Ran Off Road - Right' },
+            { code: '06', description: 'Ran Off Road - Left' },
+            { code: '07', description: 'Crossed Median / Centerline' },
+            { code: '08', description: 'Downhill Runaway' },
+            { code: '09', description: 'Cargo / Equipment Loss or Shift' },
+            { code: '10', description: 'Separation of Units' },
+            { code: '11', description: 'Fell / Jumped From Vehicle' },
+            { code: '12', description: 'Thrown / Falling Object' },
+            { code: '13', description: 'Equipment Failure' },
+            { code: '19', description: 'Other Non Collision' },
 
+            { code: '21', description: 'Pedalcyclist' },
+            { code: '22', description: 'Pedestrian' },
+            { code: '23', description: 'Train / Trolley / Other Railcar' },
+            { code: '24', description: 'Deer' },
+            { code: '25', description: 'Other Animal' },
+            { code: '26', description: 'MV in Transport' },
+            { code: '27', description: 'MV in Transport, Other Roadway' },
+            { code: '28', description: 'Parked MV' },
+            { code: '29', description: 'Work Zone or Maint. Equipment' },
+            { code: '30', description: 'Struck By Object Set In Motion By MV' },
+            { code: '39', description: 'Other Non-Fixed Object' },
+
+            { code: '41', description: 'Impact Attenuator / Crash Cushion' },
+            { code: '42', description: 'Bridge Overhead Structure' },
+            { code: '43', description: 'Bridge Pier or Support' },
+            { code: '44', description: 'Bridge Parapet End' },
+            { code: '45', description: 'Bridge Rail' },
+            { code: '46', description: 'Guardrail Face' },
+            { code: '47', description: 'Guardrail End' },
+            { code: '48', description: 'Concrete Traffic Barrier' },
+            { code: '49', description: 'Other Traffic Barrier' },
+            { code: '50', description: 'Traffic Sign Support ' },
+            { code: '51', description: 'Traffic Signal Standard' },
+            { code: '52', description: 'Utility Pole' },
+            { code: '53', description: 'Light Standard' },
+            { code: '54', description: 'Other Post, Pole, Support' },
+            { code: '55', description: 'Culvert' },
+            { code: '56', description: 'Curb' },
+            { code: '57', description: 'Ditch' },
+            { code: '58', description: 'Embankment' },
+            { code: '59', description: 'Fence' },
+            { code: '60', description: 'Tree' },
+            { code: '61', description: 'Mailbox' },
+            { code: '62', description: 'Fire Hydrant' },
+            { code: '69', description: 'Other Fixed Object' },
+
+            { code: '99', description: 'Other' },
+            { code: '00', description: 'Unknown' },
+            { code: '-20', description: 'Not Recorded' },
+            { code: '20', description: 'Value Unknown' }
+        ]
+    },
 
 
 
@@ -2411,7 +2471,7 @@ function convertCodeDescription(fieldName, codeNumber) {
         }
     } else {
         // console.log(fieldName, codeNumber, fieldValues.length, 'duplicates of field found, revise list')
-        return codeNumber
+        return codeNumber;
     }
 };
 

@@ -7,7 +7,7 @@ const sql = (params) => {
     var sql = `SELECT county_name FROM public.ard_county WHERE county_code = '${params.countyCode}';`;
 
     if (params.muniCode) {
-        sql = `SELECT muni_name FROM public.ard_municipality WHERE county_code = '${params.countyCode}' AND muni_code = ''${params.muniCode}''`;
+        sql = `SELECT muni_name FROM public.ard_municipality WHERE county_code = '${params.countyCode}' AND muni_code = '${params.muniCode}'`;
     }
     return sql;
   }
@@ -24,11 +24,12 @@ const schema = {
         countyCode: {
             type: 'string',
             description: 'County code.',
-            default: '*'
+            default: '01'
         },
         muniCode: {
             type: 'string',
-            description: 'Muni code.'
+            description: 'Muni code.',
+            default: '01'
         }
     }
 }

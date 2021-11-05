@@ -15,17 +15,17 @@ const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simp
 
 function fileExport(queryStrings, data) {
     if (queryStrings.fileFormat == 'pdf') {
-        return GeneratePDF(queryStrings, data);
+        return generatePDF(queryStrings, data);
     } else if (queryStrings.fileFormat == 'csv') {
-        return GenerateCSV(data);
+        return generateCSV(data);
     } else if (queryStrings.fileFormat == 'xlsx') {
-        return GenerateExcel(data);
+        return generateExcel(data);
     } else {
         return 'no file type specified';
     }
 }
 
-function GenerateExcel(data) {
+function generateExcel(data) {
     return new Promise((resolve, reject) => {
         try {
             const fileName = "maintenanceReport_" + Date.now() + `.xlsx`;
@@ -45,7 +45,7 @@ function GenerateExcel(data) {
     });
 }
 
-function GenerateCSV(data) {
+function generateCSV(data) {
     return new Promise((resolve, reject) => {
         try {
             const fileName = "maintenanceReport_" + Date.now() + `.csv`;
@@ -70,7 +70,7 @@ function GenerateCSV(data) {
     });
 }
 
-function GeneratePDF(queryStrings, data) {
+function generatePDF(queryStrings, data) {
     return new Promise((resolve, reject) => {
         try {
             const fileName = "maintenanceReport_" + Date.now() + `.pdf`;

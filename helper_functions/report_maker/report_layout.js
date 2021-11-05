@@ -48,7 +48,7 @@ function createHeader(doc, reportTitle) {
     .line(54, 23, pageWidth - pageMarginSides, 23);
 
     currentX = pageMarginSides;
-    currentY = 30;
+    currentY = 28;
 
     return doc;
 }
@@ -67,7 +67,7 @@ function createFiltersSection(doc, filterObject) {
             .setFont("seguisb", "normal")
             .text(filterLabel, pageMarginSides, currentY);
 
-            startX = pageMarginSides + doc.getStringUnitWidth(filterLabel) + 2;
+            startX = pageMarginSides + ((doc.getStringUnitWidth(filterLabel) * fontSize) / (72/25.6)) ;
             
             doc
             .setFont("segoeui", "normal")
@@ -108,6 +108,7 @@ function saveReportPdf(doc, saveTitle){
 
 module.exports = {
     generateReportPdf: generateReportPdf,
-    saveReportPdf: saveReportPdf
+    saveReportPdf: saveReportPdf,
+    pageMarginSides: pageMarginSides
 };
 

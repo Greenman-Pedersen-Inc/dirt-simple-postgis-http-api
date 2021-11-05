@@ -44,7 +44,12 @@ function getNestedWhere(jurisdictionCode) {
 function getTableHeader(doc, yPos) {
     doc.autoTable({
         startY: yPos,
-        head: [['CRASH CHARACTERISTIC', 'MUNICIPALITY #', 'MUNICIPALITY %', 'STATE %']],
+        margin: {right: reportHelper.pageMarginSides, left: reportHelper.pageMarginSides},
+        styles: { 
+            lineColor: [84, 84, 84],
+            lineWidth: 0.1
+        },
+        head: [['CRASH CHARACTERISTIC', 'MUNICIPALITY COUNT', 'MUNICIPALITY %', 'STATE %']],
     });
     return doc;
 }
@@ -73,8 +78,8 @@ function getPedestrianGenderQuery(nestedWhere, startYear, endYear) {
 	CASE 
 		WHEN juriCount > 0 THEN juriCount
 		ELSE 0
-	END AS juriCount, JuriTotal,
-	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference FROM (    SELECT State.code, JuriCount, StateCount AS StateCount FROM
+	END AS juriCount,
+	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference, JuriTotal FROM (    SELECT State.code, JuriCount, StateCount AS StateCount FROM
     (SELECT (CASE sex
                 WHEN 'F' THEN 'Female'
                 WHEN 'M' THEN 'Male'
@@ -105,8 +110,8 @@ function getPedestrianAgeQuery(nestedWhere, startYear, endYear) {
 	CASE 
 		WHEN juriCount > 0 THEN juriCount
 		ELSE 0
-	END AS juriCount, JuriTotal,
-	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference FROM (    SELECT State.code, JuriCount, StateCount AS StateCount FROM
+	END AS juriCount, 
+	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference, JuriTotal FROM (    SELECT State.code, JuriCount, StateCount AS StateCount FROM
     (
         SELECT AgeBucket AS Code, count(*) AS JuriCount FROM (
             SELECT 
@@ -149,8 +154,8 @@ function getPedestrianPreCrashQuery(nestedWhere, startYear, endYear) {
 	CASE 
 		WHEN juriCount > 0 THEN juriCount
 		ELSE 0
-	END AS juriCount, JuriTotal,
-	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference FROM (        SELECT State.type AS Code, JuriCount, StateCount AS StateCount FROM 
+	END AS juriCount, 
+	ROUND(JuriCount * 100.0 / JuriTotal, 2) AS JuriPercent, ROUND(StateCount * 100.0 / StateTotal, 2) AS StatePercent, ROUND(JuriCount * 100.0 / JuriTotal, 2) - ROUND(StateCount * 100.0 / StateTotal, 2) AS difference, JuriTotal FROM (        SELECT State.type AS Code, JuriCount, StateCount AS StateCount FROM 
         (
             SELECT * FROM (
                 SELECT (CASE 
@@ -177,7 +182,7 @@ function getPedestrianPreCrashQuery(nestedWhere, startYear, endYear) {
 }
 
 function getPedestrianReportTable(doc, reportData) {
-    getTableHeader(doc, 25);
+    getTableHeader(doc, 31);
     for (var tableType in reportData){
         if (reportData.hasOwnProperty(tableType)) {
             const fields = Object.keys(reportData[tableType][0]);
@@ -193,8 +198,15 @@ function getPedestrianReportTable(doc, reportData) {
                 );
             }
 
+
+            
             doc.autoTable({
                 startY: doc.lastAutoTable.finalY,
+                margin: {right: reportHelper.pageMarginSides, left: reportHelper.pageMarginSides},
+                styles: { 
+                    lineColor: [84, 84, 84],
+                    lineWidth: 0.1
+                },
                 head: [
                     [
                         {
@@ -208,7 +220,12 @@ function getPedestrianReportTable(doc, reportData) {
                         },
                     ],
                 ],
-                columns: columnArray,
+                columns: [
+                    {dataKey: "code", header: "Category"},
+                    {dataKey: "juricount", header: "Total Count"},
+                    {dataKey: "juriPercent", header: "Municipality %"},
+                    {dataKey: "statePercent", header: "State Percent"}
+                ],
                 body: reportData[tableType]
             });
         }

@@ -35,8 +35,7 @@ const sql = (query) => {
         coalesce(third_event_code, '') AS "third_event_code",
         coalesce(fourth_event_code, '') AS "fourth_event_code",
         coalesce(most_harm_event_code, '') AS "most_harm_event_code",
-        coalesce(other_prop_damage, '') AS "OTHER PROPERTY DAMAGE",
-        severity_rating5
+        coalesce(other_prop_damage, '') AS "OTHER PROPERTY DAMAGE"
         FROM maintenance.report_data
         WHERE acc_date between '${query.startDate}' and '${query.endDate}' ${query.limit ? `LIMIT ${query.limit}` : ''}
     ;`;

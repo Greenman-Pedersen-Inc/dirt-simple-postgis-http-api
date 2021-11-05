@@ -13,7 +13,7 @@ require('./report_maker/fonts/SegoeUI/seguisb-normal');
 
 const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
 
-function FileExport(queryStrings, data) {
+function fileExport(queryStrings, data) {
     if (queryStrings.fileFormat == 'pdf') {
         return GeneratePDF(queryStrings, data);
     } else if (queryStrings.fileFormat == 'csv') {
@@ -86,8 +86,8 @@ function GeneratePDF(queryStrings, data) {
                 unit: "pt"
             });
         
-            GenerateHeader(doc, queryStrings);
-            GenerateTable(doc, data);
+            generateHeader(doc, queryStrings);
+            generateTable(doc, data);
 
             doc.save(savePath);
             return resolve(fileInfo);
@@ -101,7 +101,7 @@ function GeneratePDF(queryStrings, data) {
 // *---------------*
 //  PDF Helpers
 // *---------------*
-function GenerateHeader(doc, queryStrings) {
+function generateHeader(doc, queryStrings) {
     var njdotLogo = fs.readFileSync(basePath + 'images/njdotSealSmall.png', 'base64');
     var fhwaLogo = fs.readFileSync(basePath + 'images/fhwaSealSmall.png', 'base64');
 
@@ -120,7 +120,7 @@ function GenerateHeader(doc, queryStrings) {
     .line(130, 70, 1212, 70)
 }
 
-function GenerateTable(doc, data) {
+function generateTable(doc, data) {
     var totalPagesExp = '{total_pages_count_string}'
     const fields = Object.keys(data[0]);
     var tableData = data;
@@ -184,5 +184,5 @@ function GenerateTable(doc, data) {
 // Module Exports
 // *---------------*
 module.exports = {
-    FileExport: FileExport
+    fileExport: fileExport
 };

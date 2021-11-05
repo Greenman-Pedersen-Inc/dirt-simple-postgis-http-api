@@ -136,7 +136,7 @@ module.exports = function (fastify, opts, next) {
                                 });
 
                                 //console.log(data[0]);
-                                const fileInfo = burgerHelper.FileExport(queryStrings, data);
+                                const fileInfo = burgerHelper.fileExport(queryStrings, data);
     
                                 fileInfo.then((createdFile) => {
                                     console.log(createdFile)

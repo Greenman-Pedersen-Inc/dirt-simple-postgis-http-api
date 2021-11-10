@@ -74,34 +74,42 @@ module.exports = function (fastify, opts, next) {
                         "message": "need jurisdiction code"
                     });
                 } else {
-                    const nestedWhere = burgerHelper.getNestedWhere(queryArgs.jurisdictionCode);
-                    var pedQueries = burgerHelper.getPedestrianQueries(nestedWhere, queryArgs.startYear, queryArgs.endYear);
-                    var reportData = {};
+                    var reportQueries = burgerHelper.getReportQueries(queryArgs);
+                    var reportData = {
+                        "pedestrians": [],
+                        "drivers": [],
+                        "vehicles": [],
+                        "crashes": []
+                    };
                     var promises = [];
+                    var categories = [];
 
-                    pedQueries.forEach(queryObj => {
-                        reportData[queryObj.name] = null;
-                        const promise = new Promise((resolve, reject) => {
-                            try {
-                                const res = client.query(queryObj.query);
-                                return resolve(res);
-                            }
-                            catch(err) {
-                                console.log(err.stack);
-                                return reject(error);
-                            }  
-                        });
-                        promises.push(promise);
-                    });
+                    for (var key in reportQueries) {
+                        if (reportQueries.hasOwnProperty(key)) {
+                            reportQueries[key].forEach(queryObj => {
+                                const promise = new Promise((resolve, reject) => {
+                                    try {
+                                        const res = client.query(queryObj.query);
+                                        return resolve(res);
+                                    }
+                                    catch(err) {
+                                        console.log(err.stack);
+                                        return reject(error);
+                                    }  
+                                });
+                                promises.push(promise);
+                                categories.push({[queryObj.category]: queryObj.name});
+                            });
+                        }
+                    }
 
                     Promise.all(promises).then((reportDataArray) => {
                         for (let i = 0; i < reportDataArray.length; i++) {
                             var data = reportDataArray[i].rows;
-                            var aKey = Object.keys(reportData)[i];
-                            reportData[aKey] = data;
+                            var category = Object.keys(categories[i])[0];
+                            var tableTitle = Object.values(categories[i])[0];
+                            reportData[category].push({[tableTitle]: data});
                         }
-
-                        console.log(reportData);
 
                         // create report pdf
                         const fileInfo = burgerHelper.makeJurisdictionReport(queryArgs, reportData);

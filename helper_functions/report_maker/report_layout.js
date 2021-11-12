@@ -28,62 +28,24 @@ function createPageLayout(layout) {
     else return pageLayout["letter-portrait"];
 }
 
-function createFooter (data, doc, reportTitle) {
-    var totalPagesExp = '{total_pages_count_string}'
-    // Total page number plugin only available in jspdf v1.0+
+function createFooter (doc, reportTitle) {
+    const pageCount = doc.internal.getNumberOfPages();
 
-    // Footer
-    var str = 'Page ' + doc.internal.getNumberOfPages()
-    // Total page number plugin only available in jspdf v1.0+
-    if (typeof doc.putTotalPages === 'function') {
-        str = str + ' of ' + totalPagesExp
+    for (var i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        // Footer
+        doc.setFontSize(6);
+        var str = 'Page ' + i + ' of ' + pageCount;
+        var pageSize = doc.internal.pageSize;
+        var pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight()
+        var pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth()
+        doc.text(reportTitle + " | " + str, pageWidth - pageMarginSides, pageHeight - pageMarginEnds, null, null, "right");
+
+        const date = new Date();
+        doc.text(`Report Created: ${date.toLocaleString()}`, pageMarginSides, pageHeight - pageMarginEnds);
     }
-    doc.setFontSize(6)
-
-    // jsPDF 1.4+ uses getWidth, <1.4 uses .width
-    var pageSize = doc.internal.pageSize
-    var pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight()
-    var pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth()
-    doc.text(reportTitle + " | " + str, pageWidth + 55, pageHeight - pageMarginEnds, null, null, "right");
-
-    const date = new Date();
-    doc.text(`Report Created: ${date.toLocaleString()}`, pageMarginSides, pageHeight - pageMarginEnds);
-
-    if (typeof doc.putTotalPages === 'function') {
-        doc.putTotalPages(totalPagesExp)
-    }
+    return doc;
 }
-
-// function createFooter(doc, reportTitle) {
-//     var totalPagesExp = '{total_pages_count_string}'
-//     doc.autoTable({
-//         didDrawPage: function (data) {
-//             // Footer
-//             var str = reportTitle + ' | Page ' + doc.internal.getNumberOfPages()
-//             // Total page number plugin only available in jspdf v1.0+
-//             if (typeof doc.putTotalPages === 'function') {
-//                 str = str + ' of ' + totalPagesExp
-//             }
-//             doc.setFontSize(6)
-
-//             // jsPDF 1.4+ uses getWidth, <1.4 uses .width
-//             var pageSize = doc.internal.pageSize
-//             var pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight()
-//             var pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth()
-//             doc.text(str, data.settings.margin.left, pageHeight - 10);
-
-//             const date = new Date();
-//             doc.text(`Report Created: ${date.toLocaleString()}`, pageWidth - 10, pageHeight - 10, null, null, "right");
-//         }
-//     });
-
-//     // Total page number plugin only available in jspdf v1.0+
-//     if (typeof doc.putTotalPages === 'function') {
-//         doc.putTotalPages(totalPagesExp)
-//     }
-
-//     return doc;
-// }
 
 function createHeader(doc, reportTitle) {
     const pageSize = doc.internal.pageSize
@@ -105,14 +67,14 @@ function createHeader(doc, reportTitle) {
     .line(54, 23, pageWidth - pageMarginSides, 23);
 
     currentX = pageMarginSides;
-    currentY = 28;
+    currentY = 30;
 
     return doc;
 }
 
 // {"Year Range": "2019 - 2020"}
 function createFiltersSection(doc, filterObject) {
-    const fontSize = 10;
+    const fontSize = 12;
     var startX = pageMarginSides;
     doc.setFontSize(fontSize);
 

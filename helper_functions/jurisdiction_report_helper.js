@@ -11,11 +11,17 @@ function makeJurisdictionReport(queryArgs, reportData) {
     const juriName = getJurisdictionName(queryArgs.jurisdictionCode);
     const filterObject = getFilterObject(queryArgs);
     const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, juriName + " - Comparision Summary"); 
-    getLegend(doc, juriName, 35);
-    getReportTable(doc, reportData["pedestrians"], "PEDESTRIAN & PEDACYCLIST TABLES", 60);
+    getLegend(doc, juriName, 39);
+    const tablesStart = 62;
+    getReportTable(doc, reportData["pedestrians"], "PEDESTRIAN & PEDACYCLIST TABLES", tablesStart);
     getReportTable(doc, reportData["drivers"], "DRIVER TABLES", doc.lastAutoTable.finalY + 10);
     getReportTable(doc, reportData["vehicles"], "VEHICLE TABLES", doc.lastAutoTable.finalY + 10);
     getReportTable(doc, reportData["crashes"], "CRASH TABLES", doc.lastAutoTable.finalY + 10);
+    if ("police" in reportData) {
+        getReportTable(doc, reportData["police"], "CRASH COUNTS BY EWING MUNICIPALITY POLICE", doc.lastAutoTable.finalY + 10, "police", 2);
+        getReportTable(doc, reportData["police2"], null, doc.lastAutoTable.finalY + 10, "police", 3, queryArgs);
+    }
+    reportHelper.createFooter(doc, juriName + " - Comparision Summary");
     return reportHelper.saveReportPdf(doc, "jurisdictionReport");
 }
 
@@ -28,8 +34,14 @@ function getReportQueries(queryArgs) {
         "pedestrians": pedQueries,
         "drivers": driverQueries,
         "vehicles": vehiclesQueries,
-        "crashes": crashesQueries
+        "crashes": crashesQueries,
     };
+
+    // additional police tables for Ewing 
+    if (queryArgs.jurisdictionCode === "1102") {
+        reportQueries["police"] = getPoliceQueries(queryArgs, false);
+        reportQueries["police2"] = getPoliceQueries(queryArgs, true);
+    }
     return reportQueries;
 }
 
@@ -55,7 +67,7 @@ function getNestedWhere(jurisdictionCode, category) {
         cty = "veh_acc_mun_cty_co";
         muni = "veh_acc_mun_mu";
     }
-    else if (category === "crashes") {
+    else if (category === "crashes" || category === "police") {
         cty = "mun_cty_co";
         muni = "mun_mu";
     }
@@ -70,41 +82,69 @@ function getNestedWhere(jurisdictionCode, category) {
     }
 }
 
-function getTableHeader(doc, tableTitle, yPos) {
+function getTableTitleHeader (doc, tableTitle, yPos) {
     const leftMargin = reportHelper.pageMarginSides;
     const pageSize = doc.internal.pageSize
     const pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth();
     var currYPos = yPos;
 
-    doc
-    .setFont("seguisb", "normal")
-    .setFontSize(12)
-    .text(tableTitle, leftMargin, yPos);
-    currYPos += 1;
-    doc
-    .setDrawColor(0)
-    .setLineWidth(0.5)
-    .line(leftMargin, currYPos, pageWidth - leftMargin, currYPos);
-    currYPos += 3;
+    if (tableTitle) {
+        doc
+        .setFont("seguisb", "normal")
+        .setFontSize(14)
+        .text(tableTitle, leftMargin, yPos);
+        currYPos += 1;
+        doc
+        .setDrawColor(0)
+        .setLineWidth(0.5)
+        .line(leftMargin, currYPos, pageWidth - leftMargin, currYPos);
+        currYPos += 3;
+    }
+    return currYPos;
+}
 
-    doc.autoTable({
+function getTableHeader(doc, currYPos, isPoliceTable = false, numPoliceCols = 2) {
+    var headerSettings = {
         startY: currYPos,
-        margin: {right: reportHelper.pageMarginSides, left: reportHelper.pageMarginSides},
-        styles: { 
+        margin: { right: reportHelper.pageMarginSides, left: reportHelper.pageMarginSides },
+        styles: {
             lineColor: [84, 84, 84],
             lineWidth: 0.1,
             fontStyle: 'bold',
-            fillColor: [40,127,186],
+            fillColor: [40, 127, 186],
             textColor: 255
-        },
-        body: [['CRASH CHARACTERISTIC', 'MUNICIPALITY COUNT', 'MUNICIPALITY %', 'STATE %']],
-        columnStyles: {
+        }
+    }
+
+    if (!isPoliceTable) {
+        headerSettings["body"] = [['CRASH CHARACTERISTIC', 'MUNICIPALITY COUNT', 'MUNICIPALITY %', 'STATE %']];
+        headerSettings["columnStyles"] = { 
             0: { cellWidth: 64, halign: 'center', fillColor: [40,127,186] },
             1: { cellWidth: 45, halign: 'center', fillColor: [40,127,186] },
             2: { cellWidth: 37, halign: 'center', fillColor: [40,127,186] },
             3: { cellWidth: 31.9, halign: 'center', fillColor: [40,127,186] }        
         }
-    });
+    }
+
+    else {
+        if (numPoliceCols === 2) {
+            headerSettings["body"] = [['YEAR', 'CRASH COUNT']];
+            headerSettings["columnStyles"] = { 
+                0: { cellWidth: 89, halign: 'center', fillColor: [40,127,186] },
+                1: { cellWidth: 89, halign: 'center', fillColor: [40,127,186] }       
+            }
+        }
+        else {
+            headerSettings["body"] = [['YEAR', 'ATTRIBUTE', 'CRASH COUNT']];
+            headerSettings["columnStyles"] = { 
+                0: { cellWidth: 59.33, halign: 'center', fillColor: [40,127,186] },
+                1: { cellWidth: 59.33, halign: 'center', fillColor: [40,127,186] },
+                2: { cellWidth: 59.33, halign: 'center', fillColor: [40,127,186] },       
+            }
+        }
+    }
+
+    doc.autoTable(headerSettings);
     return doc;
 }
 
@@ -116,7 +156,7 @@ function getLegend(doc, juriName, yPos) {
 
     doc
     .setFont("seguisb", "normal")
-    .setFontSize(12)
+    .setFontSize(14)
     .text("LEGEND", leftMargin, yPos);
     currYPos += 1;
     doc
@@ -135,39 +175,47 @@ function getLegend(doc, juriName, yPos) {
     .rect(reportHelper.pageMarginSides, currYPos, 5, 5, "FD")
     .text("2% - 5%", leftMargin + 5 + 3, currYPos+4)
     .setFillColor(239,93,87)
-    .rect(leftMargin + 5 + 3 + 20, currYPos, 5, 5, "FD")
-    .text("> 5%", leftMargin + 5 + 3 + 20 + 8, currYPos+4)
+    .rect(leftMargin + 5 + 3 + 35, currYPos, 5, 5, "FD")
+    .text("> 5%", leftMargin + 5 + 3 + 35 + 8, currYPos+4)
     return doc;
 }
 
-function getReportTable(doc, reportData, headerTitle, yPos) {
-    var totalPagesExp = '{total_pages_count_string}';
-    var pageNumbers = [];
-    getTableHeader(doc, headerTitle, yPos);
+function getReportTable(doc, reportData, headerTitle, yPos, category, policeCols, queryArgs) {
+    var currY = getTableTitleHeader(doc, headerTitle, yPos);
+    if (category === "police" || category === "police2") {
+        getTableHeader(doc, currY, true, policeCols);
+    }
+    else getTableHeader(doc, currY);
+
     reportData.forEach(dataTable => {
         var tableType = Object.keys(dataTable)[0];
-        var tableData = dataTable[Object.keys(dataTable)[0]];
+        var tableData = dataTable[tableType];
+        var tableCols = Object.keys(tableData[0]).length;
 
-        tableData.push({
-            code: 'Total',
-            juricount: tableData[0].juritotal,
-            juripercent: 100.00,
-            statepercent: ''
-        });
-        doc.autoTable({
+        if (category !== "police") {
+            tableData.push({
+                code: 'Total',
+                juricount: tableData[0].juritotal,
+                juripercent: 100.00,
+                statepercent: ''
+            });
+        }
+
+        var tableSettings = {
             startY: doc.lastAutoTable.finalY,
             margin: {right: reportHelper.pageMarginSides, left: reportHelper.pageMarginSides},
             styles: { 
                 lineColor: [84, 84, 84],
                 lineWidth: 0.1,
                 textColor: [0, 0, 0],
-                rowPageBreak: 'avoid'
+                rowPageBreak: 'always',
+                pageBreak: 'auto'
             },
             head: [
                 [
                     {
                         content: tableType,
-                        colSpan: 4,
+                        colSpan: tableCols,
                         styles: { 
                             halign: 'center', 
                             fillColor: [32, 178, 170],
@@ -175,22 +223,93 @@ function getReportTable(doc, reportData, headerTitle, yPos) {
                         },
                     },
                 ],
-            ],
-            columns: [
+            ]
+        }
+
+        if (category === "police") {
+            if (tableCols === 3) {
+                tableSettings["columns"] = [
+                    { dataKey: 'year', header: 'year' },
+                    { dataKey: 'code', header: 'code' },
+                    { dataKey: 'count', header: 'count'},
+                ];
+                tableSettings["columnStyles"] = {
+                    0: { cellWidth: 59.33, halign: 'center' },
+                    1: { cellWidth: 59.33, halign: 'center' },
+                    2: { cellWidth: 59.33, halign: 'center' }
+                };
+                var body = [];
+                var year = queryArgs.startYear;
+                var yearSpanLength = 0;
+                var spanRowIdx = 0;
+
+                for (var i = 0; i < tableData.length; i++) {
+                    var row = [];
+
+                    var aRow = tableData[i];
+                    if (i === tableData.length - 1) {
+                        var yearSpan = {
+                            rowSpan: yearSpanLength,
+                            content: year,
+                            styles: { valign: 'middle', halign: 'center' }
+                        };
+
+                        var targetRow = body[spanRowIdx];
+                        targetRow.unshift(yearSpan);
+                        break;
+                    };
+
+                    for (var key in tableData[i]) {
+                        if (key !== "year") row.push(tableData[i][key]);
+                    }
+
+                    if (year.toString() === aRow.year) {
+                        yearSpanLength++;
+                    }
+                    else {
+                        var yearSpan = {
+                            rowSpan: yearSpanLength,
+                            content: year,
+                            styles: { valign: 'middle', halign: 'center' }
+                        };
+
+                        var targetRow = body[spanRowIdx];
+                        targetRow.unshift(yearSpan);
+                        year++;
+                        yearSpanLength = 1;
+                        spanRowIdx = i;
+                    }
+                    body.push(row);
+                }
+                tableSettings["body"] = body;
+            }
+            else if (category === "police") {
+                tableSettings["columns"] = [
+                    { dataKey: 'year', header: 'year' },
+                    { dataKey: 'count', header: 'count'},
+                ];
+                tableSettings["columnStyles"] = {
+                    0: { cellWidth: 89, halign: 'center' },
+                    1: { cellWidth: 89, halign: 'center' }
+                };
+                tableSettings["body"] = tableData;
+            }
+        }
+        else {
+            tableSettings["columns"] = [
                 { dataKey: 'code', header: 'code' },
                 { dataKey: 'juricount', header: 'juricount'},
                 { dataKey: 'juripercent', header: 'juripercent'},
                 { dataKey: 'statepercent', header: 'statepercent' },
-            ],
-            body: tableData,
-            columnStyles: {
+            ];
+            tableSettings["columnStyles"] = {
                 0: { cellWidth: 64 },
                 1: { cellWidth: 45, halign: 'center' },
                 2: { cellWidth: 37, halign: 'center' },
                 3: { cellWidth: 31.9, halign: 'center' },
-            },
-            allSectionHooks: true,
-            didParseCell: function(data) {
+            };
+            tableSettings["allSectionHooks"] = true;
+            tableSettings["didParseCell"] = function(data) {
                 if (data.column.dataKey === 'juripercent' || data.column.dataKey === 'statepercent') {
                     if (data.cell.raw === null || data.cell.raw === 'null') {data.cell.text = "0.00%"} 
                     else if (data.cell.raw !== '') {
@@ -207,38 +326,12 @@ function getReportTable(doc, reportData, headerTitle, yPos) {
                 }
                 if (data.row.index === tableData.length - 1) {
                     data.cell.styles.fontStyle = 'bold'; // bold the TOTAL row
-                    // if (data.cell.index === 3) data.cell.styles.fillColor = [210,210,210]; // Yellow
                 }
-            },
-            didDrawPage: function(data) {
-            //     // Footer
-            //     var str = 'Page ' + doc.internal.getNumberOfPages();
-
-            //     // check if the page number footer has already been added.
-            //     if (pageNumbers.indexOf(str) === -1) {
-            //         pageNumbers.push(str);
-            //         // Total page number plugin only available in jspdf v1.0+
-            //         if (typeof doc.putTotalPages === 'function') {
-            //             str = str + ' of ' + totalPagesExp
-            //         }
-            //         doc.setFontSize(6);
-
-            //         // jsPDF 1.4+ uses getWidth, <1.4 uses .width
-            //         var pageSize = doc.internal.pageSize
-            //         var pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight()
-            //         var pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth()
-            //         doc.text("Jurisdiction Report | " + str, pageWidth, pageHeight - reportHelper.pageMarginEnds, null, null, "right");
-
-            //         const date = new Date();
-            //         doc.text(`Report Created: ${date.toLocaleString()}`, reportHelper.pageMarginSides, pageHeight - reportHelper.pageMarginEnds);
-            //     }
             }
-        });
-
-        // Total page number plugin only available in jspdf v1.0+
-        if (typeof doc.putTotalPages === 'function') {
-            doc.putTotalPages(totalPagesExp)
+            tableSettings["body"] = tableData;
         }
+
+        doc.autoTable(tableSettings);
     });
 }
 
@@ -386,7 +479,6 @@ function getDriverQueries(queryArgs) {
 }
 
 function getDriverGenderQuery(nestedWhere, startYear, endYear) {
-    console.log(nestedWhere);
     const stateTable = 'state_trends.driver_gender_state';
     const query = `
     WITH JuriTotal AS (SELECT COUNT(*) AS JuriTotal from ard_occupants where ${nestedWhere} and position_in_code = '01'
@@ -589,7 +681,7 @@ function getAlcoholQuery(nestedWhere, startYear, endYear) {
     GROUP BY State.code, JuriCount, StateCount
     ) AS data, JuriTotal, StateTotal;
     `;
-    console.log(query);
+    
     return query;
 }
 function getIntersectionQuery(nestedWhere, startYear, endYear) {
@@ -620,7 +712,7 @@ function getIntersectionQuery(nestedWhere, startYear, endYear) {
     GROUP BY State.code, JuriCount, StateCount
     ) AS data, JuriTotal, StateTotal;
     `;
-    console.log(query);
+    
 
     return query;
 }
@@ -648,7 +740,7 @@ function getYearQuery(nestedWhere, startYear, endYear) {
     GROUP BY State.code, JuriCount, StateCount
     ) AS data, JuriTotal, StateTotal;
     `;
-    console.log(query);
+    
 
     return query;
 }
@@ -695,7 +787,7 @@ function getMonthQuery(nestedWhere, startYear, endYear) {
     GROUP BY State.code, JuriCount, StateCount
     ) AS data, JuriTotal, StateTotal;
     `;
-    console.log(query);
+    
 
     return query;
 }
@@ -746,7 +838,7 @@ function getDayQuery(nestedWhere, startYear, endYear) {
     GROUP BY State.code, JuriCount, StateCount
     ) AS data, JuriTotal, StateTotal;
     `;
-    console.log(query);
+    
 
     return query;
 }
@@ -803,7 +895,7 @@ function getTimeQuery(nestedWhere, startYear, endYear) {
     GROUP BY State.code, JuriCount, StateCount
     ) AS data, JuriTotal, StateTotal;
     `;
-    console.log(query);
+    
 
     return query;
 }
@@ -843,7 +935,7 @@ function getLightQuery(nestedWhere, startYear, endYear) {
     GROUP BY State.type, JuriCount, StateCount
     ) AS data, JuriTotal, StateTotal;
     `;
-    console.log(query);
+    
 
     return query;
 }
@@ -877,16 +969,716 @@ function getSeverityQuery(nestedWhere, startYear, endYear) {
     GROUP BY State.code, JuriCount, StateCount
     ) AS data, JuriTotal, StateTotal;
     `;
-    console.log(query);
+    
     return query;
 }
+
+// *---------------*
+// Police Tables for specific jurisdiction codes
+// *---------------*
+function getPoliceQueries(queryArgs, getExtendedQueries) {
+    const category = "police";
+    if (getExtendedQueries) {
+        var queries = [
+            // these hvae 3 cols: year, label, count
+            {name: "CRASHES BY ROAD SURFACE CONDITIONS", category: category + "2", query: getRoadCondQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES BY ROAD TYPE", category: category + "2", query: getRoadSysQuery(queryArgs.startYear, queryArgs.endYear)}
+        ];
+        return queries;
+    }
+    else {
+        var queries = [
+            {name: "TOTAL CRASHES", category: category, query: getTotalCrashQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES ON ROADWAYS", category: category, query: getRoadwayQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES ON PRIVATE PROPERTY", category: category, query: getPrivatePropQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH SERIOUS INJURY PERSONS", category: category, query: getInjuryQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH FATALITIES", category: category, query: getFatalQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH IMPAIRED DRIVING (ALCOHOL, DRUGS, MEDICATION)", category: category, query: getImpairedQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH PASSENGER VEHICLES", category: category, query: getPassengerVehQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH COMMERCIAL VEHICLES (<=10,000 LBS, EXCLUDES BUSES)", category: category, query: getCommercialVehQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH MOTORCYCLES", category: category, query: getMotorcycleQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES INVOLVING PEDACYCLES", category: category, query: getPedcycleQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES INVOLVING MINI-BIKES OR MOPED", category: category, query: getMopedQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH SCHOOL BUSES", category: category, query: getSchoolbusQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH TRANSIT BUSES", category: category, query: getTransitBusQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH EMERGENCY VEHICLES", category: category, query: getEmercencyVehQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH SUV", category: category, query: getSuvQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES WITH UNKNOWN/OTHER OBJECTS (FIXED/NON-FIXED OBJECT, RAILCARS)", category: category, query: getObjCrashQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES INVOLVING ANIMALS", category: category, query: getAnimalQuery(queryArgs.startYear, queryArgs.endYear)},
+            {name: "CRASHES INVOLVING PEDESTRIANS", category: category, query: getPedCrashQuery(queryArgs.startYear, queryArgs.endYear)}
+        ];
+        return queries;        
+    }
+}
+
+function getTotalCrashQuery(startYear, endYear) {
+    const query = `
+    SELECT year, COUNT(*) FROM ARD_ACCIDENTS
+    WHERE
+    YEAR >= ${startYear} AND YEAR <= ${endYear}
+    AND
+    MUN_CTY_CO = '11'
+    AND
+    MUN_MU = '02'
+    AND
+    DEPT_NUM IN ('01', '1')
+    AND
+    DEPT_NAME LIKE 'EWING%'
+    GROUP BY year ORDER BY year;    
+    `;
+    
+
+    return query;
+}
+
+function getRoadwayQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT year, COUNT(*) FROM ARD_ACCIDENTS
+        WHERE
+        YEAR >= ${startYear} AND YEAR <= ${endYear}
+        AND
+        MUN_CTY_CO = '11'
+        AND
+        MUN_MU = '02'
+        AND
+        DEPT_NUM IN ('01', '1')
+        AND
+        DEPT_NAME LIKE 'EWING%'
+        AND 
+        ROAD_SYS_CODE <> '09'
+        GROUP BY year ORDER BY year
+    ) crashes
+    ON years.year = crashes.year;  
+    `;
+    
+
+    return query;
+}
+
+function getPrivatePropQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT year, COUNT(*) FROM ARD_ACCIDENTS
+        WHERE
+        YEAR >= ${startYear} AND YEAR <= ${endYear}
+        AND
+        MUN_CTY_CO = '11'
+        AND
+        MUN_MU = '02'
+        AND
+        DEPT_NUM IN ('01', '1')
+        AND
+        DEPT_NAME LIKE 'EWING%'
+        AND 
+        ROAD_SYS_CODE = '09'
+        GROUP BY year ORDER BY year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getInjuryQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT year, COUNT(*) FROM ARD_ACCIDENTS
+        WHERE
+        YEAR >= ${startYear} AND YEAR <= ${endYear}
+        AND
+        MUN_CTY_CO = '11'
+        AND
+        MUN_MU = '02'
+        AND
+        DEPT_NUM IN ('01', '1')
+        AND
+        DEPT_NAME LIKE 'EWING%'
+        AND 
+        SEVERITY_CODE = 'I'
+        GROUP BY year ORDER BY year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getFatalQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT year, COUNT(*) FROM ARD_ACCIDENTS
+        WHERE
+        YEAR >= ${startYear} AND YEAR <= ${endYear}
+        AND
+        MUN_CTY_CO = '11'
+        AND
+        MUN_MU = '02'
+        AND
+        DEPT_NUM IN ('01', '1')
+        AND
+        DEPT_NAME LIKE 'EWING%'
+        AND 
+        SEVERITY_CODE = 'F'
+        GROUP BY year ORDER BY year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getImpairedQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+
+        SELECT ard_accidents.year, COUNT(DISTINCT ard_accidents.crashid) FROM
+        ard_accidents, ard_vehicles
+        WHERE ard_accidents.crashid = ard_vehicles.crashid AND (ard_accidents.year >= ${startYear} AND ard_accidents.year <= ${endYear}) AND
+        (
+            ard_accidents.ALCOHOL_INVOLVED = 'Y'
+            OR
+            ard_vehicles.driver_phys_stat_code1 in ('02','03', '04' ,'05') -- Alcohol, Illicit drug use, Medication, alcohol/drug use
+            OR
+            ard_vehicles.driver_phys_stat_code2 in ('02','03', '04', '05') -- Alcohol, Illicit drug use, Medication, alcohol/drug use
+        )
+        AND
+        MUN_CTY_CO = '11' 
+        AND
+        MUN_MU = '02'
+        AND
+        DEPT_NUM IN ('01', '1')
+        AND
+        DEPT_NAME LIKE 'EWING%'
+        GROUP BY ard_accidents.year ORDER BY ard_accidents.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getPassengerVehQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_vehicles v
+        WHERE 
+        v.ACC_MUN_CTY_CO = '11' 
+        AND v.ACC_MUN_MU = '02'
+        AND v.TYPE_CODE BETWEEN '01' AND '19'
+        AND (v.acc_year >= ${startYear} AND v.acc_year <= ${endYear})
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = v.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getCommercialVehQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_vehicles v
+        WHERE 
+        v.ACC_MUN_CTY_CO = '11' 
+        AND v.ACC_MUN_MU = '02'
+        AND (v.TYPE_CODE BETWEEN '20' AND '29' OR ((v.VEH_WEIGHT_RATING = '2' OR v.VEH_WEIGHT_RATING = '3') AND v.TYPE_CODE <> '30' AND v.TYPE_CODE <> '31'))
+        AND v.VEH_USE_CODE = '02'
+        AND (v.acc_year >= ${startYear} AND v.acc_year <= ${endYear})
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = v.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getMotorcycleQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_vehicles v
+        WHERE 
+        v.ACC_MUN_CTY_CO = '11' 
+        AND v.ACC_MUN_MU = '02'
+        AND v.TYPE_CODE = '08'
+        AND (v.acc_year >= ${startYear} AND v.acc_year <= ${endYear})
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = v.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getPedcycleQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_pedestrians p
+        WHERE 
+        p.ACC_MUN_CTY_CO = '11' 
+        AND p.ACC_MUN_MU = '02'
+        AND (p.IS_BICYCLIST IS NOT NULL OR a.crash_type = '14')
+        AND (p.acc_year >= ${startYear} AND p.acc_year <= ${endYear})
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = p.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getMopedQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_vehicles v
+        WHERE 
+        v.ACC_MUN_CTY_CO = '11' 
+        AND v.ACC_MUN_MU = '02'
+        AND v.TYPE_CODE = '11'
+        AND (v.acc_year >= 2018 AND v.acc_year <= 2019)
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = v.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getSchoolbusQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_vehicles v
+        WHERE 
+        v.ACC_MUN_CTY_CO = '11' 
+        AND v.ACC_MUN_MU = '02'
+        AND (v.SPECIAL_VEH_CODE  = '07' OR v.SPECIAL_VEH_CODE = '09')
+        AND (v.acc_year >= ${startYear} AND v.acc_year <= ${endYear})
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = v.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getTransitBusQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_vehicles v
+        WHERE 
+        v.ACC_MUN_CTY_CO = '11' 
+        AND v.ACC_MUN_MU = '02'
+        AND (v.TYPE_CODE = '30' OR v.TYPE_CODE = '31')
+        AND (v.SPECIAL_VEH_CODE  <> '07' AND v.SPECIAL_VEH_CODE <> '09')
+        AND (v.acc_year >= ${startYear} AND v.acc_year <= ${endYear})
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = v.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getEmercencyVehQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_vehicles v
+        WHERE 
+        v.ACC_MUN_CTY_CO = '11' 
+        AND v.ACC_MUN_MU = '02'
+        AND (v.SPECIAL_VEH_CODE = '02' OR v.SPECIAL_VEH_CODE = '04' OR v.SPECIAL_VEH_CODE = '05')
+        AND (v.acc_year >= ${startYear} AND v.acc_year <= ${endYear})
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = v.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getSuvQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT a.year, COUNT(DISTINCT a.crashid) FROM ard_accidents a, ard_vehicles v
+        WHERE 
+        v.ACC_MUN_CTY_CO = '11' 
+        AND v.ACC_MUN_MU = '02'
+        AND v.TYPE_CODE = '04'
+        AND (v.acc_year >= ${startYear} AND v.acc_year <= ${endYear})
+        AND a.DEPT_NUM IN ('01', '1')
+        AND a.DEPT_NAME LIKE 'EWING%'
+        AND a.crashid = v.crashid
+        GROUP BY a.year ORDER BY a.year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getObjCrashQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT year, COUNT(*) FROM ARD_ACCIDENTS
+        WHERE
+        YEAR >= ${startYear} AND YEAR <= ${endYear}
+        AND
+        MUN_CTY_CO = '11'
+        AND
+        MUN_MU = '02'
+        AND
+        DEPT_NUM IN ('01', '1')
+        AND
+        DEPT_NAME LIKE 'EWING%'
+        AND 
+        (CRASH_TYPE = '11' OR CRASH_TYPE = '15' OR CRASH_TYPE = '16' OR CRASH_TYPE = '99')                
+        GROUP BY year ORDER BY year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getAnimalQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT year, COUNT(*) FROM ARD_ACCIDENTS
+        WHERE
+        YEAR >= ${startYear} AND YEAR <= ${endYear}
+        AND
+        MUN_CTY_CO = '11'
+        AND
+        MUN_MU = '02'
+        AND
+        DEPT_NUM IN ('01', '1')
+        AND
+        DEPT_NAME LIKE 'EWING%'
+        AND 
+        CRASH_TYPE = '12'     -- animal crash type
+        GROUP BY year ORDER BY year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getPedCrashQuery(startYear, endYear) {
+    const query = `
+    SELECT years.year, 
+    CASE WHEN crashes.count IS NULL THEN 0
+    ELSE crashes.count 
+    END
+
+    FROM
+
+    (SELECT DISTINCT year FROM ard_accidents WHERE (YEAR >= ${startYear} AND YEAR <= ${endYear})) AS years
+
+    LEFT JOIN
+
+    (
+        SELECT year, COUNT(*) FROM ARD_ACCIDENTS
+        WHERE
+        YEAR >= ${startYear} AND YEAR <= ${endYear}
+        AND
+        MUN_CTY_CO = '11'
+        AND
+        MUN_MU = '02'
+        AND
+        DEPT_NUM IN ('01', '1')
+        AND
+        DEPT_NAME LIKE 'EWING%'
+        AND 
+        CRASH_TYPE = '13'     -- pedestrian crash type     
+        GROUP BY year ORDER BY year
+    ) crashes 
+    ON years.year = crashes.year;
+    `;
+    
+
+    return query;
+}
+
+function getRoadCondQuery(startYear, endYear) {
+    const query = `
+    SELECT a.year,
+    CASE
+        WHEN a.SURF_COND_CODE = '01' THEN 'DRY'
+        WHEN a.SURF_COND_CODE = '02' THEN 'WET'
+        WHEN a.SURF_COND_CODE = '03' THEN 'SNOWY'
+        WHEN a.SURF_COND_CODE = '04' THEN 'ICY'
+        WHEN a.SURF_COND_CODE = '05' THEN 'SLUSH'
+        WHEN a.SURF_COND_CODE = '06' THEN 'WATER (STANDING/MOVING)'
+        WHEN a.SURF_COND_CODE = '07' THEN 'SAND/MUD/DIRT'
+        WHEN a.SURF_COND_CODE = '08' THEN 'OIL'
+        ELSE 'OTHER/UNKNOWN'
+    END AS code,
+    COUNT(*) FROM ard_accidents a
+    WHERE
+    a.MUN_CTY_CO = '11'
+    AND a.MUN_MU = '02'
+    AND (a.year >= ${startYear} AND a.year <= ${endYear})
+    AND a.DEPT_NUM IN ('01', '1')
+    AND a.DEPT_NAME LIKE 'EWING%'
+    GROUP BY a.year, code
+    ORDER BY a.year, code
+    `;
+    
+
+    return query;
+}
+
+function getRoadSysQuery(startYear, endYear) {
+    const query = `
+    SELECT a.year,
+    CASE
+        WHEN a.ROAD_SYS_CODE = '00' THEN 'OTHER/UNKNOWN'
+        WHEN a.ROAD_SYS_CODE = '01' THEN 'INTERSTATE'
+        WHEN a.ROAD_SYS_CODE = '02' THEN 'STATE HIGHWAY'
+        WHEN a.ROAD_SYS_CODE = '03' THEN 'STATE/INTERSTATE HIGHWAY'
+        WHEN a.ROAD_SYS_CODE = '04' THEN 'STATE PARK OR INSTITUTION'
+        WHEN a.ROAD_SYS_CODE = '05' THEN 'COUNTY'
+        WHEN a.ROAD_SYS_CODE = '06' THEN 'COUNTY AUTHORITY PARK OR INSTITUTION'
+        WHEN a.ROAD_SYS_CODE = '07' THEN 'MUNICIPAL'
+        WHEN a.ROAD_SYS_CODE = '08' THEN 'MUNICIPAL AUTHORITY PARK OR INSTITUTION'
+        WHEN a.ROAD_SYS_CODE = '09' THEN 'PRIVATE PROPERTY'
+        WHEN a.ROAD_SYS_CODE = '10' THEN 'U.S. GOVERNMENT PROPERTY'
+        ELSE 'OTHER/UNKNOWN'
+    END AS code,
+    COUNT(*) FROM ard_accidents a
+    WHERE
+    a.MUN_CTY_CO = '11'
+    AND a.MUN_MU = '02'
+    AND (a.year >= ${startYear} AND a.year <= ${endYear})
+    AND a.DEPT_NUM IN ('01', '1')
+    AND a.DEPT_NAME LIKE 'EWING%'
+    GROUP BY a.year, code
+    ORDER BY a.year, code
+    `;
+    
+    return query;
+}
+
 // *---------------*
 // Module Exports
 // *---------------*
 module.exports = {
-    getNestedWhere: getNestedWhere,
-    getPedestrianQueries: getPedestrianQueries,
-    getDriverQueries: getDriverQueries,
     makeJurisdictionReport: makeJurisdictionReport,
     getReportQueries: getReportQueries
 };

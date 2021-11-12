@@ -23,19 +23,11 @@ const schema = {
         jurisdictionCode: {
             type: 'string',
             description: 'county code and muni code together',
-            default: "0101"
+            default: "1102"
         }
     }
 }
 
-async function getReportData(query) {
-    try {
-        const res = await client.query(query)
-        console.log(res.rows[0])
-    } catch (err) {
-        console.log(err.stack)
-    }
-}
 
 // *---------------*
 // create route
@@ -79,7 +71,9 @@ module.exports = function (fastify, opts, next) {
                         "pedestrians": [],
                         "drivers": [],
                         "vehicles": [],
-                        "crashes": []
+                        "crashes": [],
+                        "police": [],
+                        "police2": []
                     };
                     var promises = [];
                     var categories = [];
@@ -94,6 +88,7 @@ module.exports = function (fastify, opts, next) {
                                     }
                                     catch(err) {
                                         console.log(err.stack);
+                                        console.log(queryObj.query);
                                         return reject(error);
                                     }  
                                 });
@@ -117,6 +112,7 @@ module.exports = function (fastify, opts, next) {
                             console.log(createdFile)
                             reply.send({ url: createdFile.fileName });
                         }).catch((error) => {
+                            console.log("report error");
                             console.log(error);
                         })
                     });

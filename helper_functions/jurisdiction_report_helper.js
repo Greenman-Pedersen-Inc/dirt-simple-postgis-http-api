@@ -122,7 +122,7 @@ function getTableHeader(doc, currYPos, isPoliceTable = false, numPoliceCols = 2)
             0: { cellWidth: 64, halign: 'center', fillColor: [40,127,186] },
             1: { cellWidth: 45, halign: 'center', fillColor: [40,127,186] },
             2: { cellWidth: 37, halign: 'center', fillColor: [40,127,186] },
-            3: { cellWidth: 31.9, halign: 'center', fillColor: [40,127,186] }        
+            3: { cellWidth: 32, halign: 'center', fillColor: [40,127,186] }        
         }
     }
 
@@ -137,9 +137,9 @@ function getTableHeader(doc, currYPos, isPoliceTable = false, numPoliceCols = 2)
         else {
             headerSettings["body"] = [['YEAR', 'ATTRIBUTE', 'CRASH COUNT']];
             headerSettings["columnStyles"] = { 
-                0: { cellWidth: 59.33, halign: 'center', fillColor: [40,127,186] },
-                1: { cellWidth: 59.33, halign: 'center', fillColor: [40,127,186] },
-                2: { cellWidth: 59.33, halign: 'center', fillColor: [40,127,186] },       
+                0: { cellWidth: 59, halign: 'center', fillColor: [40,127,186] },
+                1: { cellWidth: 59, halign: 'center', fillColor: [40,127,186] },
+                2: { cellWidth: 60, halign: 'center', fillColor: [40,127,186] },       
             }
         }
     }
@@ -234,9 +234,9 @@ function getReportTable(doc, reportData, headerTitle, yPos, category, policeCols
                     { dataKey: 'count', header: 'count'},
                 ];
                 tableSettings["columnStyles"] = {
-                    0: { cellWidth: 59.33, halign: 'center' },
-                    1: { cellWidth: 59.33, halign: 'center' },
-                    2: { cellWidth: 59.33, halign: 'center' }
+                    0: { cellWidth: 59, halign: 'center' },
+                    1: { cellWidth: 59, halign: 'center' },
+                    2: { cellWidth: 60, halign: 'center' }
                 };
                 var body = [];
                 var year = queryArgs.startYear;
@@ -306,7 +306,7 @@ function getReportTable(doc, reportData, headerTitle, yPos, category, policeCols
                 0: { cellWidth: 64 },
                 1: { cellWidth: 45, halign: 'center' },
                 2: { cellWidth: 37, halign: 'center' },
-                3: { cellWidth: 31.9, halign: 'center' },
+                3: { cellWidth: 32, halign: 'center' },
             };
             tableSettings["allSectionHooks"] = true;
             tableSettings["didParseCell"] = function(data) {

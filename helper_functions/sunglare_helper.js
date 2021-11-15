@@ -1,65 +1,9 @@
-// *---------------*
-// Sunglare querystrings
-// *---------------*
-
-function GetQueryStrings() {
-    var querystrings = {
-        user: {
-            type: 'string',
-            description: 'The user name.',
-            default: ''
-        },
-        moduleType: {
-            type: 'string',
-            description: 'The type of predictive module.',
-            default: 'sunglare'
-        },
-        sort: {
-            type: 'string',
-            description: 'The sorting method used in the report PDF.',
-            default: 'crash-sort'
-        },
-        startYear: {
-            type: 'string',
-            description: 'The start year for crashes.',
-            default: '2015'
-        },
-        endYear: {
-            type: 'string',
-            description: 'The end year for crashes.',
-            default: '2020'
-        },
-        crashAttributes: {
-            type: 'string',
-            description: 'Comma seperated list of Crash Attribute codes based on the NJTR-1 form.'
-        },
-        travelDirectionCodes: {
-            type: 'string',
-            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.'
-        },
-        timeOfDayCodes: {
-            type: 'string',
-            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.'
-        },
-        signalizedIntersectionCodes: {
-            type: 'string',
-            description: 'Comma seperated list of Signalized Intersection codes based on the NJTR-1 form.'
-        },
-        sri: {
-            type: 'string',
-            description: 'SRI code.'
-        },
-        countyCode: {
-            type: 'string',
-            description: 'County Code.'
-        },
-        muniCode: {
-            type: 'string',
-            description: 'Municipality code.'
-        }
-    }
-    return querystrings;
-}
+const { jsPDF } = require("jspdf"); // will automatically load the node version
+const { autoTable } = require("jspdf-autotable"); // will automatically load the node version
+const reportHelper = require('./report_maker/report_layout');
+const codeTranslator = require('./code_translator');
+require('./report_maker/fonts/SegoeUI/segoeui-normal');     // SegoiUI normal
+require('./report_maker/fonts/SegoeUI/seguisb-normal');     // SegoiUI semi bold
 
 // *---------------*
 // SQL Clause Helper Functions
@@ -181,6 +125,58 @@ function FormatTrafficSignalCodes(codeString) {
 // Report Helper Functions
 // *---------------*
 
+// returns all queries needed for the report
+function GetReportQueries(queryStrings) {
+    var reportQueries = {};
+    var queryCodes = ['default'];
+    var crashAttr = queryStrings.crashAttributes;
+    if (crashAttr !== null && crashAttr !== undefined) {
+        var crashAttrList = crashAttr.split(',');
+        queryCodes.push.apply(queryCodes, crashAttrList);
+    }
+    queryCodes.forEach(crashAttr => {
+        var aQuery = MakeReportQuery(queryStrings, crashAttr);
+        reportQueries[crashAttr] = {
+            title: CreateTableTitle(crashAttr),
+            query: aQuery
+        }
+    });
+    return reportQueries;
+}
+
+// returns object of filter text that goes on the report
+function CreateReportFilterLabels(queryStrings) {
+    var filterObject = {};
+    // year range
+    filterObject["Year Range"] = CreateYearLabel(queryStrings.startYear, queryStrings.endYear);
+
+    // location
+    var location = "New Jersey State";
+    if (queryStrings.sri) location = queryStrings.sri;
+    else if (queryStrings.muniCode || queryStrings.countyCode) {
+        const juriCode = `${queryStrings.muniCode ? queryStrings.countyCode + queryStrings.muniCode : queryStrings.countyCode}`;
+        location = getJurisdictionName(juriCode);
+    }
+    else if (queryStrings.sri) location = queryStrings.sri; 
+    filterObject["Location"] = location;
+
+    // travel direction
+    if (queryStrings.travelDirectionCodes) {
+        filterObject["Travel Direction"] = CreateDirectionLabel(queryStrings.travelDirectionCodes);
+    }
+
+    // time of day
+    if (queryStrings.timeOfDayCodes) {
+        filterObject["Time of Day"] = CreateTimeLabels(queryStrings.timeOfDayCodes);
+    }
+
+    // signalized intersection
+    if (queryStrings.signalizedIntersectionCodes) {
+        filterObject["Signalized Intersections"] = CreateSignalLabel(queryStrings.signalizedIntersectionCodes);
+    }
+    return filterObject;
+}
+
 // gets the clause of additional report tables
 function GetCrashAttributeClause(key) {
     const clauses = {
@@ -274,35 +270,21 @@ function MakeReportQuery(queryStrings, crashAttr) {
     return query;
 }
 
-function GetReportQueries(queryStrings) {
-    var reportQueries = [];
-    var queryCodes = ['default'];
-    var crashAttr = queryStrings.crashAttributes;
-    if (crashAttr !== null && crashAttr !== undefined) {
-        var crashAttrList = crashAttr.split(',');
-        queryCodes.push.apply(queryCodes, crashAttrList);
+function getJurisdictionName(jurisdictionCode) {
+    if (jurisdictionCode.length === 4) {
+        return(codeTranslator.convertCodeDescription("mun_mu", jurisdictionCode));
     }
-    queryCodes.forEach(crashAttr => {
-        var aQuery = MakeReportQuery(queryStrings, crashAttr);
-        reportQueries.push({
-            "name": crashAttr,
-            "text": aQuery
-        });
-    });
-    return reportQueries;
-}
-
-// INPUT: {"travelDirectionCodes": "02,03"}
-// OUTPUT: {"travelDirectionCodes": {name: "Travel Direction", value: "East, West"}, {...}}
-function CreateReportFilterLabels(filterObject) {
-    
+    else {
+        return(codeTranslator.convertCodeDescription("mun_cty_co", jurisdictionCode));
+    }
 }
 
 function CreateYearLabel(startYear, endYear) {
-    return {"Years": startYear + " - " + endYear};
+    return startYear + " - " + endYear;
 }
 
-function CreateSignalLabel(splitCodeArray) {
+function CreateSignalLabel(codes) {
+    const splitCodeArray = codes.split(",");
     const signalNames = {
         "trf_ctrl_adult_crossing_guard":"Adult Crossing Guard",
         "trf_ctrl_channelization_painted":"Channelization (Painted)" ,
@@ -330,7 +312,8 @@ function CreateSignalLabel(splitCodeArray) {
     return foundFilters.join(" OR ");
 }
 
-function CreateDirectionLabel(splitCodeArray){
+function CreateDirectionLabel(codes){
+    const splitCodeArray = codes.split(",");
     const dirNames = {
         "01": "North",
         "03": "South",
@@ -347,7 +330,8 @@ function CreateDirectionLabel(splitCodeArray){
     return foundFilters.join(" OR "); 
 }
 
-function CreateTimeLabels(splitCodeArray) {
+function CreateTimeLabels(codes) {
+    const splitCodeArray = codes.split(",");
     if (splitCodeArray.length === 0) return "None";
     var filters = [];
     splitCodeArray.forEach(timeString => {
@@ -361,16 +345,62 @@ function CreateTimeLabels(splitCodeArray) {
     return filters.join(" OR ");
 }
 
+function CreateTableTitle(crashAttr) {
+    if (crashAttr === 'default') return 'Physical Condition';
+    else if (crashAttr === 'surf_cond_code') return 'Road Surface Condition';
+    else if (crashAttr === 'road_surf_code') return 'Road Surface Type';
+    else if (crashAttr === 'road_horiz_align_code') return 'Road Horizontal Alignment';
+    else if (crashAttr === 'road_grade_code') return 'Road Grade';
+}
+
+function GetTableColumns(crashAttr) {
+    if (crashAttr === 'default') return ['Fatal', 'Incap.', 'Mod. Injury', 'Compl. Pain', 'Total']
+    else if (crashAttr === 'surf_cond_code') return ['Dry', 'Wet','Snowy', 'Icy', 'Slush', 'Water', 'Sand', 'Oil/Fuel','Mud', 'Dirt', 'Gravel', 'Total']
+    else if (crashAttr === 'road_surf_code') return ['Concrete', 'Blacktop', 'Gravel', 'Steel','Grid', 'Dirt',' N/A', 'Total'];
+    else if (crashAttr === 'road_horiz_align_code') return ['Straight', 'Curved', 'Left', 'Curve', 'Right', 'N/A', 'Total']
+    else if (crashAttr === 'road_grade_code') return ['Level', 'Down Hill', 'Up Hill', 'Hill Crest', 'Sag (Bottom)', ' N/A', 'Total'];
+}
+
+// *---------------*
+// Report Creation Functions
+// *---------------*
+function MakeSunglareReport(queryArgs, reportData) {
+    const filterObject = CreateReportFilterLabels(queryArgs);
+    const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, "Top SRI & Mileposts by Sun Glare");
+    var currentY = reportHelper.createFooter(doc, "Top SRI & Mileposts by Sun Glare");
+    return reportHelper.saveReportPdf(doc, "sunglareReport"); 
+}
+
+function getTableTitleHeader (doc, tableTitle, yPos) {
+    const leftMargin = reportHelper.pageMarginSides;
+    const pageSize = doc.internal.pageSize
+    const pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth();
+    var currYPos = yPos;
+
+    if (tableTitle) {
+        doc
+        .setFont("seguisb", "normal")
+        .setFontSize(14)
+        .text(tableTitle, leftMargin, yPos);
+        currYPos += 1;
+        doc
+        .setDrawColor(0)
+        .setLineWidth(0.5)
+        .line(leftMargin, currYPos, pageWidth - leftMargin, currYPos);
+        currYPos += 3;
+    }
+    return currYPos;
+}
 
 // *---------------*
 // Module Exports
 // *---------------*
 
 module.exports = {
-    GetQueryStrings: GetQueryStrings,
     CreateLimitSortClause: CreateLimitSortClause,
     CreateFilterClause: CreateFilterClause,
     CreateLocationClause: CreateLocationClause,
-    GetReportQueries: GetReportQueries
+    GetReportQueries: GetReportQueries,
+    MakeSunglareReport: MakeSunglareReport
 };
 

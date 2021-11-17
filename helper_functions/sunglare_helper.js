@@ -43,16 +43,19 @@ function CreateFilterClause(queryString) {
 // creates the clause for sort and limit
 function CreateLimitSortClause(queryString) {
     var limitClause = "";
-    var sortClause = "";
     if (queryString.countyCode !== null || (queryString.countyCode == null && queryString.sri == null)) limitClause = " LIMIT 25";
-    sortClause = "ORDER BY count DESC";
+    return CreateSortClause(queryString) + " " + limitClause;
+}
+
+function CreateSortClause(queryString) {
+    var sortClause = "ORDER BY count DESC";
     if (queryString.sort == "fatal-sort") {
         sortClause = "ORDER BY fatal DESC, incapacitated DESC, mod_inj DESC, count DESC";
     }
     else if (queryString.sort == "mp-sort") {
         sortClause = "ORDER BY MP";
     }
-    return sortClause + " " + limitClause;
+    return sortClause;
 }
 
 
@@ -354,11 +357,59 @@ function CreateTableTitle(crashAttr) {
 }
 
 function GetTableColumns(crashAttr) {
-    if (crashAttr === 'default') return ['Fatal', 'Incap.', 'Mod. Injury', 'Compl. Pain', 'Total']
-    else if (crashAttr === 'surf_cond_code') return ['Dry', 'Wet','Snowy', 'Icy', 'Slush', 'Water', 'Sand', 'Oil/Fuel','Mud', 'Dirt', 'Gravel', 'Total']
-    else if (crashAttr === 'road_surf_code') return ['Concrete', 'Blacktop', 'Gravel', 'Steel','Grid', 'Dirt',' N/A', 'Total'];
-    else if (crashAttr === 'road_horiz_align_code') return ['Straight', 'Curved', 'Left', 'Curve', 'Right', 'N/A', 'Total']
-    else if (crashAttr === 'road_grade_code') return ['Level', 'Down Hill', 'Up Hill', 'Hill Crest', 'Sag (Bottom)', ' N/A', 'Total'];
+    var defaultCols = [
+        { header: '#', dataKey: 'num' },
+        { header: 'SRI', dataKey: 'calc_sri' },
+        { header: 'SRI Name', dataKey: 'upper' },
+        { header: 'Milepost', dataKey: 'mp_range' }
+    ]; 
+    var cols;
+    if (crashAttr === 'default') cols = [
+        { header: 'Fatal', dataKey: 'fatal' },
+        { header: 'Incap.', dataKey: 'incapacitated' },
+        { header: 'Mod. Injury', dataKey: 'mod_inj' },
+        { header: 'Compl. Pain', dataKey: 'comp_pain' },
+        { header: 'Prop. Dmg.', dataKey: 'prop_dmg' },
+        { header: 'Total', dataKey: 'count' }
+    ];
+    else if (crashAttr === 'surf_cond_code') cols = [
+        { header: 'Dry', dataKey: 'na' },
+        { header: 'Wet', dataKey: 'wet' },
+        { header: 'Snowy', dataKey: 'snowy' },
+        { header: 'Icy', dataKey: 'icy' },
+        { header: 'Slush', dataKey: 'slush' },
+        { header: 'Water', dataKey: 'water' },
+        { header: 'Sand', dataKey: 'sand' },
+        { header: 'Oil/Fuel', dataKey: 'oil_fuel' },
+        { header: 'Mud, Dirt, Gravel', dataKey: 'mud_dirt_gravel' },
+        { header: 'Total', dataKey: 'count' }
+    ]
+    else if (crashAttr === 'road_surf_code') cols = [
+        { header: 'Concrete', dataKey: 'concrete' },
+        { header: 'Blacktop', dataKey: 'blacktop' },
+        { header: 'Gravel', dataKey: 'gravel' },
+        { header: 'Steel Grid', dataKey: 'steel_grid' },
+        { header: 'Dirt', dataKey: 'dirt' },
+        { header: 'N/A', dataKey: 'na' },
+        { header: 'Total', dataKey: 'count' }
+    ];
+    else if (crashAttr === 'road_horiz_align_code') cols = [
+        { header: 'Straight', dataKey: 'straight' },
+        { header: 'Curved Left', dataKey: 'curved_left' },
+        { header: 'Curve Right', dataKey: 'curved_right' },
+        { header: 'N/A', dataKey: 'na' },
+        { header: 'Total', dataKey: 'count' }
+    ];
+    else if (crashAttr === 'road_grade_code') cols = [
+        { header: 'Level', dataKey: 'lvl' },
+        { header: 'Down Hill', dataKey: 'down_hill' },
+        { header: 'Up Hill', dataKey: 'up_hill' },
+        { header: 'Hill Crest', dataKey: 'hill_crest' },
+        { header: 'Sag (Bottom)', dataKey: 'sag' },
+        { header: 'N/A', dataKey: 'na' },
+        { header: 'Total', dataKey: 'count' }
+    ];
+    return defaultCols.concat(cols);
 }
 
 // *---------------*
@@ -367,7 +418,8 @@ function GetTableColumns(crashAttr) {
 function MakeSunglareReport(queryArgs, reportData) {
     const filterObject = CreateReportFilterLabels(queryArgs);
     const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, "Top SRI & Mileposts by Sun Glare");
-    var currentY = reportHelper.createFooter(doc, "Top SRI & Mileposts by Sun Glare");
+    reportHelper.createFooter(doc, "Top SRI & Mileposts by Sun Glare");
+    MakeReportTable(doc, reportData, reportHelper.getCurrentY() + 5);
     return reportHelper.saveReportPdf(doc, "sunglareReport"); 
 }
 
@@ -381,15 +433,81 @@ function getTableTitleHeader (doc, tableTitle, yPos) {
         doc
         .setFont("seguisb", "normal")
         .setFontSize(14)
+        .setTextColor(104,104,104)
         .text(tableTitle, leftMargin, yPos);
         currYPos += 1;
         doc
-        .setDrawColor(0)
+        .setDrawColor(104,104,104)
         .setLineWidth(0.5)
         .line(leftMargin, currYPos, pageWidth - leftMargin, currYPos);
-        currYPos += 3;
+        currYPos += 5;
     }
     return currYPos;
+}
+
+function MakeReportTable(doc, reportData, yPos) {
+    var currY = yPos;
+    Object.keys(reportData).forEach(crashAttr => {
+        // add # column
+        var tableData = reportData[crashAttr].data;
+        for (var i = 0; i < tableData.length; i++) {
+            tableData[i]['num'] = i + 1;
+        }
+
+        currY = getTableTitleHeader(doc, reportData[crashAttr].title, currY);
+        var tableSettings = {
+            startY: currY,
+            margin: { right: reportHelper.pageMarginSides, left: reportHelper.pageMarginSides },
+            styles: {
+                lineColor: [84, 84, 84],
+                lineWidth: 0.1,
+                textColor: [0, 0, 0],
+                rowPageBreak: 'always',
+                pageBreak: 'auto',
+                fontSize: 6
+            },
+            headStyles: {
+                halign: 'center',
+                fillColor: [32, 178, 170],
+                textColor: 255
+            },
+            bodyStyles: {
+                halign: 'center'
+            },
+            columnStyles: {
+                "count": {
+                    fontStyle: 'bold'
+                }
+            },
+            columns: GetTableColumns(crashAttr),
+            body: tableData,
+            allSectionHooks: true,
+            willDrawCell: function (data) {
+                doc.setFont("segoeui", "normal")
+                // highlight fatal or incap cells
+                if (crashAttr === "default") {
+                    if (data.row.section === 'body' && (data.column.dataKey === 'fatal' || data.column.dataKey === 'incapacitated')) {
+                        if (data.cell.raw > 0) {
+                            doc.setFont("seguisb", "normal");
+                            doc.setTextColor(0);
+                            data.cell.styles.fillColor = [255, 127, 12]; // Red
+                        }
+                    }
+                }
+                if (data.row.section === 'body' && (data.column.dataKey === 'count')) {
+                    doc.setFont("seguisb", "normal");
+                }
+            },
+            didDrawCell: function (data) {
+                if (data.row.section === 'head' && data.column.dataKey === 'count') {
+                    data.cell.styles.fillColor = [0, 127, 127];
+                }
+            }
+        }
+        doc.autoTable(tableSettings);
+        currY = doc.lastAutoTable.finalY + 10;
+    });
+    return doc;
 }
 
 // *---------------*

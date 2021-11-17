@@ -74,7 +74,7 @@ function createHeader(doc, reportTitle) {
 
 // {"Year Range": "2019 - 2020"}
 function createFiltersSection(doc, filterObject) {
-    const fontSize = 12;
+    const fontSize = 10;
     var startX = pageMarginSides;
     doc.setFontSize(fontSize);
 
@@ -92,9 +92,13 @@ function createFiltersSection(doc, filterObject) {
             .setFont("segoeui", "normal")
             .text(filterValue, startX, currentY);
 
-            currentY += 4;
+            currentY += 5;
         }
     }
+    return currentY;
+}
+
+function getCurrentY() {
     return currentY;
 }
 
@@ -130,5 +134,6 @@ module.exports = {
     createFooter: createFooter,
     saveReportPdf: saveReportPdf,
     pageMarginSides: pageMarginSides,
-    pageMarginEnds: pageMarginEnds
+    pageMarginEnds: pageMarginEnds,
+    getCurrentY: getCurrentY
 };

@@ -105,6 +105,7 @@ module.exports = function (fastify, opts, next) {
                         if (reportQueries.hasOwnProperty(key)) {
                             const promise = new Promise((resolve, reject) => {
                                 try {
+                                    console.log(reportQueries[key].query)
                                     const res = client.query(reportQueries[key].query);
                                     return resolve(res);
                                 }

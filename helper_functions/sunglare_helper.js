@@ -4,6 +4,8 @@ const reportHelper = require('./report_maker/report_layout');
 const codeTranslator = require('./code_translator');
 require('./report_maker/fonts/SegoeUI/segoeui-normal');     // SegoiUI normal
 require('./report_maker/fonts/SegoeUI/seguisb-normal');     // SegoiUI semi bold
+require('./report_maker/fonts/SegoeUI/segoeuib-bold');     // SegoiUI bold
+
 
 // *---------------*
 // SQL Clause Helper Functions
@@ -25,7 +27,6 @@ function CreateLocationClause(queryString) {
 function CreateFilterClause(queryString) {
     var predictiveWhereClause = [];
     if (queryString.travelDirectionCodes !== null && queryString.travelDirectionCodes !== undefined) {
-        console.log(queryString.travelDirectionCodes);
         var formattedCodes = FormatCodes(queryString.travelDirectionCodes);
         predictiveWhereClause.push(`veh_one_travel_dir_code IN (${formattedCodes})`);   // location_dir from the accidents table
     }
@@ -35,7 +36,7 @@ function CreateFilterClause(queryString) {
     }
     if (queryString.timeOfDayCodes !== null && queryString.timeOfDayCodes !== undefined) {
         var formattedCodes = FormatTimeCodes(queryString.timeOfDayCodes);
-        predictiveWhereClause.push(`({formattedCodes})`);
+        predictiveWhereClause.push(`(${formattedCodes})`);
     }
     return predictiveWhereClause.join(' AND ');
 }
@@ -48,14 +49,18 @@ function CreateLimitSortClause(queryString) {
 }
 
 function CreateSortClause(queryString) {
-    var sortClause = "ORDER BY count DESC";
+    var sortClause = "ORDER BY count DESC, fatal DESC, incapacitated DESC";
     if (queryString.sort == "fatal-sort") {
         sortClause = "ORDER BY fatal DESC, incapacitated DESC, mod_inj DESC, count DESC";
     }
     else if (queryString.sort == "mp-sort") {
-        sortClause = "ORDER BY MP";
+        sortClause = "ORDER BY milepost";
     }
     return sortClause;
+}
+
+function GetSriNameQuery(sriCode) {
+    return `SELECT name FROM public.srilookupname WHERE stndrd_rt_id = '${sriCode}'`;
 }
 
 
@@ -97,7 +102,7 @@ function FormatTimeCodes(codeString) {
     if (splitCodes.length > 0) {
         var formattedCodes = [];
         splitCodes.forEach(splitCode => {
-            var timeRangeQuery = String.Format("(TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '{0}:00'::TIME AND '{0}:59'::TIME)", splitCode);
+            var timeRangeQuery = `TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '${splitCode}:00'::TIME AND '${splitCode}:59'::TIME`;
             formattedCodes.push(timeRangeQuery);
         });
         returnCodes = formattedCodes.join(' OR ');
@@ -155,7 +160,7 @@ function CreateReportFilterLabels(queryStrings) {
 
     // location
     var location = "New Jersey State";
-    if (queryStrings.sri) location = queryStrings.sri;
+    if (queryStrings.sri) location = queryStrings.sriName + ' (' + queryStrings.sri + ')';
     else if (queryStrings.muniCode || queryStrings.countyCode) {
         const juriCode = `${queryStrings.muniCode ? queryStrings.countyCode + queryStrings.muniCode : queryStrings.countyCode}`;
         location = getJurisdictionName(juriCode);
@@ -266,10 +271,7 @@ function MakeReportQuery(queryStrings, crashAttr) {
         GROUP BY calc_sri, calc_milepost
     ) accidents
     LEFT JOIN public.srilookupname ON public.srilookupname.stndrd_rt_id = accidents.calc_sri
-    ${locationClause !== "" ? ` AND ${locationClause}` : '' }
-    ${filterClause  !== "" ? ` AND ${filterClause}` : '' }
-    ${limitSortClause  !== "" ? ` ${limitSortClause}` : '' }
-    ;`;
+    ${limitSortClause  !== "" ? ` ${limitSortClause}` : '' };`;
     return query;
 }
 
@@ -342,18 +344,18 @@ function CreateTimeLabels(codes) {
         if (timeInt < 12)
         {
             if (timeInt == 0) { filters.push("12 AM"); }
-            else filters.push(timeInt.ToString() + " AM");
+            else filters.push(timeInt.toString() + " AM");
         }
     });
     return filters.join(" OR ");
 }
 
 function CreateTableTitle(crashAttr) {
-    if (crashAttr === 'default') return 'Physical Condition';
-    else if (crashAttr === 'surf_cond_code') return 'Road Surface Condition';
-    else if (crashAttr === 'road_surf_code') return 'Road Surface Type';
-    else if (crashAttr === 'road_horiz_align_code') return 'Road Horizontal Alignment';
-    else if (crashAttr === 'road_grade_code') return 'Road Grade';
+    if (crashAttr === 'default') return 'Crashes by Physical Condition';
+    else if (crashAttr === 'surf_cond_code') return 'Crashes by Road Surface Condition';
+    else if (crashAttr === 'road_surf_code') return 'Crashes by Road Surface Type';
+    else if (crashAttr === 'road_horiz_align_code') return 'Crashes by Road Horizontal Alignment';
+    else if (crashAttr === 'road_grade_code') return 'Crashes by Road Grade';
 }
 
 function GetTableColumns(crashAttr) {
@@ -418,8 +420,8 @@ function GetTableColumns(crashAttr) {
 function MakeSunglareReport(queryArgs, reportData) {
     const filterObject = CreateReportFilterLabels(queryArgs);
     const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, "Top SRI & Mileposts by Sun Glare");
-    reportHelper.createFooter(doc, "Top SRI & Mileposts by Sun Glare");
     MakeReportTable(doc, reportData, reportHelper.getCurrentY() + 5);
+    reportHelper.createFooter(doc, "Top SRI & Mileposts by Sun Glare");
     return reportHelper.saveReportPdf(doc, "sunglareReport"); 
 }
 
@@ -435,19 +437,19 @@ function getTableTitleHeader (doc, tableTitle, yPos) {
         .setFontSize(14)
         .setTextColor(104,104,104)
         .text(tableTitle, leftMargin, yPos);
-        currYPos += 1;
+        currYPos += 2;
         doc
         .setDrawColor(104,104,104)
         .setLineWidth(0.5)
         .line(leftMargin, currYPos, pageWidth - leftMargin, currYPos);
-        currYPos += 5;
+        currYPos += 3;
     }
     return currYPos;
 }
 
 function MakeReportTable(doc, reportData, yPos) {
     var currY = yPos;
-    Object.keys(reportData).forEach(crashAttr => {
+    Object.keys(reportData).forEach((crashAttr, idx, arr) => {
         // add # column
         var tableData = reportData[crashAttr].data;
         for (var i = 0; i < tableData.length; i++) {
@@ -464,7 +466,7 @@ function MakeReportTable(doc, reportData, yPos) {
                 textColor: [0, 0, 0],
                 rowPageBreak: 'always',
                 pageBreak: 'auto',
-                fontSize: 6
+                fontSize: 7
             },
             headStyles: {
                 halign: 'center',
@@ -482,30 +484,41 @@ function MakeReportTable(doc, reportData, yPos) {
             columns: GetTableColumns(crashAttr),
             body: tableData,
             allSectionHooks: true,
+            didParseCell: function (data) {
+                if (data.column.dataKey === 'count' && data.row.section === 'head') {
+                    data.cell.styles.fillColor = [0, 127, 127];
+                }
+                // highlight fatal or incap cells
+                if (crashAttr === "default") {
+                    if (data.row.section === 'body' && (data.column.dataKey === 'fatal' || data.column.dataKey === 'incapacitated')) {
+                        if (parseInt(data.cell.raw) > 0) {
+                            data.cell.styles.fillColor = [255, 127, 127]; // Red
+                        }
+                    }
+                }
+            },
             willDrawCell: function (data) {
                 doc.setFont("segoeui", "normal")
                 // highlight fatal or incap cells
                 if (crashAttr === "default") {
                     if (data.row.section === 'body' && (data.column.dataKey === 'fatal' || data.column.dataKey === 'incapacitated')) {
-                        if (data.cell.raw > 0) {
-                            doc.setFont("seguisb", "normal");
-                            doc.setTextColor(0);
-                            data.cell.styles.fillColor = [255, 127, 12]; // Red
+                        if (parseInt(data.cell.raw) > 0) {
+                            doc.setFont("segoeuib", "bold");
+                            doc.setTextColor(255,255,255);
                         }
                     }
                 }
                 if (data.row.section === 'body' && (data.column.dataKey === 'count')) {
-                    doc.setFont("seguisb", "normal");
+                    doc.setFont("segoeuib", "bold");
+                }
+                if (data.row.section === 'head') {
+                    doc.setFont("segoeuib", "bold");
                 }
             },
-            didDrawCell: function (data) {
-                if (data.row.section === 'head' && data.column.dataKey === 'count') {
-                    data.cell.styles.fillColor = [0, 127, 127];
-                }
-            }
         }
         doc.autoTable(tableSettings);
-        currY = doc.lastAutoTable.finalY + 10;
+        if (idx !== arr.length - 1 ) doc.addPage();
+        currY = reportHelper.newPageTextY;
     });
     return doc;
 }
@@ -516,9 +529,13 @@ function MakeReportTable(doc, reportData, yPos) {
 
 module.exports = {
     CreateLimitSortClause: CreateLimitSortClause,
-    CreateFilterClause: CreateFilterClause,
     CreateLocationClause: CreateLocationClause,
     GetReportQueries: GetReportQueries,
-    MakeSunglareReport: MakeSunglareReport
+    MakeSunglareReport: MakeSunglareReport,
+    GetSriNameQuery: GetSriNameQuery,
+    CreateLimitSortClause: CreateLimitSortClause,
+    CreateLocationClause: CreateLocationClause,
+    CreateFilterClause: CreateFilterClause,
+    MakeReportQuery: MakeReportQuery
 };
 

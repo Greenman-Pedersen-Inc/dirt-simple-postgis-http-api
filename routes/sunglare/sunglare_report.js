@@ -23,7 +23,7 @@ const schema = {
         sort: {
             type: 'string',
             description: 'The sorting method used in the report PDF.',
-            default: 'crash-sort'
+            default: 'sri-sort'
         },
         startYear: {
             type: 'string',
@@ -42,11 +42,11 @@ const schema = {
         },
         travelDirectionCodes: {
             type: 'string',
-            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.'
+            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.',
         },
         timeOfDayCodes: {
             type: 'string',
-            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.'
+            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.',
         },
         signalizedIntersectionCodes: {
             type: 'string',
@@ -54,11 +54,12 @@ const schema = {
         },
         sri: {
             type: 'string',
-            description: 'SRI code.'
+            description: 'SRI code.',
+            default: '00000010__'
         },
         countyCode: {
             type: 'string',
-            description: 'County Code.'
+            description: 'County Code.',
         },
         muniCode: {
             type: 'string',
@@ -119,12 +120,31 @@ module.exports = function (fastify, opts, next) {
                         }
                     }
 
+                    if (queryArgs.sri) {
+                        const promise = new Promise((resolve, reject) => {
+                            try {
+                                const res = client.query(burgerHelper.GetSriNameQuery(queryArgs.sri));
+                                return resolve(res);
+                            }
+                            catch(err) {
+                                console.log(err.stack);
+                                return reject(error);
+                            }  
+                        });
+                        promises.push(promise);
+                    }
+
                     Promise.all(promises).then((reportDataArray) => {
                         //console.log(reportDataArray);
                         for (let i = 0; i < reportDataArray.length; i++) {
-                            var data = reportDataArray[i].rows;
-                            var category = Object.keys(reportQueries)[i];
-                            reportQueries[category]["data"] = data;
+                            if (queryArgs.sri && i === reportDataArray.length - 1) {
+                                queryArgs.sriName = reportDataArray[i].rows[0].name;
+                            }
+                            else {
+                                var data = reportDataArray[i].rows;
+                                var category = Object.keys(reportQueries)[i];
+                                reportQueries[category]["data"] = data;
+                            }
                         }
 
                         // create report pdf

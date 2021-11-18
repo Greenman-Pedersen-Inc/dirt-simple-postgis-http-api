@@ -14,6 +14,7 @@ const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simp
 
 const pageMarginSides = 19;
 const pageMarginEnds = 7;
+const newPageTextY = 15;
 var currentX = 0;
 var currentY = 0;
 
@@ -135,5 +136,6 @@ module.exports = {
     saveReportPdf: saveReportPdf,
     pageMarginSides: pageMarginSides,
     pageMarginEnds: pageMarginEnds,
-    getCurrentY: getCurrentY
+    getCurrentY: getCurrentY,
+    newPageTextY: newPageTextY
 };

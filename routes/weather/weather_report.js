@@ -1,13 +1,13 @@
-// sunglare_report: generates the sunglare report
+// weather_report: generates the weather report
 const burgerHelper = require('../../helper_functions/report_maker/predictive_report_layout');
 
 // *---------------*
 // route schema
 // *---------------*
 const schema = {
-    description: 'generates a sunglare report pdf.',
-    tags: ['sunglare'],
-    summary: 'generates a sunglare report pdf.',
+    description: 'generates a weather report pdf.',
+    tags: ['weather'],
+    summary: 'generates a weather report pdf.',
     querystring: {
         user: {
             type: 'string',
@@ -17,7 +17,7 @@ const schema = {
         moduleType: {
             type: 'string',
             description: 'The type of predictive module.',
-            default: 'sunglare'
+            default: 'weather'
         },
         sort: {
             type: 'string',
@@ -37,24 +37,16 @@ const schema = {
         crashAttributes: {
             type: 'string',
             description: 'Comma seperated list of Crash Attribute codes based on the NJTR-1 form.',
-            default: "surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code"
+            default: "light_cond_code,surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code"
         },
-        travelDirectionCodes: {
+        environmentCodes: {
             type: 'string',
-            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.',
-        },
-        timeOfDayCodes: {
-            type: 'string',
-            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.',
-        },
-        signalizedIntersectionCodes: {
-            type: 'string',
-            description: 'Comma seperated list of Signalized Intersection codes based on the NJTR-1 form.'
+            description: 'Comma seperated list of enviornment codes based on the NJTR-1 form.',
+            default: '03,02'
         },
         sri: {
             type: 'string',
             description: 'SRI code.',
-            default: '00000010__'
         },
         countyCode: {
             type: 'string',
@@ -73,7 +65,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/sunglare/report',
+        url: '/weather/report',
         schema: schema,
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)
@@ -97,7 +89,15 @@ module.exports = function (fastify, opts, next) {
                         "error": "Internal Server Error",
                         "message": "need start or end year"
                     });
-                } else {
+                } 
+                else if (queryArgs.environmentCodes == undefined) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "need enviornmental codes"
+                    });
+                }
+                else {
                     var reportQueries = burgerHelper.GetReportQueries(queryArgs);
 
                     var promises = [];
@@ -147,7 +147,7 @@ module.exports = function (fastify, opts, next) {
                         }
 
                         // create report pdf
-                        const fileInfo = burgerHelper.MakePredictiveReport(queryArgs, reportQueries, "Top SRI & Mileposts by Sun Glare", "sunglare_report");
+                        const fileInfo = burgerHelper.MakePredictiveReport(queryArgs, reportQueries, "Top SRI & Mileposts by Weather Conditions", "weather_report");
                         fileInfo.then((createdFile) => {
                             console.log(createdFile)
                             reply.send({ url: createdFile.fileName });

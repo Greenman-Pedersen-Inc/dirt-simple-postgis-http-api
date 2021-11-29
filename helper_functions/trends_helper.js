@@ -142,5 +142,7 @@ function getTrendsQueryObject(queryArgs, tableName) {
 
 module.exports = {
     getTrendsQueryObject: getTrendsQueryObject,
-    getTableNameByAttribute: getTableNameByAttribute
+    getTableNameByAttribute: getTableNameByAttribute,
+    getMpoCounties: getMpoCounties,
+    formatCodes: formatCodes
 };

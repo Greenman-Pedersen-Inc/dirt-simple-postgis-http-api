@@ -1,12 +1,12 @@
 // time_summary: gets stats grouped by time of day
-const burgerHelper = require('../../helper_functions/sunglare_helper');
+const sunglareHelper = require('../../helper_functions/sunglare_helper');
 
 // *---------------*
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-    var locationClause = burgerHelper.CreateLocationClause(queryArgs);
-    var filterClause = burgerHelper.CreateFilterClause(queryArgs);
+    var locationClause = sunglareHelper.createLocationClause(queryArgs);
+    var filterClause = sunglareHelper.createFilterClause(queryArgs);
 
     var sql = `
     SELECT 

@@ -1,5 +1,5 @@
 // graph_data: gets graph data for each EA category
-const burgerHelper = require('../../helper_functions/legacy_ea_helper');
+const eaHelper = require('../../helper_functions/legacy_ea_helper');
 
 // *---------------*
 // route schema
@@ -73,7 +73,7 @@ module.exports = function (fastify, opts, next) {
                     });
                 }
 
-                var reportQueries = burgerHelper.getQueryObject(queryArgs);
+                var reportQueries = eaHelper.getQueryObject(queryArgs);
                 var returnData = {};
 
                 var promises = [];
@@ -98,7 +98,7 @@ module.exports = function (fastify, opts, next) {
                 // add the HMVMT query
                 const promise = new Promise((resolve, reject) => {
                     try {
-                        const res = client.query(burgerHelper.getHmvmtsQuery());
+                        const res = client.query(eaHelper.getHmvmtsQuery());
                         return resolve(res);
                     }
                     catch(err) {
@@ -113,7 +113,7 @@ module.exports = function (fastify, opts, next) {
                     console.log(hmvmtsValues);
                     for (let i = 0; i < reportDataArray.length - 1; i++) {
                         var data = reportDataArray[i].rows;
-                        data = burgerHelper.cleanData(data, queryArgs.startYear, queryArgs.endYear);        // fill in years that have no data
+                        data = eaHelper.cleanData(data, queryArgs.startYear, queryArgs.endYear);        // fill in years that have no data
 
                         var category = Object.keys(reportQueries)[i];
                         returnData[category] = [];
@@ -123,9 +123,9 @@ module.exports = function (fastify, opts, next) {
                                 var rowObj = {};
                                 rowObj['Year'] = parseInt(row.year);
                                 rowObj['Raw'] = { 'Incapacitated': parseInt(row['total_incapacitated']), 'Killed': parseInt(row['total_killed']) }
-                                rowObj['Average'] = burgerHelper.calculateAverageData(data, rowIndex);
+                                rowObj['Average'] = eaHelper.calculateAverageData(data, rowIndex);
                                 const hmvmtValue = hmvmtsValues.find(e => e.year === row['year']);
-                                rowObj['HMVMT'] = burgerHelper.calculateHmvmtData(rowObj['Average'], hmvmtValue['hmvmts']);
+                                rowObj['HMVMT'] = eaHelper.calculateHmvmtData(rowObj['Average'], hmvmtValue['hmvmts']);
                                 returnData[category].push(rowObj);
                             }
                         });

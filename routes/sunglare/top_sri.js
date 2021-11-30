@@ -1,11 +1,11 @@
 // time_summary: gets stats grouped by time of day
-const burgerHelper = require('../../helper_functions/sunglare_helper');
+const sunglareHelper = require('../../helper_functions/sunglare_helper');
 
 // *---------------*
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-    var sql = burgerHelper.MakeReportQuery(queryArgs, 'default');
+    var sql = sunglareHelper.makeReportQuery(queryArgs, 'default');
     console.log(sql);
     return sql;
   }

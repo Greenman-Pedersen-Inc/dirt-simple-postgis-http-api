@@ -11,10 +11,10 @@ require('./fonts/SegoeUI/segoeuib-bold');     // SegoiUI bold
 // *---------------*
 // Report Creation Functions
 // *---------------*
-function MakePredictiveReport(queryArgs, reportData, reportTitle, reportSaveName) {
-    const filterObject = CreateReportFilterLabels(queryArgs);
+function makePredictiveReport(queryArgs, reportData, reportTitle, reportSaveName) {
+    const filterObject = createReportFilterLabels(queryArgs);
     const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, reportTitle);
-    MakeReportTable(doc, reportData, reportHelper.getCurrentY() + 5);
+    makeReportTable(doc, reportData, reportHelper.getCurrentY() + 5);
     reportHelper.createFooter(doc, reportTitle);
     return reportHelper.saveReportPdf(doc, reportSaveName); 
 }
@@ -41,7 +41,7 @@ function getTableTitleHeader (doc, tableTitle, yPos) {
     return currYPos;
 }
 
-function MakeReportTable(doc, reportData, yPos) {
+function makeReportTable(doc, reportData, yPos) {
     var currY = yPos;
     Object.keys(reportData).forEach((crashAttr, idx, arr) => {
         // add # column
@@ -75,7 +75,7 @@ function MakeReportTable(doc, reportData, yPos) {
                     fontStyle: 'bold'
                 }
             },
-            columns: GetTableColumns(crashAttr),
+            columns: getTableColumns(crashAttr),
             body: tableData,
             allSectionHooks: true,
             didParseCell: function (data) {
@@ -124,7 +124,7 @@ function MakeReportTable(doc, reportData, yPos) {
 // *---------------*
 
 // returns all queries needed for the report
-function GetReportQueries(queryStrings) {
+function getReportQueries(queryStrings) {
     var reportQueries = {};
     var queryCodes = ['default'];
     var crashAttr = queryStrings.crashAttributes;
@@ -133,9 +133,9 @@ function GetReportQueries(queryStrings) {
         queryCodes.push.apply(queryCodes, crashAttrList);
     }
     queryCodes.forEach(crashAttr => {
-        var aQuery = MakeReportQuery(queryStrings, crashAttr);
+        var aQuery = makeReportQuery(queryStrings, crashAttr);
         reportQueries[crashAttr] = {
-            title: CreateTableTitle(crashAttr),
+            title: createTableTitle(crashAttr),
             query: aQuery
         }
     });
@@ -143,10 +143,10 @@ function GetReportQueries(queryStrings) {
 }
 
 // returns object of filter text that goes on the report
-function CreateReportFilterLabels(queryStrings) {
+function createReportFilterLabels(queryStrings) {
     var filterObject = {};
     // year range
-    filterObject["Year Range"] = CreateYearLabel(queryStrings.startYear, queryStrings.endYear);
+    filterObject["Year Range"] = createYearLabel(queryStrings.startYear, queryStrings.endYear);
 
     // location
     var location = "New Jersey State";
@@ -160,31 +160,31 @@ function CreateReportFilterLabels(queryStrings) {
 
     // travel direction
     if (queryStrings.travelDirectionCodes) {
-        filterObject["Travel Direction"] = CreateDirectionLabel(queryStrings.travelDirectionCodes);
+        filterObject["Travel Direction"] = createDirectionLabel(queryStrings.travelDirectionCodes);
     }
 
     // time of day
     if (queryStrings.timeOfDayCodes) {
-        filterObject["Time of Day"] = CreateTimeLabels(queryStrings.timeOfDayCodes);
+        filterObject["Time of Day"] = createTimeLabels(queryStrings.timeOfDayCodes);
     }
 
     // signalized intersection
     if (queryStrings.signalizedIntersectionCodes) {
-        filterObject["Signalized Intersections"] = CreateSignalLabel(queryStrings.signalizedIntersectionCodes);
+        filterObject["Signalized Intersections"] = createSignalLabel(queryStrings.signalizedIntersectionCodes);
     }
 
     // enviornmental cond
     if (queryStrings.environmentCodes) {
-        filterObject["Weather Conditions"] = CreateEnviornmentLabels(queryStrings.environmentCodes);
+        filterObject["Weather Conditions"] = createEnviornmentLabels(queryStrings.environmentCodes);
     }
     return filterObject;
 }
 
-function MakeReportQuery(queryStrings, crashAttr) {
+function makeReportQuery(queryStrings, crashAttr) {
     var defaultQuery = "";
-    var locationClause = CreateLocationClause(queryStrings);
-    var filterClause = CreateFilterClause(queryStrings);
-    var limitSortClause = CreateLimitSortClause(queryStrings);
+    var locationClause = createLocationClause(queryStrings);
+    var filterClause = createFilterClause(queryStrings);
+    var limitSortClause = createLimitSortClause(queryStrings);
     const tableName = `${queryStrings.moduleType}.ard_accidents_${queryStrings.moduleType}`;
 
     console.log(filterClause);
@@ -198,7 +198,7 @@ function MakeReportQuery(queryStrings, crashAttr) {
     }
     else
     {
-        var crashAttrClause = GetCrashAttributeClause(crashAttr);
+        var crashAttrClause = getCrashAttributeClause(crashAttr);
         if (crashAttrClause !== null) defaultQuery = "," + crashAttrClause;
     }
 
@@ -232,11 +232,11 @@ function getJurisdictionName(jurisdictionCode) {
     }
 }
 
-function CreateYearLabel(startYear, endYear) {
+function createYearLabel(startYear, endYear) {
     return startYear + " - " + endYear;
 }
 
-function CreateSignalLabel(codes) {
+function createSignalLabel(codes) {
     const splitCodeArray = codes.split(",");
     const signalNames = {
         "trf_ctrl_adult_crossing_guard":"Adult Crossing Guard",
@@ -265,7 +265,7 @@ function CreateSignalLabel(codes) {
     return foundFilters.join(" OR ");
 }
 
-function CreateDirectionLabel(codes){
+function createDirectionLabel(codes){
     const splitCodeArray = codes.split(",");
     const dirNames = {
         "01": "North",
@@ -283,7 +283,7 @@ function CreateDirectionLabel(codes){
     return foundFilters.join(" OR "); 
 }
 
-function CreateTimeLabels(codes) {
+function createTimeLabels(codes) {
     const splitCodeArray = codes.split(",");
     if (splitCodeArray.length === 0) return "None";
     var filters = [];
@@ -298,7 +298,7 @@ function CreateTimeLabels(codes) {
     return filters.join(" OR ");
 }
 
-function CreateEnviornmentLabels(codes) {
+function createEnviornmentLabels(codes) {
     const splitCodeArray = codes.split(",");
     const dirNames = {
         "01": "Clear",
@@ -322,7 +322,7 @@ function CreateEnviornmentLabels(codes) {
     return foundFilters.join(" OR "); 
 }
 
-function CreateTableTitle(crashAttr) {
+function createTableTitle(crashAttr) {
     if (crashAttr === 'default') return 'Crashes by Physical Condition';
     else if (crashAttr === 'surf_cond_code') return 'Crashes by Road Surface Condition';
     else if (crashAttr === 'road_surf_code') return 'Crashes by Road Surface Type';
@@ -331,7 +331,7 @@ function CreateTableTitle(crashAttr) {
     else if (crashAttr === 'light_cond_code') return 'Crashes by Road Lighting Condition';
 }
 
-function GetTableColumns(crashAttr) {
+function getTableColumns(crashAttr) {
     var defaultCols = [
         { header: '#', dataKey: 'num' },
         { header: 'SRI', dataKey: 'calc_sri' },
@@ -403,7 +403,7 @@ function GetTableColumns(crashAttr) {
 // *---------------*
 
 // gets the clause of additional report tables
-function GetCrashAttributeClause(key) {
+function getCrashAttributeClause(key) {
     const clauses = {
         "light_cond_code": `SUM(CASE WHEN light_cond_code = '02' THEN 1 ELSE 0 END) DAWN,
         SUM(CASE WHEN light_cond_code = '03' THEN 1 ELSE 0 END) DUSK,
@@ -460,7 +460,7 @@ function GetCrashAttributeClause(key) {
 }
 
 // creates the clause for SRI, county, or muni
-function CreateLocationClause(queryString) {
+function createLocationClause(queryString) {
     var whereClauses = [];
     if (queryString.sri !== null && queryString.sri !== undefined) whereClauses.push(`calc_sri = '${queryString.sri}'`);
     else if (queryString.countyCode !== null && queryString.countyCode !== undefined) {
@@ -472,25 +472,25 @@ function CreateLocationClause(queryString) {
 }
 
 // creates the clause for sunglare filters
-function CreateFilterClause(queryString) {
+function createFilterClause(queryString) {
     var predictiveWhereClause = [];
     if (queryString.moduleType === 'sunglare') {
         if (queryString.travelDirectionCodes !== null && queryString.travelDirectionCodes !== undefined) {
-            var formattedCodes = FormatCodes(queryString.travelDirectionCodes);
+            var formattedCodes = formatCodes(queryString.travelDirectionCodes);
             predictiveWhereClause.push(`veh_one_travel_dir_code IN (${formattedCodes})`);   // location_dir from the accidents table
         }
         if (queryString.signalizedIntersectionCodes !== null && queryString.signalizedIntersectionCodes !== undefined) {
-            var formattedCodes = FormatTrafficSignalCodes(queryString.signalizedIntersectionCodes);
+            var formattedCodes = formatTrafficSignalCodes(queryString.signalizedIntersectionCodes);
             predictiveWhereClause.push(`(${formattedCodes})`);
         }
         if (queryString.timeOfDayCodes !== null && queryString.timeOfDayCodes !== undefined) {
-            var formattedCodes = FormatTimeCodes(queryString.timeOfDayCodes);
+            var formattedCodes = formatTimeCodes(queryString.timeOfDayCodes);
             predictiveWhereClause.push(`(${formattedCodes})`);
         }        
     }
     else if (queryString.moduleType === 'weather') {
         if (queryString.environmentCodes !== null && queryString.environmentCodes !== undefined) {
-            var formattedCodes = FormatCodes(queryString.environmentCodes);
+            var formattedCodes = formatCodes(queryString.environmentCodes);
             predictiveWhereClause.push(`environ_cond_code IN (${formattedCodes})`);   // location_dir from the accidents table
         }
     }
@@ -499,14 +499,14 @@ function CreateFilterClause(queryString) {
 }
 
 // creates the clause for sort and limit
-function CreateLimitSortClause(queryString) {
+function createLimitSortClause(queryString) {
     var limitClause = "";
     if (queryString.countyCode !== null || (queryString.countyCode == null && queryString.sri == null)) limitClause = " LIMIT 25";
-    return CreateSortClause(queryString) + " " + limitClause;
+    return createSortClause(queryString) + " " + limitClause;
 }
 
 // returns the sorting clause for mp, crash, or sri order
-function CreateSortClause(queryString) {
+function createSortClause(queryString) {
     var sortClause = "ORDER BY count DESC, fatal DESC, incapacitated DESC";
     if (queryString.sort == "fatal-sort") {
         sortClause = "ORDER BY fatal DESC, incapacitated DESC, mod_inj DESC, count DESC";
@@ -518,7 +518,7 @@ function CreateSortClause(queryString) {
 }
 
 // returns readble SRI name
-function GetSriNameQuery(sriCode) {
+function getSriNameQuery(sriCode) {
     return `SELECT name FROM public.srilookupname WHERE stndrd_rt_id = '${sriCode}'`;
 }
 
@@ -529,23 +529,23 @@ function GetSriNameQuery(sriCode) {
 // Splits a code string by "," to return an array of codes
 // INPUT: "07,08,15,16,18"
 // OUTPUT: [07, 08, ...]
-function SplitCodes(codeString) {
-    var splitCodes = [];
+function splitCodes(codeString) {
+    var codes = [];
     if (codeString !== undefined && codeString !== null) {
-        splitCodes = codeString.split(',');
+        codes = codeString.split(',');
     }
-    return splitCodes;
+    return codes;
 }
 
 // This formats the codes for the IN statement by adding single quotes and commas to each code from the request parameters.
 // EXAMPLE: enviornmentCode = "01,02,03"
 // RETURNS: "'01','02','03'"
-function FormatCodes(codeString) {
+function formatCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = SplitCodes(codeString);
-    if (splitCodes.length > 0) {
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
         var formattedCodes = [];
-        splitCodes.forEach(splitCode => {
+        codes.forEach(splitCode => {
             formattedCodes.push("'" + splitCode + "'");
         });
         returnCodes = formattedCodes.join(", ");
@@ -554,12 +554,12 @@ function FormatCodes(codeString) {
 }
 
 //"07,08,15,16,18"
-function FormatTimeCodes(codeString) {
+function formatTimeCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = SplitCodes(codeString);
-    if (splitCodes.length > 0) {
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
         var formattedCodes = [];
-        splitCodes.forEach(splitCode => {
+        codes.forEach(splitCode => {
             var timeRangeQuery = `TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '${splitCode}:00'::TIME AND '${splitCode}:59'::TIME`;
             formattedCodes.push(timeRangeQuery);
         });
@@ -570,14 +570,14 @@ function FormatTimeCodes(codeString) {
 
 // INPUT: "trf_ctrl_adult_crossing_guard,trf_ctrl_channelization_painted,trf_ctrl_channelization_physical"
 // OUTPUT: (trf_ctrl_adult_crossing_guard > 0) OR (trf_ctrl_channelization_painted > 0) OR ...
-function FormatTrafficSignalCodes(codeString) {
+function formatTrafficSignalCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = SplitCodes(codeString);
+    var codes = splitCodes(codeString);
     if (codeString !== undefined && codeString !== null) {
-        var splitCodes = codeString.split(',');
-        if (splitCodes.length > 0) {
+        var codes = codeString.split(',');
+        if (codes.length > 0) {
             var formattedCodes = [];
-            splitCodes.forEach(splitCode => {
+            codes.forEach(splitCode => {
                 var timeRangeQuery = `(${splitCode} > 0)`;
                 formattedCodes.push(timeRangeQuery);
             });
@@ -593,13 +593,13 @@ function FormatTrafficSignalCodes(codeString) {
 // Module Exports
 // *---------------*
 module.exports = {
-    CreateLimitSortClause: CreateLimitSortClause,
-    CreateLocationClause: CreateLocationClause,
-    GetReportQueries: GetReportQueries,
-    MakePredictiveReport: MakePredictiveReport,
-    GetSriNameQuery: GetSriNameQuery,
-    CreateLimitSortClause: CreateLimitSortClause,
-    CreateLocationClause: CreateLocationClause,
-    CreateFilterClause: CreateFilterClause,
-    MakeReportQuery: MakeReportQuery
+    createLimitSortClause: createLimitSortClause,
+    createLocationClause: createLocationClause,
+    getReportQueries: getReportQueries,
+    makePredictiveReport: makePredictiveReport,
+    getSriNameQuery: getSriNameQuery,
+    createLimitSortClause: createLimitSortClause,
+    createLocationClause: createLocationClause,
+    createFilterClause: createFilterClause,
+    makeReportQuery: makeReportQuery
 };

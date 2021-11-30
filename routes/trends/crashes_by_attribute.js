@@ -1,5 +1,5 @@
 // crashes_by_attribute: gets crash count by attribute (cellphone use, intersection)
-const burgerHelper = require('../../helper_functions/trends_helper');
+const trendsHelper = require('../../helper_functions/trends_helper');
 
 // *---------------*
 // route schema
@@ -97,8 +97,8 @@ module.exports = function (fastify, opts, next) {
                     });
                 }
 
-                const table = burgerHelper.getTableNameByAttribute(queryArgs.attribute);
-                var reportQueries = burgerHelper.getTrendsQueryObject(queryArgs, table);
+                const table = trendsHelper.getTableNameByAttribute(queryArgs.attribute);
+                var reportQueries = trendsHelper.getTrendsQueryObject(queryArgs, table);
                 var returnData = {};
 
                 var promises = [];

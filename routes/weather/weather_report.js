@@ -1,5 +1,5 @@
 // weather_report: generates the weather report
-const burgerHelper = require('../../helper_functions/report_maker/predictive_report_layout');
+const reportHelper = require('../../helper_functions/report_maker/predictive_report_layout');
 
 // *---------------*
 // route schema
@@ -98,7 +98,7 @@ module.exports = function (fastify, opts, next) {
                     });
                 }
                 else {
-                    var reportQueries = burgerHelper.GetReportQueries(queryArgs);
+                    var reportQueries = reportHelper.getReportQueries(queryArgs);
 
                     var promises = [];
                     for (var key in reportQueries) {
@@ -122,7 +122,7 @@ module.exports = function (fastify, opts, next) {
                     if (queryArgs.sri) {
                         const promise = new Promise((resolve, reject) => {
                             try {
-                                const res = client.query(burgerHelper.GetSriNameQuery(queryArgs.sri));
+                                const res = client.query(reportHelper.getSriNameQuery(queryArgs.sri));
                                 return resolve(res);
                             }
                             catch(err) {
@@ -147,7 +147,7 @@ module.exports = function (fastify, opts, next) {
                         }
 
                         // create report pdf
-                        const fileInfo = burgerHelper.MakePredictiveReport(queryArgs, reportQueries, "Top SRI & Mileposts by Weather Conditions", "weather_report");
+                        const fileInfo = reportHelper.makePredictiveReport(queryArgs, reportQueries, "Top SRI & Mileposts by Weather Conditions", "weather_report");
                         fileInfo.then((createdFile) => {
                             console.log(createdFile)
                             reply.send({ url: createdFile.fileName });

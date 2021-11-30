@@ -1,5 +1,5 @@
 // si_by_year: gets serious injury count by year
-const burgerHelper = require('../../helper_functions/trends_helper');
+const trendsHelper = require('../../helper_functions/trends_helper');
 
 // *---------------*
 // route schema
@@ -90,7 +90,7 @@ module.exports = function (fastify, opts, next) {
                 }
 
                 const table = `trends.crash_${queryArgs.personType}_physcl_cndtn_code_02`;
-                var reportQueries = burgerHelper.getTrendsQueryObject(queryArgs, table);
+                var reportQueries = trendsHelper.getTrendsQueryObject(queryArgs, table);
                 var returnData = {};
 
                 var promises = [];

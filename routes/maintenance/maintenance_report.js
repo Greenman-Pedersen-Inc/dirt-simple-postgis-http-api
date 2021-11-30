@@ -1,6 +1,6 @@
 // readMaintenanceData: queries accident data between a time frame for NJDOT Maintenance for insurance claims
 
-const burgerHelper = require('../../helper_functions/maintenance_helper');
+const maintenanceHelper = require('../../helper_functions/maintenance_helper');
 const codeTranslator = require('../../helper_functions/code_translator');
 
 
@@ -136,7 +136,7 @@ module.exports = function (fastify, opts, next) {
                                 });
 
                                 //console.log(data[0]);
-                                const fileInfo = burgerHelper.fileExport(queryStrings, data);
+                                const fileInfo = maintenanceHelper.fileExport(queryStrings, data);
     
                                 fileInfo.then((createdFile) => {
                                     console.log(createdFile)

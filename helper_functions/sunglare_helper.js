@@ -12,7 +12,7 @@ require('./report_maker/fonts/SegoeUI/segoeuib-bold');     // SegoiUI bold
 // *---------------*
 
 // creates the clause for SRI, county, or muni
-function CreateLocationClause(queryString) {
+function createLocationClause(queryString) {
     var whereClauses = [];
     if (queryString.sri !== null && queryString.sri !== undefined) whereClauses.push(`calc_sri = '${queryString.sri}'`);
     else if (queryString.countyCode !== null && queryString.countyCode !== undefined) {
@@ -24,31 +24,31 @@ function CreateLocationClause(queryString) {
 }
 
 // creates the clause for sunglare filters
-function CreateFilterClause(queryString) {
+function createFilterClause(queryString) {
     var predictiveWhereClause = [];
     if (queryString.travelDirectionCodes !== null && queryString.travelDirectionCodes !== undefined) {
-        var formattedCodes = FormatCodes(queryString.travelDirectionCodes);
+        var formattedCodes = formatCodes(queryString.travelDirectionCodes);
         predictiveWhereClause.push(`veh_one_travel_dir_code IN (${formattedCodes})`);   // location_dir from the accidents table
     }
     if (queryString.signalizedIntersectionCodes !== null && queryString.signalizedIntersectionCodes !== undefined) {
-        var formattedCodes = FormatTrafficSignalCodes(queryString.signalizedIntersectionCodes);
+        var formattedCodes = formatTrafficSignalCodes(queryString.signalizedIntersectionCodes);
         predictiveWhereClause.push(`(${formattedCodes})`);
     }
     if (queryString.timeOfDayCodes !== null && queryString.timeOfDayCodes !== undefined) {
-        var formattedCodes = FormatTimeCodes(queryString.timeOfDayCodes);
+        var formattedCodes = formatTimeCodes(queryString.timeOfDayCodes);
         predictiveWhereClause.push(`(${formattedCodes})`);
     }
     return predictiveWhereClause.join(' AND ');
 }
 
 // creates the clause for sort and limit
-function CreateLimitSortClause(queryString) {
+function createLimitSortClause(queryString) {
     var limitClause = "";
     if (queryString.countyCode !== null || (queryString.countyCode == null && queryString.sri == null)) limitClause = " LIMIT 25";
-    return CreateSortClause(queryString) + " " + limitClause;
+    return createSortClause(queryString) + " " + limitClause;
 }
 
-function CreateSortClause(queryString) {
+function createSortClause(queryString) {
     var sortClause = "ORDER BY count DESC, fatal DESC, incapacitated DESC";
     if (queryString.sort == "fatal-sort") {
         sortClause = "ORDER BY fatal DESC, incapacitated DESC, mod_inj DESC, count DESC";
@@ -59,7 +59,7 @@ function CreateSortClause(queryString) {
     return sortClause;
 }
 
-function GetSriNameQuery(sriCode) {
+function getSriNameQuery(sriCode) {
     return `SELECT name FROM public.srilookupname WHERE stndrd_rt_id = '${sriCode}'`;
 }
 
@@ -71,7 +71,7 @@ function GetSriNameQuery(sriCode) {
 // Splits a code string by "," to return an array of codes
 // INPUT: "07,08,15,16,18"
 // OUTPUT: [07, 08, ...]
-function SplitCodes(codeString) {
+function splitCodes(codeString) {
     var splitCodes = [];
     if (codeString !== undefined && codeString !== null) {
         splitCodes = codeString.split(',');
@@ -82,12 +82,12 @@ function SplitCodes(codeString) {
 // This formats the codes for the IN statement by adding single quotes and commas to each code from the request parameters.
 // EXAMPLE: enviornmentCode = "01,02,03"
 // RETURNS: "'01','02','03'"
-function FormatCodes(codeString) {
+function formatCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = SplitCodes(codeString);
-    if (splitCodes.length > 0) {
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
         var formattedCodes = [];
-        splitCodes.forEach(splitCode => {
+        codes.forEach(splitCode => {
             formattedCodes.push("'" + splitCode + "'");
         });
         returnCodes = formattedCodes.join(", ");
@@ -96,9 +96,9 @@ function FormatCodes(codeString) {
 }
 
 //"07,08,15,16,18"
-function FormatTimeCodes(codeString) {
+function formatTimeCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = SplitCodes(codeString);
+    var splitCodes = splitCodes(codeString);
     if (splitCodes.length > 0) {
         var formattedCodes = [];
         splitCodes.forEach(splitCode => {
@@ -112,9 +112,9 @@ function FormatTimeCodes(codeString) {
 
 // INPUT: "trf_ctrl_adult_crossing_guard,trf_ctrl_channelization_painted,trf_ctrl_channelization_physical"
 // OUTPUT: (trf_ctrl_adult_crossing_guard > 0) OR (trf_ctrl_channelization_painted > 0) OR ...
-function FormatTrafficSignalCodes(codeString) {
+function formatTrafficSignalCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = SplitCodes(codeString);
+    var splitCodes = splitCodes(codeString);
     if (codeString !== undefined && codeString !== null) {
         var splitCodes = codeString.split(',');
         if (splitCodes.length > 0) {
@@ -133,8 +133,49 @@ function FormatTrafficSignalCodes(codeString) {
 // Report Helper Functions
 // *---------------*
 
+function makeReportQuery(queryStrings, crashAttr) {
+    var defaultQuery = "";
+    var locationClause = createLocationClause(queryStrings);
+    var filterClause = createFilterClause(queryStrings);
+    var limitSortClause = createLimitSortClause(queryStrings);
+
+    if (crashAttr == "default")
+    {
+        defaultQuery = `, SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal, 
+            SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated, 
+            SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) mod_inj, 
+            SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) comp_pain, 
+            SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) prop_dmg`;
+    }
+    else
+    {
+        var crashAttrClause = getCrashAttributeClause(crashAttr);
+        if (crashAttrClause !== null) defaultQuery = "," + crashAttrClause;
+    }
+
+    var query = `
+    SELECT DISTINCT UPPER(public.srilookupname.name), accidents.* FROM
+    (
+        SELECT calc_sri, 
+        ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,
+        CONCAT(CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(calc_milepost * 10) / 10, 1) + .09) AS mp_range,
+        COUNT(ard_accidents_sunglare.crashid)
+        ${defaultQuery}
+        FROM 
+        sunglare.ard_accidents_sunglare
+        WHERE year BETWEEN ${queryStrings.startYear} AND ${queryStrings.endYear} 
+        AND calc_milepost IS NOT NULL
+        ${locationClause !== "" ? ` AND ${locationClause}` : '' }
+        ${filterClause  !== "" ? ` AND ${filterClause}` : '' }              
+        GROUP BY calc_sri, calc_milepost
+    ) accidents
+    LEFT JOIN public.srilookupname ON public.srilookupname.stndrd_rt_id = accidents.calc_sri
+    ${limitSortClause  !== "" ? ` ${limitSortClause}` : '' };`;
+    return query;
+}
+
 // returns all queries needed for the report
-function GetReportQueries(queryStrings) {
+function getReportQueries(queryStrings) {
     var reportQueries = {};
     var queryCodes = ['default'];
     var crashAttr = queryStrings.crashAttributes;
@@ -143,9 +184,9 @@ function GetReportQueries(queryStrings) {
         queryCodes.push.apply(queryCodes, crashAttrList);
     }
     queryCodes.forEach(crashAttr => {
-        var aQuery = MakeReportQuery(queryStrings, crashAttr);
+        var aQuery = makeReportQuery(queryStrings, crashAttr);
         reportQueries[crashAttr] = {
-            title: CreateTableTitle(crashAttr),
+            title: createTableTitle(crashAttr),
             query: aQuery
         }
     });
@@ -153,10 +194,10 @@ function GetReportQueries(queryStrings) {
 }
 
 // returns object of filter text that goes on the report
-function CreateReportFilterLabels(queryStrings) {
+function createReportFilterLabels(queryStrings) {
     var filterObject = {};
     // year range
-    filterObject["Year Range"] = CreateYearLabel(queryStrings.startYear, queryStrings.endYear);
+    filterObject["Year Range"] = createYearLabel(queryStrings.startYear, queryStrings.endYear);
 
     // location
     var location = "New Jersey State";
@@ -170,23 +211,23 @@ function CreateReportFilterLabels(queryStrings) {
 
     // travel direction
     if (queryStrings.travelDirectionCodes) {
-        filterObject["Travel Direction"] = CreateDirectionLabel(queryStrings.travelDirectionCodes);
+        filterObject["Travel Direction"] = createDirectionLabel(queryStrings.travelDirectionCodes);
     }
 
     // time of day
     if (queryStrings.timeOfDayCodes) {
-        filterObject["Time of Day"] = CreateTimeLabels(queryStrings.timeOfDayCodes);
+        filterObject["Time of Day"] = createTimeLabels(queryStrings.timeOfDayCodes);
     }
 
     // signalized intersection
     if (queryStrings.signalizedIntersectionCodes) {
-        filterObject["Signalized Intersections"] = CreateSignalLabel(queryStrings.signalizedIntersectionCodes);
+        filterObject["Signalized Intersections"] = createSignalLabel(queryStrings.signalizedIntersectionCodes);
     }
     return filterObject;
 }
 
 // gets the clause of additional report tables
-function GetCrashAttributeClause(key) {
+function getCrashAttributeClause(key) {
     const clauses = {
         "surf_cond_code": `SUM(CASE WHEN surf_cond_code = '09' THEN 1 ELSE 0 END) MUD_DIRT_GRAVEL, 
         SUM(CASE WHEN surf_cond_code = '08' THEN 1 ELSE 0 END) OIL_FUEL, 
@@ -234,47 +275,6 @@ function GetCrashAttributeClause(key) {
     return null;
 }
 
-function MakeReportQuery(queryStrings, crashAttr) {
-    var defaultQuery = "";
-    var locationClause = CreateLocationClause(queryStrings);
-    var filterClause = CreateFilterClause(queryStrings);
-    var limitSortClause = CreateLimitSortClause(queryStrings);
-
-    if (crashAttr == "default")
-    {
-        defaultQuery = `, SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal, 
-            SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated, 
-            SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) mod_inj, 
-            SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) comp_pain, 
-            SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) prop_dmg`;
-    }
-    else
-    {
-        var crashAttrClause = GetCrashAttributeClause(crashAttr);
-        if (crashAttrClause !== null) defaultQuery = "," + crashAttrClause;
-    }
-
-    var query = `
-    SELECT DISTINCT UPPER(public.srilookupname.name), accidents.* FROM
-    (
-        SELECT calc_sri, 
-        ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,
-        CONCAT(CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(calc_milepost * 10) / 10, 1) + .09) AS mp_range,
-        COUNT(ard_accidents_sunglare.crashid)
-        ${defaultQuery}
-        FROM 
-        sunglare.ard_accidents_sunglare
-        WHERE year BETWEEN ${queryStrings.startYear} AND ${queryStrings.endYear} 
-        AND calc_milepost IS NOT NULL
-        ${locationClause !== "" ? ` AND ${locationClause}` : '' }
-        ${filterClause  !== "" ? ` AND ${filterClause}` : '' }              
-        GROUP BY calc_sri, calc_milepost
-    ) accidents
-    LEFT JOIN public.srilookupname ON public.srilookupname.stndrd_rt_id = accidents.calc_sri
-    ${limitSortClause  !== "" ? ` ${limitSortClause}` : '' };`;
-    return query;
-}
-
 function getJurisdictionName(jurisdictionCode) {
     if (jurisdictionCode.length === 4) {
         return(codeTranslator.convertCodeDescription("mun_mu", jurisdictionCode));
@@ -284,11 +284,11 @@ function getJurisdictionName(jurisdictionCode) {
     }
 }
 
-function CreateYearLabel(startYear, endYear) {
+function createYearLabel(startYear, endYear) {
     return startYear + " - " + endYear;
 }
 
-function CreateSignalLabel(codes) {
+function createSignalLabel(codes) {
     const splitCodeArray = codes.split(",");
     const signalNames = {
         "trf_ctrl_adult_crossing_guard":"Adult Crossing Guard",
@@ -317,7 +317,7 @@ function CreateSignalLabel(codes) {
     return foundFilters.join(" OR ");
 }
 
-function CreateDirectionLabel(codes){
+function createDirectionLabel(codes){
     const splitCodeArray = codes.split(",");
     const dirNames = {
         "01": "North",
@@ -335,7 +335,7 @@ function CreateDirectionLabel(codes){
     return foundFilters.join(" OR "); 
 }
 
-function CreateTimeLabels(codes) {
+function createTimeLabels(codes) {
     const splitCodeArray = codes.split(",");
     if (splitCodeArray.length === 0) return "None";
     var filters = [];
@@ -350,7 +350,7 @@ function CreateTimeLabels(codes) {
     return filters.join(" OR ");
 }
 
-function CreateTableTitle(crashAttr) {
+function createTableTitle(crashAttr) {
     if (crashAttr === 'default') return 'Crashes by Physical Condition';
     else if (crashAttr === 'surf_cond_code') return 'Crashes by Road Surface Condition';
     else if (crashAttr === 'road_surf_code') return 'Crashes by Road Surface Type';
@@ -358,7 +358,7 @@ function CreateTableTitle(crashAttr) {
     else if (crashAttr === 'road_grade_code') return 'Crashes by Road Grade';
 }
 
-function GetTableColumns(crashAttr) {
+function getTableColumns(crashAttr) {
     var defaultCols = [
         { header: '#', dataKey: 'num' },
         { header: 'SRI', dataKey: 'calc_sri' },
@@ -417,10 +417,10 @@ function GetTableColumns(crashAttr) {
 // *---------------*
 // Report Creation Functions
 // *---------------*
-function MakeSunglareReport(queryArgs, reportData) {
-    const filterObject = CreateReportFilterLabels(queryArgs);
+function makeSunglareReport(queryArgs, reportData) {
+    const filterObject = createReportFilterLabels(queryArgs);
     const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, "Top SRI & Mileposts by Sun Glare");
-    MakeReportTable(doc, reportData, reportHelper.getCurrentY() + 5);
+    makeReportTable(doc, reportData, reportHelper.getCurrentY() + 5);
     reportHelper.createFooter(doc, "Top SRI & Mileposts by Sun Glare");
     return reportHelper.saveReportPdf(doc, "sunglareReport"); 
 }
@@ -447,7 +447,7 @@ function getTableTitleHeader (doc, tableTitle, yPos) {
     return currYPos;
 }
 
-function MakeReportTable(doc, reportData, yPos) {
+function makeReportTable(doc, reportData, yPos) {
     var currY = yPos;
     Object.keys(reportData).forEach((crashAttr, idx, arr) => {
         // add # column
@@ -481,7 +481,7 @@ function MakeReportTable(doc, reportData, yPos) {
                     fontStyle: 'bold'
                 }
             },
-            columns: GetTableColumns(crashAttr),
+            columns: getTableColumns(crashAttr),
             body: tableData,
             allSectionHooks: true,
             didParseCell: function (data) {
@@ -528,14 +528,14 @@ function MakeReportTable(doc, reportData, yPos) {
 // *---------------*
 
 module.exports = {
-    CreateLimitSortClause: CreateLimitSortClause,
-    CreateLocationClause: CreateLocationClause,
-    GetReportQueries: GetReportQueries,
-    MakeSunglareReport: MakeSunglareReport,
-    GetSriNameQuery: GetSriNameQuery,
-    CreateLimitSortClause: CreateLimitSortClause,
-    CreateLocationClause: CreateLocationClause,
-    CreateFilterClause: CreateFilterClause,
-    MakeReportQuery: MakeReportQuery
+    createLimitSortClause: createLimitSortClause,
+    createLocationClause: createLocationClause,
+    getReportQueries: getReportQueries,
+    makeSunglareReport: makeSunglareReport,
+    getSriNameQuery: getSriNameQuery,
+    createLimitSortClause: createLimitSortClause,
+    createLocationClause: createLocationClause,
+    createFilterClause: createFilterClause,
+    makeReportQuery: makeReportQuery
 };
 

@@ -14,6 +14,7 @@ const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simp
 
 const pageMarginSides = 19;
 const pageMarginEnds = 7;
+const newPageTextY = 15;
 var currentX = 0;
 var currentY = 0;
 
@@ -85,7 +86,6 @@ function createFiltersSection(doc, filterObject) {
             doc
             .setFont("seguisb", "normal")
             .text(filterLabel, pageMarginSides, currentY);
-
             startX = pageMarginSides + ((doc.getStringUnitWidth(filterLabel) * fontSize) / (72/25.6)) ;
             
             doc
@@ -104,6 +104,10 @@ function generateReportPdf(layout, filters, reportTitle) {
     createHeader(doc, reportTitle);
     if (filters) createFiltersSection(doc, filters);
     return doc;
+}
+
+function getCurrentY() {
+    return currentY;
 }
 
 function saveReportPdf(doc, saveTitle){
@@ -130,6 +134,7 @@ module.exports = {
     createFooter: createFooter,
     saveReportPdf: saveReportPdf,
     pageMarginSides: pageMarginSides,
-    pageMarginEnds: pageMarginEnds
+    pageMarginEnds: pageMarginEnds,
+    getCurrentY: getCurrentY,
+    newPageTextY: newPageTextY
 };
-

@@ -107,7 +107,7 @@ module.exports = function (fastify, opts, next) {
                         }
 
                         // create report pdf
-                        const fileInfo = burgerHelper.makeJurisdictionReport(queryArgs, reportData);
+                        const fileInfo = juriHelper.makeJurisdictionReport(queryArgs, reportData);
                         fileInfo.then((createdFile) => {
                             console.log(createdFile)
                             reply.send({ url: createdFile.fileName });

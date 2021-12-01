@@ -24,9 +24,17 @@ const reportHelper = require('../../helper_functions/report_maker/report_layout'
             "message": "unable to connect to database server"
           });
 
-          var savePath = reportHelper.GenerateReportPdf("letter-portrait", "Top SRI & Mileposts by Sun Glare");
-          release();
-          reply.send(err || savePath);
+          const filterObject = {"Year Range": "2016 - 2019"};
+          const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, "Jurisdiction Report");
+          const fileInfo = reportHelper.saveReportPdf(doc, "juriReport");
+
+          fileInfo.then((createdFile) => {
+            console.log(createdFile)
+            reply.send({ url: createdFile.fileName });
+
+          }).catch((error) => {
+            console.log(error);
+          })
 
         }
       }

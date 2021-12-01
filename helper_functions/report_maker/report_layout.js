@@ -75,7 +75,7 @@ function createHeader(doc, reportTitle) {
 
 // {"Year Range": "2019 - 2020"}
 function createFiltersSection(doc, filterObject) {
-    const fontSize = 10;
+    const fontSize = 12;
     var startX = pageMarginSides;
     doc.setFontSize(fontSize);
 
@@ -86,21 +86,16 @@ function createFiltersSection(doc, filterObject) {
             doc
             .setFont("seguisb", "normal")
             .text(filterLabel, pageMarginSides, currentY);
-
             startX = pageMarginSides + ((doc.getStringUnitWidth(filterLabel) * fontSize) / (72/25.6)) ;
             
             doc
             .setFont("segoeui", "normal")
             .text(filterValue, startX, currentY);
 
-            currentY += 5;
+            currentY += 2;
         }
     }
-    return currentY;
-}
-
-function getCurrentY() {
-    return currentY;
+    return doc;
 }
 
 function generateReportPdf(layout, filters, reportTitle) {
@@ -109,6 +104,10 @@ function generateReportPdf(layout, filters, reportTitle) {
     createHeader(doc, reportTitle);
     if (filters) createFiltersSection(doc, filters);
     return doc;
+}
+
+function getCurrentY() {
+    return currentY;
 }
 
 function saveReportPdf(doc, saveTitle){

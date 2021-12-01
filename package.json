@@ -19,6 +19,12 @@
     "fastify-postgres": "^3.5.0",
     "fastify-static": "^4.0.1",
     "fastify-swagger": "^4.7.0",
+    "json2csv": "^5.0.6",
+    "json2xls": "^0.1.2",
+    "jspdf": "^2.4.0",
+    "jspdf-autotable": "^3.5.23",
+    "pdfkit": "^0.12.3",
+    "pdfkit-table": "^0.1.54",
     "pg": "^8.6.0"
   },
   "devDependencies": {

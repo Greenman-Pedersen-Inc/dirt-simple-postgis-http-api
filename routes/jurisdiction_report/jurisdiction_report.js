@@ -1,6 +1,6 @@
 // jurisdiction_report: generates the jurisdiction report pdf based on county, muni, start year, and end year inputs
 
-const burgerHelper = require('../../helper_functions/jurisdiction_report_helper');
+const juriHelper = require('../../helper_functions/jurisdiction_report_helper');
 
 // *---------------*
 // route schema
@@ -66,7 +66,7 @@ module.exports = function (fastify, opts, next) {
                         "message": "need jurisdiction code"
                     });
                 } else {
-                    var reportQueries = burgerHelper.getReportQueries(queryArgs);
+                    var reportQueries = juriHelper.getReportQueries(queryArgs);
                     var reportData = {
                         "pedestrians": [],
                         "drivers": [],

@@ -187,7 +187,7 @@ function makeReportQuery(queryStrings, crashAttr) {
     var limitSortClause = createLimitSortClause(queryStrings);
     const tableName = `${queryStrings.moduleType}.ard_accidents_${queryStrings.moduleType}`;
 
-    console.log(filterClause);
+    //console.log(filterClause);
     if (crashAttr == "default")
     {
         defaultQuery = `, SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal, 
@@ -462,7 +462,7 @@ function getCrashAttributeClause(key) {
 // creates the clause for SRI, county, or muni
 function createLocationClause(queryString) {
     var whereClauses = [];
-    if (queryString.sri !== null && queryString.sri !== undefined) whereClauses.push(`calc_sri = '${queryString.sri}'`);
+    if (queryString.sri !== null && queryString.sri !== undefined && queryString.sri !== 'null') whereClauses.push(`calc_sri = '${queryString.sri}'`);
     else if (queryString.countyCode !== null && queryString.countyCode !== undefined) {
         whereClauses.push(`mun_cty_co = '${queryString.countyCode}'`);
         if (queryString.muniCode !== null && queryString.muniCode !== undefined) whereClauses.push(`mun_mu = '${queryString.muniCode}'`);
@@ -475,7 +475,7 @@ function createLocationClause(queryString) {
 function createFilterClause(queryString) {
     var predictiveWhereClause = [];
     if (queryString.moduleType === 'sunglare') {
-        if (queryString.travelDirectionCodes !== null && queryString.travelDirectionCodes !== undefined) {
+        if (queryString.travelDirectionCodes !== null && queryString.travelDirectionCodes !== undefined && queryString.travelDirectionCodes !== 'null') {
             var formattedCodes = formatCodes(queryString.travelDirectionCodes);
             predictiveWhereClause.push(`veh_one_travel_dir_code IN (${formattedCodes})`);   // location_dir from the accidents table
         }

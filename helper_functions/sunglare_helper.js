@@ -1,65 +1,11 @@
-// *---------------*
-// Sunglare querystrings
-// *---------------*
+const { jsPDF } = require("jspdf"); // will automatically load the node version
+const { autoTable } = require("jspdf-autotable"); // will automatically load the node version
+const reportHelper = require('./report_maker/report_layout');
+const codeTranslator = require('./code_translator');
+require('./report_maker/fonts/SegoeUI/segoeui-normal');     // SegoiUI normal
+require('./report_maker/fonts/SegoeUI/seguisb-normal');     // SegoiUI semi bold
+require('./report_maker/fonts/SegoeUI/segoeuib-bold');     // SegoiUI bold
 
-function GetQueryStrings() {
-    var querystrings = {
-        user: {
-            type: 'string',
-            description: 'The user name.',
-            default: ''
-        },
-        moduleType: {
-            type: 'string',
-            description: 'The type of predictive module.',
-            default: 'sunglare'
-        },
-        sort: {
-            type: 'string',
-            description: 'The sorting method used in the report PDF.',
-            default: 'crash-sort'
-        },
-        startYear: {
-            type: 'string',
-            description: 'The start year for crashes.',
-            default: '2015'
-        },
-        endYear: {
-            type: 'string',
-            description: 'The end year for crashes.',
-            default: '2020'
-        },
-        crashAttributes: {
-            type: 'string',
-            description: 'Comma seperated list of Crash Attribute codes based on the NJTR-1 form.'
-        },
-        travelDirectionCodes: {
-            type: 'string',
-            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.'
-        },
-        timeOfDayCodes: {
-            type: 'string',
-            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.'
-        },
-        signalizedIntersectionCodes: {
-            type: 'string',
-            description: 'Comma seperated list of Signalized Intersection codes based on the NJTR-1 form.'
-        },
-        sri: {
-            type: 'string',
-            description: 'SRI code.'
-        },
-        countyCode: {
-            type: 'string',
-            description: 'County Code.'
-        },
-        muniCode: {
-            type: 'string',
-            description: 'Municipality code.'
-        }
-    }
-    return querystrings;
-}
 
 // *---------------*
 // SQL Clause Helper Functions
@@ -81,7 +27,6 @@ function CreateLocationClause(queryString) {
 function CreateFilterClause(queryString) {
     var predictiveWhereClause = [];
     if (queryString.travelDirectionCodes !== null && queryString.travelDirectionCodes !== undefined) {
-        console.log(queryString.travelDirectionCodes);
         var formattedCodes = FormatCodes(queryString.travelDirectionCodes);
         predictiveWhereClause.push(`veh_one_travel_dir_code IN (${formattedCodes})`);   // location_dir from the accidents table
     }
@@ -91,7 +36,7 @@ function CreateFilterClause(queryString) {
     }
     if (queryString.timeOfDayCodes !== null && queryString.timeOfDayCodes !== undefined) {
         var formattedCodes = FormatTimeCodes(queryString.timeOfDayCodes);
-        predictiveWhereClause.push(`({formattedCodes})`);
+        predictiveWhereClause.push(`(${formattedCodes})`);
     }
     return predictiveWhereClause.join(' AND ');
 }
@@ -99,17 +44,25 @@ function CreateFilterClause(queryString) {
 // creates the clause for sort and limit
 function CreateLimitSortClause(queryString) {
     var limitClause = "";
-    var sortClause = "";
     if (queryString.countyCode !== null || (queryString.countyCode == null && queryString.sri == null)) limitClause = " LIMIT 25";
-    sortClause = "ORDER BY count DESC";
+    return CreateSortClause(queryString) + " " + limitClause;
+}
+
+function CreateSortClause(queryString) {
+    var sortClause = "ORDER BY count DESC, fatal DESC, incapacitated DESC";
     if (queryString.sort == "fatal-sort") {
         sortClause = "ORDER BY fatal DESC, incapacitated DESC, mod_inj DESC, count DESC";
     }
     else if (queryString.sort == "mp-sort") {
-        sortClause = "ORDER BY MP";
+        sortClause = "ORDER BY milepost";
     }
-    return sortClause + " " + limitClause;
+    return sortClause;
 }
+
+function GetSriNameQuery(sriCode) {
+    return `SELECT name FROM public.srilookupname WHERE stndrd_rt_id = '${sriCode}'`;
+}
+
 
 // *---------------*
 // Formatter Helper Functions
@@ -149,7 +102,7 @@ function FormatTimeCodes(codeString) {
     if (splitCodes.length > 0) {
         var formattedCodes = [];
         splitCodes.forEach(splitCode => {
-            var timeRangeQuery = String.Format("(TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '{0}:00'::TIME AND '{0}:59'::TIME)", splitCode);
+            var timeRangeQuery = `TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '${splitCode}:00'::TIME AND '${splitCode}:59'::TIME`;
             formattedCodes.push(timeRangeQuery);
         });
         returnCodes = formattedCodes.join(' OR ');
@@ -179,6 +132,58 @@ function FormatTrafficSignalCodes(codeString) {
 // *---------------*
 // Report Helper Functions
 // *---------------*
+
+// returns all queries needed for the report
+function GetReportQueries(queryStrings) {
+    var reportQueries = {};
+    var queryCodes = ['default'];
+    var crashAttr = queryStrings.crashAttributes;
+    if (crashAttr !== null && crashAttr !== undefined) {
+        var crashAttrList = crashAttr.split(',');
+        queryCodes.push.apply(queryCodes, crashAttrList);
+    }
+    queryCodes.forEach(crashAttr => {
+        var aQuery = MakeReportQuery(queryStrings, crashAttr);
+        reportQueries[crashAttr] = {
+            title: CreateTableTitle(crashAttr),
+            query: aQuery
+        }
+    });
+    return reportQueries;
+}
+
+// returns object of filter text that goes on the report
+function CreateReportFilterLabels(queryStrings) {
+    var filterObject = {};
+    // year range
+    filterObject["Year Range"] = CreateYearLabel(queryStrings.startYear, queryStrings.endYear);
+
+    // location
+    var location = "New Jersey State";
+    if (queryStrings.sri) location = queryStrings.sriName + ' (' + queryStrings.sri + ')';
+    else if (queryStrings.muniCode || queryStrings.countyCode) {
+        const juriCode = `${queryStrings.muniCode ? queryStrings.countyCode + queryStrings.muniCode : queryStrings.countyCode}`;
+        location = getJurisdictionName(juriCode);
+    }
+    else if (queryStrings.sri) location = queryStrings.sri; 
+    filterObject["Location"] = location;
+
+    // travel direction
+    if (queryStrings.travelDirectionCodes) {
+        filterObject["Travel Direction"] = CreateDirectionLabel(queryStrings.travelDirectionCodes);
+    }
+
+    // time of day
+    if (queryStrings.timeOfDayCodes) {
+        filterObject["Time of Day"] = CreateTimeLabels(queryStrings.timeOfDayCodes);
+    }
+
+    // signalized intersection
+    if (queryStrings.signalizedIntersectionCodes) {
+        filterObject["Signalized Intersections"] = CreateSignalLabel(queryStrings.signalizedIntersectionCodes);
+    }
+    return filterObject;
+}
 
 // gets the clause of additional report tables
 function GetCrashAttributeClause(key) {
@@ -266,42 +271,25 @@ function MakeReportQuery(queryStrings, crashAttr) {
         GROUP BY calc_sri, calc_milepost
     ) accidents
     LEFT JOIN public.srilookupname ON public.srilookupname.stndrd_rt_id = accidents.calc_sri
-    ${locationClause !== "" ? ` AND ${locationClause}` : '' }
-    ${filterClause  !== "" ? ` AND ${filterClause}` : '' }
-    ${limitSortClause  !== "" ? ` ${limitSortClause}` : '' }
-    ;`;
+    ${limitSortClause  !== "" ? ` ${limitSortClause}` : '' };`;
     return query;
 }
 
-function GetReportQueries(queryStrings) {
-    var reportQueries = [];
-    var queryCodes = ['default'];
-    var crashAttr = queryStrings.crashAttributes;
-    if (crashAttr !== null && crashAttr !== undefined) {
-        var crashAttrList = crashAttr.split(',');
-        queryCodes.push.apply(queryCodes, crashAttrList);
+function getJurisdictionName(jurisdictionCode) {
+    if (jurisdictionCode.length === 4) {
+        return(codeTranslator.convertCodeDescription("mun_mu", jurisdictionCode));
     }
-    queryCodes.forEach(crashAttr => {
-        var aQuery = MakeReportQuery(queryStrings, crashAttr);
-        reportQueries.push({
-            "name": crashAttr,
-            "text": aQuery
-        });
-    });
-    return reportQueries;
-}
-
-// INPUT: {"travelDirectionCodes": "02,03"}
-// OUTPUT: {"travelDirectionCodes": {name: "Travel Direction", value: "East, West"}, {...}}
-function CreateReportFilterLabels(filterObject) {
-    
+    else {
+        return(codeTranslator.convertCodeDescription("mun_cty_co", jurisdictionCode));
+    }
 }
 
 function CreateYearLabel(startYear, endYear) {
-    return {"Years": startYear + " - " + endYear};
+    return startYear + " - " + endYear;
 }
 
-function CreateSignalLabel(splitCodeArray) {
+function CreateSignalLabel(codes) {
+    const splitCodeArray = codes.split(",");
     const signalNames = {
         "trf_ctrl_adult_crossing_guard":"Adult Crossing Guard",
         "trf_ctrl_channelization_painted":"Channelization (Painted)" ,
@@ -329,7 +317,8 @@ function CreateSignalLabel(splitCodeArray) {
     return foundFilters.join(" OR ");
 }
 
-function CreateDirectionLabel(splitCodeArray){
+function CreateDirectionLabel(codes){
+    const splitCodeArray = codes.split(",");
     const dirNames = {
         "01": "North",
         "03": "South",
@@ -346,7 +335,8 @@ function CreateDirectionLabel(splitCodeArray){
     return foundFilters.join(" OR "); 
 }
 
-function CreateTimeLabels(splitCodeArray) {
+function CreateTimeLabels(codes) {
+    const splitCodeArray = codes.split(",");
     if (splitCodeArray.length === 0) return "None";
     var filters = [];
     splitCodeArray.forEach(timeString => {
@@ -354,22 +344,198 @@ function CreateTimeLabels(splitCodeArray) {
         if (timeInt < 12)
         {
             if (timeInt == 0) { filters.push("12 AM"); }
-            else filters.push(timeInt.ToString() + " AM");
+            else filters.push(timeInt.toString() + " AM");
         }
     });
     return filters.join(" OR ");
 }
 
+function CreateTableTitle(crashAttr) {
+    if (crashAttr === 'default') return 'Crashes by Physical Condition';
+    else if (crashAttr === 'surf_cond_code') return 'Crashes by Road Surface Condition';
+    else if (crashAttr === 'road_surf_code') return 'Crashes by Road Surface Type';
+    else if (crashAttr === 'road_horiz_align_code') return 'Crashes by Road Horizontal Alignment';
+    else if (crashAttr === 'road_grade_code') return 'Crashes by Road Grade';
+}
+
+function GetTableColumns(crashAttr) {
+    var defaultCols = [
+        { header: '#', dataKey: 'num' },
+        { header: 'SRI', dataKey: 'calc_sri' },
+        { header: 'SRI Name', dataKey: 'upper' },
+        { header: 'Milepost', dataKey: 'mp_range' }
+    ]; 
+    var cols;
+    if (crashAttr === 'default') cols = [
+        { header: 'Fatal', dataKey: 'fatal' },
+        { header: 'Incap.', dataKey: 'incapacitated' },
+        { header: 'Mod. Injury', dataKey: 'mod_inj' },
+        { header: 'Compl. Pain', dataKey: 'comp_pain' },
+        { header: 'Prop. Dmg.', dataKey: 'prop_dmg' },
+        { header: 'Total', dataKey: 'count' }
+    ];
+    else if (crashAttr === 'surf_cond_code') cols = [
+        { header: 'Dry', dataKey: 'na' },
+        { header: 'Wet', dataKey: 'wet' },
+        { header: 'Snowy', dataKey: 'snowy' },
+        { header: 'Icy', dataKey: 'icy' },
+        { header: 'Slush', dataKey: 'slush' },
+        { header: 'Water', dataKey: 'water' },
+        { header: 'Sand', dataKey: 'sand' },
+        { header: 'Oil/Fuel', dataKey: 'oil_fuel' },
+        { header: 'Mud, Dirt, Gravel', dataKey: 'mud_dirt_gravel' },
+        { header: 'Total', dataKey: 'count' }
+    ]
+    else if (crashAttr === 'road_surf_code') cols = [
+        { header: 'Concrete', dataKey: 'concrete' },
+        { header: 'Blacktop', dataKey: 'blacktop' },
+        { header: 'Gravel', dataKey: 'gravel' },
+        { header: 'Steel Grid', dataKey: 'steel_grid' },
+        { header: 'Dirt', dataKey: 'dirt' },
+        { header: 'N/A', dataKey: 'na' },
+        { header: 'Total', dataKey: 'count' }
+    ];
+    else if (crashAttr === 'road_horiz_align_code') cols = [
+        { header: 'Straight', dataKey: 'straight' },
+        { header: 'Curved Left', dataKey: 'curved_left' },
+        { header: 'Curve Right', dataKey: 'curved_right' },
+        { header: 'N/A', dataKey: 'na' },
+        { header: 'Total', dataKey: 'count' }
+    ];
+    else if (crashAttr === 'road_grade_code') cols = [
+        { header: 'Level', dataKey: 'lvl' },
+        { header: 'Down Hill', dataKey: 'down_hill' },
+        { header: 'Up Hill', dataKey: 'up_hill' },
+        { header: 'Hill Crest', dataKey: 'hill_crest' },
+        { header: 'Sag (Bottom)', dataKey: 'sag' },
+        { header: 'N/A', dataKey: 'na' },
+        { header: 'Total', dataKey: 'count' }
+    ];
+    return defaultCols.concat(cols);
+}
+
+// *---------------*
+// Report Creation Functions
+// *---------------*
+function MakeSunglareReport(queryArgs, reportData) {
+    const filterObject = CreateReportFilterLabels(queryArgs);
+    const doc = reportHelper.generateReportPdf("letter-portrait", filterObject, "Top SRI & Mileposts by Sun Glare");
+    MakeReportTable(doc, reportData, reportHelper.getCurrentY() + 5);
+    reportHelper.createFooter(doc, "Top SRI & Mileposts by Sun Glare");
+    return reportHelper.saveReportPdf(doc, "sunglareReport"); 
+}
+
+function getTableTitleHeader (doc, tableTitle, yPos) {
+    const leftMargin = reportHelper.pageMarginSides;
+    const pageSize = doc.internal.pageSize
+    const pageWidth = pageSize.width ? pageSize.width : pageSize.getWidth();
+    var currYPos = yPos;
+
+    if (tableTitle) {
+        doc
+        .setFont("seguisb", "normal")
+        .setFontSize(14)
+        .setTextColor(104,104,104)
+        .text(tableTitle, leftMargin, yPos);
+        currYPos += 2;
+        doc
+        .setDrawColor(104,104,104)
+        .setLineWidth(0.5)
+        .line(leftMargin, currYPos, pageWidth - leftMargin, currYPos);
+        currYPos += 3;
+    }
+    return currYPos;
+}
+
+function MakeReportTable(doc, reportData, yPos) {
+    var currY = yPos;
+    Object.keys(reportData).forEach((crashAttr, idx, arr) => {
+        // add # column
+        var tableData = reportData[crashAttr].data;
+        for (var i = 0; i < tableData.length; i++) {
+            tableData[i]['num'] = i + 1;
+        }
+
+        currY = getTableTitleHeader(doc, reportData[crashAttr].title, currY);
+        var tableSettings = {
+            startY: currY,
+            margin: { right: reportHelper.pageMarginSides, left: reportHelper.pageMarginSides },
+            styles: {
+                lineColor: [84, 84, 84],
+                lineWidth: 0.1,
+                textColor: [0, 0, 0],
+                rowPageBreak: 'always',
+                pageBreak: 'auto',
+                fontSize: 7
+            },
+            headStyles: {
+                halign: 'center',
+                fillColor: [32, 178, 170],
+                textColor: 255
+            },
+            bodyStyles: {
+                halign: 'center'
+            },
+            columnStyles: {
+                "count": {
+                    fontStyle: 'bold'
+                }
+            },
+            columns: GetTableColumns(crashAttr),
+            body: tableData,
+            allSectionHooks: true,
+            didParseCell: function (data) {
+                if (data.column.dataKey === 'count' && data.row.section === 'head') {
+                    data.cell.styles.fillColor = [0, 127, 127];
+                }
+                // highlight fatal or incap cells
+                if (crashAttr === "default") {
+                    if (data.row.section === 'body' && (data.column.dataKey === 'fatal' || data.column.dataKey === 'incapacitated')) {
+                        if (parseInt(data.cell.raw) > 0) {
+                            data.cell.styles.fillColor = [255, 127, 127]; // Red
+                        }
+                    }
+                }
+            },
+            willDrawCell: function (data) {
+                doc.setFont("segoeui", "normal")
+                // highlight fatal or incap cells
+                if (crashAttr === "default") {
+                    if (data.row.section === 'body' && (data.column.dataKey === 'fatal' || data.column.dataKey === 'incapacitated')) {
+                        if (parseInt(data.cell.raw) > 0) {
+                            doc.setFont("segoeuib", "bold");
+                            doc.setTextColor(255,255,255);
+                        }
+                    }
+                }
+                if (data.row.section === 'body' && (data.column.dataKey === 'count')) {
+                    doc.setFont("segoeuib", "bold");
+                }
+                if (data.row.section === 'head') {
+                    doc.setFont("segoeuib", "bold");
+                }
+            },
+        }
+        doc.autoTable(tableSettings);
+        if (idx !== arr.length - 1 ) doc.addPage();
+        currY = reportHelper.newPageTextY;
+    });
+    return doc;
+}
 
 // *---------------*
 // Module Exports
 // *---------------*
 
 module.exports = {
-    GetQueryStrings: GetQueryStrings,
     CreateLimitSortClause: CreateLimitSortClause,
-    CreateFilterClause: CreateFilterClause,
     CreateLocationClause: CreateLocationClause,
-    GetReportQueries: GetReportQueries
+    GetReportQueries: GetReportQueries,
+    MakeSunglareReport: MakeSunglareReport,
+    GetSriNameQuery: GetSriNameQuery,
+    CreateLimitSortClause: CreateLimitSortClause,
+    CreateLocationClause: CreateLocationClause,
+    CreateFilterClause: CreateFilterClause,
+    MakeReportQuery: MakeReportQuery
 };
 

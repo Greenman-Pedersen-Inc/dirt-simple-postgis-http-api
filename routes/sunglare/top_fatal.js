@@ -9,7 +9,7 @@ const sql = (queryArgs) => {
     var filterClause = sunglareHelper.createFilterClause(queryArgs);
 
     var sql = `
-    SELECT DISTINCT UPPER(public.srilookupname.name), accidents.* FROM
+    SELECT DISTINCT UPPER(public.srilookupname.name) "sri_name", accidents.* FROM
     (
         SELECT calc_sri, 
         ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,
@@ -23,7 +23,7 @@ const sql = (queryArgs) => {
         WHERE year BETWEEN ${queryArgs.startYear} AND ${queryArgs.endYear}  AND calc_milepost IS NOT NULL AND acc_time IS NOT NULL
         ${locationClause !== "" ? ` AND ${locationClause}` : '' }
         ${filterClause  !== "" ? ` AND ${filterClause}` : '' }    
-        GROUP BY calc_sri, milepost, crash_hr
+        GROUP BY calc_sri, calc_milepost, crash_hr
     ) accidents
     LEFT JOIN public.srilookupname ON public.srilookupname.stndrd_rt_id = accidents.calc_sri
     WHERE fatal > 0 OR incapacitated > 0 

@@ -154,7 +154,7 @@ function makeReportQuery(queryStrings, crashAttr) {
     }
 
     var query = `
-    SELECT DISTINCT UPPER(public.srilookupname.name), accidents.* FROM
+    SELECT DISTINCT UPPER(public.srilookupname.name) "sri_name", accidents.* FROM
     (
         SELECT calc_sri, 
         ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,

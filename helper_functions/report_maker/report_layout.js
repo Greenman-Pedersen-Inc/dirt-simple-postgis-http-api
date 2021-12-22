@@ -10,7 +10,7 @@ const { autoTable } = require("jspdf-autotable"); // will automatically load the
 require('./fonts/SegoeUI/segoeui-normal');     // SegoiUI normal
 require('./fonts/SegoeUI/seguisb-normal');     // SegoiUI semi bold
 
-const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
+const basePath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/';
 
 const pageMarginSides = 19;
 const pageMarginEnds = 7;
@@ -92,7 +92,7 @@ function createFiltersSection(doc, filterObject) {
             .setFont("segoeui", "normal")
             .text(filterValue, startX, currentY);
 
-            currentY += 2;
+            currentY += 6;
         }
     }
     return doc;

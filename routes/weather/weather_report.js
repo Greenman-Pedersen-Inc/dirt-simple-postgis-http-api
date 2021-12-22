@@ -105,13 +105,13 @@ module.exports = function (fastify, opts, next) {
                         if (reportQueries.hasOwnProperty(key)) {
                             const promise = new Promise((resolve, reject) => {
                                 try {
-                                    console.log(reportQueries[key].query)
+                                    //console.log(reportQueries[key].query)
                                     const res = client.query(reportQueries[key].query);
                                     return resolve(res);
                                 }
                                 catch(err) {
-                                    console.log(err.stack);
-                                    console.log(reportQueries[key].query);
+                                    //console.log(err.stack);
+                                    //console.log(reportQueries[key].query);
                                     return reject(error);
                                 }  
                             });
@@ -126,7 +126,7 @@ module.exports = function (fastify, opts, next) {
                                 return resolve(res);
                             }
                             catch(err) {
-                                console.log(err.stack);
+                                //console.log(err.stack);
                                 return reject(error);
                             }  
                         });
@@ -134,7 +134,7 @@ module.exports = function (fastify, opts, next) {
                     }
 
                     Promise.all(promises).then((reportDataArray) => {
-                        //console.log(reportDataArray);
+                        ////console.log(reportDataArray);
                         for (let i = 0; i < reportDataArray.length; i++) {
                             if (queryArgs.sri && i === reportDataArray.length - 1) {
                                 queryArgs.sriName = reportDataArray[i].rows[0].name;
@@ -149,11 +149,11 @@ module.exports = function (fastify, opts, next) {
                         // create report pdf
                         const fileInfo = reportHelper.makePredictiveReport(queryArgs, reportQueries, "Top SRI & Mileposts by Weather Conditions", "weather_report");
                         fileInfo.then((createdFile) => {
-                            console.log(createdFile)
+                            //console.log(createdFile)
                             reply.send({ url: createdFile.fileName });
                         }).catch((error) => {
-                            console.log("report error");
-                            console.log(error);
+                            //console.log("report error");
+                            //console.log(error);
                         })
                     });
                 }

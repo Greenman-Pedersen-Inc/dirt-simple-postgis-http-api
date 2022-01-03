@@ -98,10 +98,10 @@ function formatCodes(codeString) {
 //"07,08,15,16,18"
 function formatTimeCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = splitCodes(codeString);
-    if (splitCodes.length > 0) {
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
         var formattedCodes = [];
-        splitCodes.forEach(splitCode => {
+        codes.forEach(splitCode => {
             var timeRangeQuery = `TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '${splitCode}:00'::TIME AND '${splitCode}:59'::TIME`;
             formattedCodes.push(timeRangeQuery);
         });
@@ -114,12 +114,12 @@ function formatTimeCodes(codeString) {
 // OUTPUT: (trf_ctrl_adult_crossing_guard > 0) OR (trf_ctrl_channelization_painted > 0) OR ...
 function formatTrafficSignalCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = splitCodes(codeString);
+    var codes = splitCodes(codeString);
     if (codeString !== undefined && codeString !== null) {
-        var splitCodes = codeString.split(',');
-        if (splitCodes.length > 0) {
+        var codes = codeString.split(',');
+        if (codes.length > 0) {
             var formattedCodes = [];
-            splitCodes.forEach(splitCode => {
+            codes.forEach(splitCode => {
                 var timeRangeQuery = `(${splitCode} > 0)`;
                 formattedCodes.push(timeRangeQuery);
             });
@@ -141,13 +141,14 @@ function makeReportQuery(queryStrings, crashAttr) {
 
     if (crashAttr == "default")
     {
-        defaultQuery = `, SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal, 
-            SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated, 
-            SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) mod_inj, 
-            SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) comp_pain, 
-            SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) prop_dmg`;
+        defaultQuery = `CAST (SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) AS INTEGER) fatal,
+            CAST (SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) AS INTEGER) incapacitated,
+            CAST (SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) AS INTEGER) mod_inj,
+            CAST (SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) AS INTEGER) comp_pain,
+            CAST (SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) AS INTEGER) prop_dmg
+        `;
     }
-    else
+    else if (crashAttr)
     {
         var crashAttrClause = getCrashAttributeClause(crashAttr);
         if (crashAttrClause !== null) defaultQuery = "," + crashAttrClause;
@@ -157,9 +158,9 @@ function makeReportQuery(queryStrings, crashAttr) {
     SELECT DISTINCT UPPER(public.srilookupname.name) "sri_name", accidents.* FROM
     (
         SELECT calc_sri, 
-        ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,
+        CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DOUBLE PRECISION) AS milepost,
         CONCAT(CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(calc_milepost * 10) / 10, 1) + .09) AS mp_range,
-        COUNT(ard_accidents_sunglare.crashid)
+        CAST (COUNT(ard_accidents_sunglare.crashid) AS INTEGER), 
         ${defaultQuery}
         FROM 
         sunglare.ard_accidents_sunglare
@@ -238,14 +239,6 @@ function getCrashAttributeClause(key) {
         SUM(CASE WHEN surf_cond_code = '03' THEN 1 ELSE 0 END) SNOWY, 
         SUM(CASE WHEN surf_cond_code = '02' THEN 1 ELSE 0 END) WET, 
         SUM(CASE WHEN surf_cond_code NOT IN ('02', '03', '04', '05', '06', '07', '08', '09') OR surf_cond_code IS NULL THEN 1 ELSE 0 END) NA`,
-
-        "light_cond_code": `SUM(CASE WHEN light_cond_code = '02' THEN 1 ELSE 0 END) DAWN, 
-        SUM(CASE WHEN light_cond_code = '03' THEN 1 ELSE 0 END) DUSK, 
-        SUM(CASE WHEN light_cond_code = '04' THEN 1 ELSE 0 END) DARK_STREET_LIGHTS_OFF, 
-        SUM(CASE WHEN light_cond_code = '05' THEN 1 ELSE 0 END) DARK_NO_STREET_LIGHTS, 
-        SUM(CASE WHEN light_cond_code = '06' THEN 1 ELSE 0 END) DARK_STREET_LIGHTS_ON_CONT, 
-        SUM(CASE WHEN light_cond_code = '07' THEN 1 ELSE 0 END) DARK_STREET_LIGHTS_ON_SPOT, 
-        SUM(CASE WHEN light_cond_code NOT IN ('02', '03', '04', '05', '06', '07') OR light_cond_code IS NULL OR light_cond_code = '' THEN 1 ELSE 0 END) NA`,
 
         "road_surf_code": `SUM(CASE WHEN road_surf_code = '01' THEN 1 ELSE 0 END) CONCRETE, 
         SUM(CASE WHEN road_surf_code = '02' THEN 1 ELSE 0 END) BLACKTOP, 

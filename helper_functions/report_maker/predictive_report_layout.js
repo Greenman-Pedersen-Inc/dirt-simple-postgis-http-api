@@ -203,7 +203,7 @@ function makeReportQuery(queryStrings, crashAttr) {
     }
 
     var query = `
-    SELECT DISTINCT UPPER(public.srilookupname.name), accidents.* FROM
+    SELECT DISTINCT UPPER(public.srilookupname.name) "sri_name", accidents.* FROM
     (
         SELECT calc_sri, 
         ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS rounded_mp,
@@ -335,7 +335,7 @@ function getTableColumns(crashAttr) {
     var defaultCols = [
         { header: '#', dataKey: 'num' },
         { header: 'SRI', dataKey: 'calc_sri' },
-        { header: 'SRI Name', dataKey: 'upper' },
+        { header: 'SRI Name', dataKey: 'sri_name' },
         { header: 'Milepost', dataKey: 'mp_range' }
     ]; 
     var cols;

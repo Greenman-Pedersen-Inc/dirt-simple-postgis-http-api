@@ -63,7 +63,7 @@ module.exports = function (fastify, opts, next) {
                             const returnRow = result.rows[0];
                             if (returnRow.directory) {
                                 const njtr1Root = "https://voyagernjtr1.s3.amazonaws.com/";
-                                returnPath = njtr1Root + returnRow.directory + '/' + dlnNum.toUpperCase() + '.PDF';
+                                returnPath = njtr1Root + returnRow.directory + '/' + queryArgs.dlnNum.toUpperCase() + '.PDF';
                             }
                         }
 

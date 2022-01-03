@@ -12,11 +12,11 @@ const sql = (queryArgs) => {
     SELECT DISTINCT UPPER(public.srilookupname.name) "sri_name", accidents.* FROM
     (
         SELECT calc_sri, 
-        ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,
+        CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DOUBLE PRECISION) AS milepost,
         CONCAT(CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(calc_milepost * 10) / 10, 1) + .09) AS mp_range,
-        SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal,
-        SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated,
-        SUBSTRING ( acc_time, 1, 2 ) crash_hr
+        CAST (SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) AS INTEGER) fatal,
+        CAST (SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) AS INTEGER) incapacitated,
+        CAST (SUBSTRING ( acc_time, 1, 2 ) AS INTEGER) crash_hr
         
         FROM 
         sunglare.ard_accidents_sunglare

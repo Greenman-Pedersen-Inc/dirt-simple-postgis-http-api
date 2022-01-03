@@ -22,22 +22,19 @@ const schema = {
         sort: {
             type: 'string',
             description: 'The sorting method used in the report PDF.',
-            default: 'sri-sort'
+            default: 'crash-sort'
         },
         startYear: {
             type: 'string',
             description: 'The start year for crashes.',
-            default: '2015'
         },
         endYear: {
             type: 'string',
             description: 'The end year for crashes.',
-            default: '2020'
         },
         crashAttributes: {
             type: 'string',
             description: 'Comma seperated list of Crash Attribute codes based on the NJTR-1 form.',
-            default: "surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code"
         },
         travelDirectionCodes: {
             type: 'string',
@@ -54,7 +51,6 @@ const schema = {
         sri: {
             type: 'string',
             description: 'SRI code.',
-            default: '00000010__'
         },
         countyCode: {
             type: 'string',

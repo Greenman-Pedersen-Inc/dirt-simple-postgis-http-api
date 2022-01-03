@@ -10,13 +10,13 @@ const sql = (queryArgs) => {
 
     var sql = `
     SELECT 
-    SUBSTRING ( acc_time, 1, 2 ) crash_hr,
-    COUNT(ard_accidents_sunglare.crashid), 
-    SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal,
-    SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated,
-    SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) mod_inj,
-    SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) comp_pain,
-    SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) prop_dmg
+    CAST (SUBSTRING ( acc_time, 1, 2 ) AS INTEGER) crash_hr,
+    CAST (COUNT(ard_accidents_sunglare.crashid) AS INTEGER), 
+    CAST (SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) AS INTEGER) fatal,
+    CAST (SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) AS INTEGER) incapacitated,
+    CAST (SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) AS INTEGER) mod_inj,
+    CAST (SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) AS INTEGER) comp_pain,
+    CAST (SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) AS INTEGER) prop_dmg
 
     FROM
 

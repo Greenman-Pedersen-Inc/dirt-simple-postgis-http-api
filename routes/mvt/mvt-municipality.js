@@ -7,7 +7,7 @@ const sql = (params, query) => {
             ST_Transform(crash_data.${query.geom_column}, 3857),
             ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
           ) as geom
-          , muni_data.mun, muni_data.mun_mu, muni_data.county, muni_data.mun_cty_co, SUM(crashes)::INTEGER crashes
+          , muni_data.mun, muni_data.mun_mu, muni_data.county, muni_data.mun_cty_co, COUNT(crashid)::INTEGER crashes
         FROM
           ${params.table} crash_data LEFT JOIN public.municipal_boundaries_of_nj muni_data
           ON crash_data.mun_cty_co = muni_data.mun_cty_co AND crash_data.mun_mu = muni_data.mun_mu,
@@ -23,6 +23,7 @@ const sql = (params, query) => {
   
           -- Optional Filter
           ${query.filter ? ` AND ${query.filter}` : ''}
+          GROUP BY muni_data.mun, muni_data.mun_mu, muni_data.county, muni_data.mun_cty_co, muni_data.wkb_geometry
       )
       SELECT ST_AsMVT(mvtgeom.*, '${params.table}', 4096, 'geom' ${
       query.id_column ? `, '${query.id_column}'` : ''
@@ -61,8 +62,8 @@ const sql = (params, query) => {
     querystring: {
       geom_column: {
         type: 'string',
-        description: 'Optional geometry column of the table. The default is geom.',
-        default: 'geom'
+        description: 'Optional geometry column of the table..',
+        default: 'wkb_geometry'
       },
       columns: {
         type: 'string',
@@ -85,7 +86,7 @@ const sql = (params, query) => {
   module.exports = function(fastify, opts, next) {
     fastify.route({
       method: 'GET',
-      url: '/municipaility/:table/:z/:x/:y',
+      url: '/mvt/municipaility/:table/:z/:x/:y',
       schema: schema,
       handler: function(request, reply) {
         fastify.pg.connect(onConnect)

@@ -4,7 +4,7 @@ const reportHelper = require('../../helper_functions/report_maker/report_layout'
   // route schema
   const schema = {
     description: 'Report maker test.',
-    tags: ['report'],
+    tags: ['test'],
     summary: 'report maker test'
   }
   
@@ -12,7 +12,7 @@ const reportHelper = require('../../helper_functions/report_maker/report_layout'
   module.exports = function (fastify, opts, next) {
     fastify.route({
       method: 'GET',
-      url: '/report/report-test',
+      url: '/test/report-test',
       schema: schema,
       handler: function (request, reply) {
         fastify.pg.connect(onConnect)

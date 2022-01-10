@@ -155,6 +155,7 @@ module.exports = function (fastify, opts, next) {
                             console.log("report error");
                             console.log(error);
                         })
+                        release()
                     });
                 }
             }

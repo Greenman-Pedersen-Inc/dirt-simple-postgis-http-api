@@ -1,3 +1,4 @@
+
 // *---------------*
 // functions that find or translate ARD column codes into readable fields and return values for the front-end
 // *---------------*
@@ -13,7 +14,7 @@ const tableFiltersArray = [accidentsFilters, occupantsFilters, vehiclesFilters, 
 
 function resolveFieldAlias(targetFieldName) {
     for (let index = 0; index < tableFiltersArray.length; index++) {
-        const filters = tableFiltersArray[index];
+        const filters = tableFiltersArray[index].filters;
         let aliasList = filters.filter(filter => {
             if (filter.fieldName === targetFieldName || filter.moduleName === targetFieldName) {
                 return true;
@@ -21,15 +22,16 @@ function resolveFieldAlias(targetFieldName) {
         })
 
         if (aliasList.length === 1) { // exact match found, with no duplicates
+            aliasList[0]['table'] = tableFiltersArray[index].table;
             return aliasList[0];
         } else {
-            console.log(targetFieldName, ' could not be found in ', index);
+            //console.log(targetFieldName, ' could not be found in ', index);
         }
     }
 };
 
 // transcribes fieldName keys into human-readble title as keys
-// dataObject is in format: {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}
+// dataObject is in format: [ {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}, {...}, {...} ]
 function transcribeKeysArray(dataRowsArray) {
     var transcribedRows = [];
     dataRowsArray.forEach(row => {
@@ -39,6 +41,8 @@ function transcribeKeysArray(dataRowsArray) {
     return transcribedRows;
 }
 
+// transcribes fieldName keys into human-readble title as keys
+// dataObject is in format: {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}
 function transcribeKeys(dataRowObject, translateValues = true) {
     var returnRow = {}
     for (const [key, value] of Object.entries(dataRowObject)) {
@@ -81,6 +85,18 @@ function transcribeKeys(dataRowObject, translateValues = true) {
     }
 
     return returnRow;
+}
+
+function makeFromClause(tableNameArray) {
+    var fromClause = "";
+    tableNameArray.forEach(tableName => {
+        fromClause += `INNER JOIN ${tableName} on ard_accidents.crashid = ${tableName}.crashid `;
+    });
+    return fromClause;
+}
+
+function makeWhereClause(whereClauses) {
+    return whereClauses.join(" AND ");
 }
 
 // converts table fields into proper titles and codes into actual descriptions
@@ -178,5 +194,6 @@ function convertFeature(feature) {
 module.exports = {
     resolveFieldAlias: resolveFieldAlias,
     transcribeKeys: transcribeKeys,
-    transcribeKeysArray: transcribeKeysArray
+    transcribeKeysArray: transcribeKeysArray,
+    makeCrashFilterQuery: makeCrashFilterQuery
 }

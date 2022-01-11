@@ -1,3 +1,6 @@
+const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
+
+
 // get_cluster_detail: Gets all cases within a crash cluster
 
 // *---------------*
@@ -66,7 +69,9 @@ module.exports = function (fastify, opts, next) {
                     sql(queryArgs),
                     function onResult(err, result) {
                         release()
-                        reply.send(err || {Crashes: result.rows})
+                        const transcribedObject = transcribeKeysArray(result.rows);
+                        //console.log(transcribedObject)
+                        reply.send(err || {Crashes: transcribedObject})
                     }
                 )
             }

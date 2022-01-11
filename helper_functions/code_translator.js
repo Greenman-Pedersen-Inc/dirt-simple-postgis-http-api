@@ -1,3 +1,10 @@
+// *---------------*
+// DEPRECATED. SEE code_translations files instead.
+// *---------------*
+
+
+
+
 // code_translator: list of codes used in the NJTR-1 form and their respective labels.
 // Contains functions to convert a code and returns their human readable text.
 

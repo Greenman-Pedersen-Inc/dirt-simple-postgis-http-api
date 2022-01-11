@@ -1,15 +1,26 @@
-const {resolveFieldAlias} = require('../../helper_functions/code_translations/translator_helper');
+const {makeCrashFilterQuery} = require('../../helper_functions/code_translations/query_maker');
 
 // *---------------*
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-    const filterJson = JSON.parse(queryArgs.crashFilter);
-    console.log(filterJson);
-    for (var key of Object.keys(filterJson)) {
-        const codeTranslation = resolveFieldAlias(key);
-        if (codeTranslation) console.log(codeTranslation.query(filterJson[key]));
-    }
+    //const filterJson = JSON.parse(queryArgs.crashFilter);
+    //console.log(filterJson);
+    // for (var key of Object.keys(filterJson)) {
+    //     const codeTranslation = resolveFieldAlias(key);
+    //     if (codeTranslation) console.log(codeTranslation.query(filterJson[key]));
+    // }
+    const crashFilterClauses = makeCrashFilterQuery(queryArgs.crashFilter);
+    console.log(crashFilterClauses)
+
+
+    const returnQuery = `
+        SELECT ${selectQuery} 
+        FROM ${crashFilterClauses.fromClause} ${additionalFromClause} 
+        WHERE ${crashFilterClauses.whereClause} ${additionalWhereClause} 
+        ${groupByClause ? ` GROUP BY ${groupByClause}`: ''}
+        ${orderByClause ? ` ORDER BY ${orderByClause}`: ''}
+    `;
   }
 
 // *---------------*

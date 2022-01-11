@@ -1,57 +1,112 @@
+const {resolveFieldAlias} = require('./translator_helper');
+
 // *---------------*
 // SQL QUERY CLAUSE MAKERS
 // *---------------*
 
+function makeCrashFilterQuery(crashFilter) {
+    const filterJson = JSON.parse(crashFilter);
+    var usedTables = [];
+    var whereClauses = [];
+
+    for (var key of Object.keys(filterJson)) {
+        const codeTranslation = resolveFieldAlias(key);
+        if (codeTranslation) {
+
+            if (usedTables.indexOf(codeTranslation.table) === -1) { usedTables.push(codeTranslation.table) } // add the table in list of tables to construct the FROM clause with
+            whereClauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
+        }
+    }
+
+    return {
+        fromClause: makeFromClause(usedTables),
+        whereClause: makeWhereClause(whereClauses)
+    }
+}
+
 // returns SQL formatted WHERE clause for the table attribute with the format: tableAttribute = 'aValue'. 
 // The input value is a singleton string, for example: 04
-function createQueryClauseSingleton(codeObject, input, qualifier = '=') {
+function createQueryClauseSingleton(codeObject, tableName, input, qualifier = '=') {
     // assumes value is a number
     if (qualifier.includes(">") || qualifier.includes("<")) {
-        return `${codeObject.fieldName} ${qualifier} ${input}`;
+        return `${tableName}.${codeObject.fieldName} ${qualifier} ${input}`;
     }
-    else return `${codeObject.fieldName} = '${input}'`; // The input value is converted as an SQL string.
+    else return `${tableName}.${codeObject.fieldName} = '${input}'`; // The input value is converted as an SQL string.
 }
 
 // returns SQL formatted WHERE clause for the table attribute with the format: tableAttribute IN ('value1', 'value2', ...). 
 // The input format will be parsed based on comma seperated values, for example: 01,02,03,04
 // The input value is converted as an SQL string.
-function createQueryClauseMultiple(codeObject, input) {
+function createQueryClauseMultiple(codeObject, tableName, input) {
     const splitInputList = input.split(',');
     const formattedList = "'" + splitInputList.join("','") + "'"
 
     // if the codeObject has secondary columns, construct 'OR' clauses for each column in the array
     if (codeObject.secondaryColumns) {
         var returnQueryArray = [];
-        returnQueryArray.push(`${codeObject.fieldName} IN (${formattedList})`);
+        returnQueryArray.push(`${tableName}.${codeObject.fieldName} IN (${formattedList})`);
         codeObject.secondaryColumns.forEach(column => {
             returnQueryArray.push(`${column} IN (${formattedList})`);
         });
         return `(${returnQueryArray.join(" OR ")})`;
     }
-    else return `${codeObject.fieldName} IN (${formattedList})`;
+    else return `${tableName}.${codeObject.fieldName} IN (${formattedList})`;
 }
 
 // input format: 2020-1-1;2021-1-31
-function createQueryDateRange(input) {
+function createQueryDateRange(tableName, input) {
     const splitInputList = input.split(';');
     if (splitInputList.length > 1) {
-        return `(acc_date >= '${splitInputList[0]}' AND acc_date <= '${splitInputList[1]}')`;
+        return `(${tableName}.acc_date >= '${splitInputList[0]}' AND ${tableName}.acc_date <= '${splitInputList[1]}')`;
     }
-    else return `acc_date >= '${splitInputList[0]}'`;
+    else return `${tableName}.acc_date >= '${splitInputList[0]}'`;
 }
 
-function createQueryMilepost(mp, from, milepostColumn = "calc_sri") {
-    if (from === "start") return `${milepostColumn} >= ${mp}`;
-    else if (from === "end") return `${milepostColumn} < ${mp}`;
+function createQueryMilepost(mp, from, tableName, milepostColumn = "calc_sri") {
+    if (from === "start") return `${tableName}.${milepostColumn} >= ${mp}`;
+    else if (from === "end") return `${tableName}.${milepostColumn} < ${mp}`;
 }
 
 // input format 24 hr clock: 0745;1320
-function createTimeDateRange(input) {
+function createTimeDateRange(tableName, input) {
     const splitInputList = input.split(';');
     if (splitInputList.length > 1) {
-        return `(TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '${splitInputList[0].substring(0,2)}:${splitInputList[0].substring(2)}'::TIME AND '${splitInputList[1].substring(0,2)}:${splitInputList[1].substring(2)}'::TIME)`;
+        return `(TO_TIMESTAMP(${tableName}.acc_time, 'HH24MI')::TIME BETWEEN '${splitInputList[0].substring(0,2)}:${splitInputList[0].substring(2)}'::TIME AND '${splitInputList[1].substring(0,2)}:${splitInputList[1].substring(2)}'::TIME)`;
     }
-    else return `(TO_TIMESTAMP(acc_time, 'HH24MI')::TIME >= '${splitInputList[0].substring(0,2)}:${splitInputList[0].substring(2)}'::TIME)`;
+    else return `(TO_TIMESTAMP(${tableName}.acc_time, 'HH24MI')::TIME >= '${splitInputList[0].substring(0,2)}:${splitInputList[0].substring(2)}'::TIME)`;
+}
+
+function createQueryVehicleTotal(codeObject, tableName, input) {
+    // to preserve the menu filter relationship between menus, the
+    // magnitude and direction filters are seperate terms which allows
+    // them to coexist and operate as expected. "multi" was added to the
+    // filter values for the multivehicle filter but will always be stripped
+    // out before being submitted to the final query.
+    var magniBound = []; // list of all crash magnitude vehicle filters
+    var magniBoundPart = "1=1"; // magnitude query string
+    var multiBoundPart = "1=1"; // multivehicle query string
+    const codeArray = input.split(',');
+    codeArray.forEach(code => {
+        if (code.includes("multi")) {
+            // strip out "multi" from the string as there is no corresponding
+            // value in the database that would satisfy the condition.
+            multiBoundPart = `${tableName}.${codeObject.fieldName}${code.replace("multi", "")}`;
+        }
+        else {
+            // add the magnitude bound as these will be queried using an "or"
+            // statement so all values are valid.
+            magniBound.push(`${tableName}.${codeObject.fieldName}${code}`);
+        }
+        // if there are any magnitude bounds, put them all together
+        if (magniBound.length > 0) {
+            magniBoundPart = magniBound.join(" or ");
+        }
+
+        // join the two terms together before adding them to the final query
+        const query = "(" + multiBoundPart + " and (" + magniBoundPart + "))";
+
+        return query;
+    });
 }
 
 module.exports = {
@@ -59,5 +114,7 @@ module.exports = {
     createQueryClauseMultiple: createQueryClauseMultiple,
     createQueryDateRange: createQueryDateRange,
     createTimeDateRange: createTimeDateRange,
-    createQueryMilepost: createQueryMilepost
+    createQueryMilepost: createQueryMilepost,
+    createQueryVehicleTotal: createQueryVehicleTotal,
+    makeCrashFilterQuery: makeCrashFilterQuery
 }

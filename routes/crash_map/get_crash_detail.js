@@ -1,3 +1,5 @@
+const { transcribeKeys, transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
+
 // get_crash_detail: Gets Accident, Vehicle, Occupant, Ped data in the Detailed Crash Information dialog
 
 // *---------------*
@@ -127,11 +129,13 @@ module.exports = function (fastify, opts, next) {
                     for (let i = 0; i < returnData.length; i++) {
                         var table = Object.keys(queries)[i];
                         var data = returnData[i].rows;
-                        if (table === "accidents") crashData = data[0];
-                        else {
-                            crashData[table] = data;
+                        if (table === "accidents") {
+                            crashData = transcribeKeys(data[0]);
+                            // crashData = data[0];
                         }
-                        console.log(crashData)
+                        else {
+                            crashData[table] = transcribeKeysArray(data);
+                        }
                     }
 
                     reply.send({ crash: crashData });

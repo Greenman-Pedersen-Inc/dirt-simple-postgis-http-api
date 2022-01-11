@@ -1,37 +1,39 @@
 // route query
+// require the funciton 
 const sql = (params, query) => {
-    let queryText = `
-      WITH mvtgeom as (
-        SELECT
-          ST_AsMVTGeom (
-            ST_Transform(county_data.${query.geom_column}, 3857),
+  // funciton(params, queyr)!!!!!!
+  let queryText = `
+  with complete_data as(
+    select 
+        intersected_crash_data.*, 
+        ST_AsMVTGeom(
+            boundary_join.wkb_geometry,
             ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
-          ) as geom
-          , county_data.county, crash_data.mun_cty_co, COUNT(crashid)::INTEGER crashes
-        FROM
-          public.ard_accidents_geom crash_data LEFT JOIN public.county_boundaries_of_nj county_data
-          ON crash_data.mun_cty_co = county_data.mun_cty_co,
-          (SELECT ST_SRID(${query.geom_column}) AS srid FROM public.county_boundaries_of_nj LIMIT 1) a
-        WHERE
-          ST_Intersects(
-            county_data.${query.geom_column},
-            ST_Transform(
-              ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}),
-              srid
+        ) as geom
+        from (
+            select
+                crash_data.mun_cty_co, 
+                COUNT(crashid)::INTEGER crashes
+            from county_boundaries_of_nj_3857 boundary_data
+            left join ard_accidents_geom_partition crash_data
+            on crash_data.mun_cty_co = boundary_data.mun_cty_co
+            where st_intersects(
+                wkb_geometry,
+                ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
             )
-          )
-  
-          -- Optional Filter
-          ${query.filter ? ` AND ${query.filter}` : ''}
-          GROUP BY county_data.county, crash_data.mun_cty_co, county_data.wkb_geometry
-      )
-      SELECT ST_AsMVT(mvtgeom.*, '${params.table}', 4096, 'geom' ${query.id_column ? `, '${query.id_column}'` : ''}) AS mvt from mvtgeom;
-    `
-  
-    console.log(queryText);
-    
-    return queryText;
-  }
+            ${query.filter ? ` AND ${query.filter}` : ''}
+            group by crash_data.mun_cty_co
+        ) as intersected_crash_data
+        left join county_boundaries_of_nj_3857 boundary_join
+        on intersected_crash_data.mun_cty_co = boundary_join.mun_cty_co
+    )
+    SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
+`
+
+// console.log(queryText);
+
+return queryText;
+}
   
   // route schema
   const schema = {

@@ -1,28 +1,8 @@
-const {resolveFieldAlias} = require('./translator_helper');
+
 
 // *---------------*
 // SQL QUERY CLAUSE MAKERS
 // *---------------*
-
-function makeCrashFilterQuery(crashFilter) {
-    const filterJson = JSON.parse(crashFilter);
-    var usedTables = [];
-    var whereClauses = [];
-
-    for (var key of Object.keys(filterJson)) {
-        const codeTranslation = resolveFieldAlias(key);
-        if (codeTranslation) {
-
-            if (usedTables.indexOf(codeTranslation.table) === -1) { usedTables.push(codeTranslation.table) } // add the table in list of tables to construct the FROM clause with
-            whereClauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
-        }
-    }
-
-    return {
-        fromClause: makeFromClause(usedTables),
-        whereClause: makeWhereClause(whereClauses)
-    }
-}
 
 // returns SQL formatted WHERE clause for the table attribute with the format: tableAttribute = 'aValue'. 
 // The input value is a singleton string, for example: 04
@@ -109,6 +89,18 @@ function createQueryVehicleTotal(codeObject, tableName, input) {
     });
 }
 
+function makeFromClause(tableNameArray) {
+    var fromClause = "";
+    tableNameArray.forEach(tableName => {
+        fromClause += `INNER JOIN ${tableName} on ard_accidents.crashid = ${tableName}.crashid `;
+    });
+    return fromClause;
+}
+
+function makeWhereClause(whereClauses) {
+    return whereClauses.join(" AND ");
+}
+
 module.exports = {
     createQueryClauseSingleton: createQueryClauseSingleton,
     createQueryClauseMultiple: createQueryClauseMultiple,
@@ -116,5 +108,6 @@ module.exports = {
     createTimeDateRange: createTimeDateRange,
     createQueryMilepost: createQueryMilepost,
     createQueryVehicleTotal: createQueryVehicleTotal,
-    makeCrashFilterQuery: makeCrashFilterQuery
+    makeFromClause: makeFromClause,
+    makeWhereClause: makeWhereClause
 }

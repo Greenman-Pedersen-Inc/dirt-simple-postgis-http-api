@@ -1,4 +1,3 @@
-
 // *---------------*
 // functions that find or translate ARD column codes into readable fields and return values for the front-end
 // *---------------*
@@ -11,6 +10,27 @@ const tableFiltersArray = [accidentsFilters, occupantsFilters, vehiclesFilters, 
 // *---------------*
 // CODE LOOKUP FUNCTIONS
 // *---------------*
+
+// function makeCrashFilterQuery(crashFilter) {
+//     const filterJson = JSON.parse(crashFilter);
+//     console.log(filterJson);
+//     var usedTables = [];
+//     var whereClauses = [];
+
+//     for (var key of Object.keys(filterJson)) {
+//         const codeTranslation = resolveFieldAlias(key);
+//         if (codeTranslation) {
+
+//             if (usedTables.indexOf(codeTranslation.table) === -1) { usedTables.push(codeTranslation.table) } // add the table in list of tables to construct the FROM clause with
+//             whereClauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
+//         }
+//     }
+
+//     return {
+//         fromClause: makeFromClause(usedTables),
+//         whereClause: makeWhereClause(whereClauses)
+//     }
+// }
 
 function resolveFieldAlias(targetFieldName) {
     for (let index = 0; index < tableFiltersArray.length; index++) {
@@ -25,7 +45,7 @@ function resolveFieldAlias(targetFieldName) {
             aliasList[0]['table'] = tableFiltersArray[index].table;
             return aliasList[0];
         } else {
-            //console.log(targetFieldName, ' could not be found in ', index);
+            console.log(targetFieldName, ' could not be found in ', index);
         }
     }
 };
@@ -85,18 +105,6 @@ function transcribeKeys(dataRowObject, translateValues = true) {
     }
 
     return returnRow;
-}
-
-function makeFromClause(tableNameArray) {
-    var fromClause = "";
-    tableNameArray.forEach(tableName => {
-        fromClause += `INNER JOIN ${tableName} on ard_accidents.crashid = ${tableName}.crashid `;
-    });
-    return fromClause;
-}
-
-function makeWhereClause(whereClauses) {
-    return whereClauses.join(" AND ");
 }
 
 // converts table fields into proper titles and codes into actual descriptions
@@ -195,5 +203,4 @@ module.exports = {
     resolveFieldAlias: resolveFieldAlias,
     transcribeKeys: transcribeKeys,
     transcribeKeysArray: transcribeKeysArray,
-    makeCrashFilterQuery: makeCrashFilterQuery
 }

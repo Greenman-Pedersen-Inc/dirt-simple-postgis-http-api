@@ -28,6 +28,6 @@
     "pg": "^8.6.0"
   },
   "devDependencies": {
-    "jsdoc-to-markdown": "^7.0.1"
+    "jsdoc-to-markdown": "^4.0.1"
   }
 }

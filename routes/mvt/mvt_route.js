@@ -33,6 +33,8 @@ const sql = (params, query) => {
         ), clipped_results as (
             select 
                 filtered_crash_data.*,
+                segment_polygons.sri,
+                segment_polygons.mp,
                 ST_AsMVTGeom(
                     geom,
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})

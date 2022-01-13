@@ -1,7 +1,4 @@
-// TO-DO: incorporate google searching
 const https = require('https');
-const { url } = require('inspector');
-const { resolve } = require('path');
 
 // *---------------*
 // route query
@@ -79,17 +76,6 @@ const sql = (params) => {
   console.log(sql)
   return sql;
 }
-
-const httpGet = options => {
-  return new Promise((resolve, reject) => {
-    http.get(options, res => {
-      res.setEncoding('utf8');
-      let body = ''; 
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => resolve(body));
-    }).on('error', reject);
-  });
-};
 
 // returns google geocoded results for an address or place input.
 // resultKeyword is either "predictions" for PLACE or "results" for addresses

@@ -14,7 +14,7 @@ const { createQueryClauseSingleton, createQueryClauseMultiple, createQueryDateRa
 //  query: function which formats the SQL query clause of the column
 
 // *---------------*
-const tableName = "ard_accidents";
+const tableName = "ard_accidents_geom_partition";
 
 const filterDictonary = 
 [

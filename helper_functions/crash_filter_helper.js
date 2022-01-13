@@ -5,7 +5,12 @@ const { makeFromClause, makeWhereClause } = require('./code_translations/query_m
 
 
 function makeCrashFilterQuery(crashFilter) {
-    const filterJson = JSON.parse(crashFilter);
+    let filterJson;
+    if (typeof crashFilter === 'string') {
+        filterJson = JSON.parse(crashFilter);
+    } else {
+        filterJson = crashFilter;
+    }
     console.log(filterJson);
     var usedTables = [];
     var whereClauses = [];

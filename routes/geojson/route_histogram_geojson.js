@@ -1,12 +1,12 @@
 // route query
+
+const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+
 const sql = (params, query) => {
 
-    // let query_parameters = JSON.parse(query.filter.replace( "'", '%27' ));
-    // let selected_sri = query_parameters.sri;
-
-    // delete query_parameters.sri;
-
-    // console.log(new URLSearchParams(query_parameters).toString())
+    let filter = makeCrashFilterQuery(query.filter);
+    let parsed_filter = JSON.parse(query.filter)
+    console.log(filter);
 
 
     let formattedQuery = `
@@ -16,13 +16,13 @@ const sql = (params, query) => {
                 milepost,
                 count(*) crash_count 
             from ard_accidents_geom_partition
-            ${query_parameters ? ` where ${query.filter.replace('&', ' and ')}` : ''}
+            ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
             group by sri, milepost
         ), route_data as (
             select 
                 array[array[min(ST_XMin(st_transform(geom, 4326))), min(ST_YMin(st_transform(geom, 4326)))], array[max(ST_XMax(st_transform(geom, 4326))), max(ST_YMax(st_transform(geom, 4326)))]]
             from segment_polygons
-            where sri = '${query_parameters.sri}'
+            where sri = '${parsed_filter.sri}'
         )
 
         select json_build_object(

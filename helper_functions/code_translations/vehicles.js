@@ -13,10 +13,12 @@ const { createQueryClauseSingleton, createQueryClauseMultiple } = require('./que
 //  query: function which formats the SQL query clause of the column
 
 // *---------------*
+const tableName = "ard_vehicles";
 
-const filters = [
-    { title: 'Crash Identifier', fieldName: 'crashid', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Year', fieldName: 'acc_year', query: function (input) { return createQueryClauseMultiple(this, input); } },
+const filterDictonary = 
+[
+    { title: 'Crash Identifier', fieldName: 'crashid', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Year', fieldName: 'acc_year', query: function (input) { return createQueryClauseMultiple(this, tableName, input); } },
     {
         title: 'County',
         fieldName: 'acc_mun_cty_co',
@@ -43,7 +45,7 @@ const filters = [
             { code: '20', description: 'Union' },
             { code: '21', description: 'Warren' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Municipality',
@@ -618,9 +620,9 @@ const filters = [
             { code: '2122', description: 'Washington Township' },
             { code: '2123', description: 'White Township' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
-    { title: 'Case #', fieldName: 'acc_acc_case', query: function (input) { return createQueryClauseSingleton(this, input); } },
+    { title: 'Case #', fieldName: 'acc_acc_case', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     {
         title: 'Gender',
         fieldName: 'driver_sex',
@@ -637,7 +639,7 @@ const filters = [
             { code: 'T', description: 'TRANSGENDER' },
             { code: 'U', description: 'UNKNOWN' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Driver Alcohol Test',
@@ -647,7 +649,7 @@ const filters = [
             { code: 'N', description: 'No' },
             { code: 'R', description: 'Refused' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Sobriety Test Type',
@@ -658,18 +660,18 @@ const filters = [
             { code: 'UR', description: 'Urine' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
-    { title: 'Driver Alcohol Result', fieldName: 'driver_alc_result', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Driver Alcohol Result Pending', fieldName: 'driver_alc_pending', query: function (input) { return createQueryClauseSingleton(this, input); } },
+    { title: 'Driver Alcohol Result', fieldName: 'driver_alc_result', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Driver Alcohol Result Pending', fieldName: 'driver_alc_pending', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
 
 
 
-    { title: 'Make', fieldName: 'make', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Model', fieldName: 'model', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Color', fieldName: 'color', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'State', fieldName: 'state', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Registration Expiry', fieldName: 'reg_expiry', query: function (input) { return createQueryClauseSingleton(this, input); } },
+    { title: 'Make', fieldName: 'make', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Model', fieldName: 'model', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Color', fieldName: 'color', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'State', fieldName: 'state', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Registration Expiry', fieldName: 'reg_expiry', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     {
         title: 'Vehicle Weight Rating',
         fieldName: 'veh_weight_rating',
@@ -678,9 +680,9 @@ const filters = [
             { code: '2', description: '10000lbs - 26000lbs' },
             { code: '3', description: '26001lbs' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
-    { title: 'Vehicle Removed To', fieldName: 'removed_to', query: function (input) { return createQueryClauseSingleton(this, input); } },
+    { title: 'Vehicle Removed To', fieldName: 'removed_to', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     {
         title: 'Vehicle Weight Rating',
         fieldName: 'veh_weight_rating',
@@ -689,7 +691,7 @@ const filters = [
             { code: '2', description: '10000lbs - 26000lbs' },
             { code: '3', description: '26001lbs' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Initial Impact',
@@ -715,7 +717,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Principal Damage',
@@ -741,7 +743,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Extent of Damage',
@@ -752,7 +754,7 @@ const filters = [
             { code: '03', description: 'Moderate/Functional' },
             { code: '04', description: 'Disabling' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Traffic Control',
@@ -776,7 +778,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Traffic Control',
@@ -800,7 +802,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Vehicle Use',
@@ -815,7 +817,7 @@ const filters = [
             { code: '00', description: 'Unknown' },
             { code: '99', description: 'Other' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Special Function',
@@ -838,7 +840,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '00', description: 'Unknown' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Cargo Body Type',
@@ -861,7 +863,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Contributing Circumstances 1',
@@ -915,7 +917,7 @@ const filters = [
             { code: '85', description: 'None' },
             { code: '89', description: 'Other Pedestrian Factors' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Contributing Circumstances 2',
@@ -967,7 +969,7 @@ const filters = [
             { code: '85', description: 'None' },
             { code: '89', description: 'Other Pedestrian Factors' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Travel Direction',
@@ -978,7 +980,7 @@ const filters = [
             { code: '03', description: 'East' },
             { code: '04', description: 'West' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Physical Status 1',
@@ -998,7 +1000,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Physical Status 2',
@@ -1017,7 +1019,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Pre-Crash Action',
@@ -1063,7 +1065,7 @@ const filters = [
             { code: '99', description: 'Other' },
             { code: '-20', description: 'NOT RECORDED' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'First Event',
@@ -1121,7 +1123,7 @@ const filters = [
             { code: '62', description: 'Fire Hydrant' },
             { code: '69', description: 'Other Fixed Object' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Second Event',
@@ -1178,7 +1180,7 @@ const filters = [
             { code: '62', description: 'Fire Hydrant' },
             { code: '69', description: 'Other Fixed Object' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Third Event',
@@ -1235,7 +1237,7 @@ const filters = [
             { code: '62', description: 'Fire Hydrant' },
             { code: '69', description: 'Other Fixed Object' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Fourth Event',
@@ -1292,7 +1294,7 @@ const filters = [
             { code: '62', description: 'Fire Hydrant' },
             { code: '69', description: 'Other Fixed Object' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     {
         title: 'Most Harmful Event',
@@ -1349,11 +1351,11 @@ const filters = [
             { code: '62', description: 'Fire Hydrant' },
             { code: '69', description: 'Other Fixed Object' },
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
-    { title: 'Hazmat Status', fieldName: 'hazmat_status', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Hazmat Class', fieldName: 'hazmat_class', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Hazmat Placard', fieldName: 'hazmat_placard', query: function (input) { return createQueryClauseSingleton(this, input); } },
+    { title: 'Hazmat Status', fieldName: 'hazmat_status', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Hazmat Class', fieldName: 'hazmat_class', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Hazmat Placard', fieldName: 'hazmat_placard', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     {
         title: 'Cell Phone Use',
         fieldName: 'cell_use_code',
@@ -1361,13 +1363,18 @@ const filters = [
             { code: '01', description: 'Handheld' },
             { code: '02', description: 'Hands Free' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
-    { title: 'Responded to Emergency', fieldName: 'flg_resp_emergency', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Parked Vehicle', fieldName: 'flg_parked', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Parked', fieldName: 'flg_parked', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Hit and Run Crash', fieldName: 'flg_hit_run', query: function (input) { return createQueryClauseSingleton(this, input); } },
-    { title: 'Unlicensed', fieldName: 'unlicensed', query: function (input) { return createQueryClauseSingleton(this, input); } }
+    { title: 'Responded to Emergency', fieldName: 'flg_resp_emergency', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Parked Vehicle', fieldName: 'flg_parked', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Parked', fieldName: 'flg_parked', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Hit and Run Crash', fieldName: 'flg_hit_run', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Unlicensed', fieldName: 'unlicensed', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } }
 ];
 
-module.exports = filters;
+const codeDefinitions = {
+    table: tableName,
+    filters: filterDictonary
+};
+
+module.exports = codeDefinitions;

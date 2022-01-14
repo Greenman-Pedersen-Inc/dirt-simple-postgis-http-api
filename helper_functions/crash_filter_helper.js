@@ -19,9 +19,11 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
         const codeTranslation = resolveFieldAlias(key);
         if (codeTranslation) {
             // add the table in list of tables to construct the FROM clause with
-            if (usedTables.indexOf(codeTranslation.table) === -1 && codeTranslation.table !== accidentTableName) { 
-                usedTables.push(codeTranslation.table);
-            } 
+            if (codeTranslation.table !== accidentTableName) {
+                if (usedTables.indexOf(codeTranslation.table) === -1) {
+                    usedTables.push(codeTranslation.table);
+                } 
+            }
             whereClauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
         }
     }

@@ -51,7 +51,7 @@ const schema = {
         crashFilter: {
             type: 'string',
             description: 'stringified JSON of crash filter object',
-            default: `{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019"}`
+            default: `{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}`
         }, 
         target_milepost: {
             type: 'string',

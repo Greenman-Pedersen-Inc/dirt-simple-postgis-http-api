@@ -1,10 +1,11 @@
 /* 
-get_crash_list: Gets a list of all crash cases within a specified milepost and crash filter. 
-The crash filter should have the SRI if the milepost attribute is specified. 
+get_sri_breakdown: Gets a list of number of crashes grouped by crash attribute code
 */
 
+const { rows } = require('pg/lib/defaults');
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+const allowedFields = ["crash_type","surf_cond_code","road_median_code","year","acc_dow","environ_cond_code","road_char_code","surf_cond_code","dept_num","ramp_direction","light_cond_code"];
 
 // *---------------*
 // route query
@@ -15,7 +16,15 @@ const sql = (queryArgs) => {
     let filterJson = JSON.parse(queryArgs.crashFilter);
 
     if (queryArgs.target_sri) {
-        filterJson.sri = queryArgs.target_sri;
+        if (queryArgs.target_sri.toUpperCase() === "STATE") {
+            delete filterJson.sri;
+            delete filterJson.mp_start;
+            delete filterJson.mp_end;
+            delete filterJson.milepost;
+        }
+        else {
+            filterJson.sri = queryArgs.target_sri;
+        }
 
         if (queryArgs.target_milepost) {
             filterJson.mp_start = queryArgs.target_milepost;
@@ -24,17 +33,14 @@ const sql = (queryArgs) => {
     }
 
     const crashFilterClauses = makeCrashFilterQuery(filterJson, accidentsTableName);
-    const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
 
     var sql = `
-    SELECT *, directory as report_directory,
-    CASE 
-        WHEN directory IS NOT NULL OR directory <> '' THEN CONCAT('${njtr1Root}', directory, '/', dln, '.PDF') 
-        ELSE NULL
-    END AS "URL"
+    SELECT ${queryArgs.breakdown_field}, COALESCE(COUNT(*), 0)
     FROM ${accidentsTableName} ${crashFilterClauses.fromClause} 
-    ${crashFilterClauses.whereClause ? ` WHERE ${crashFilterClauses.whereClause}` : ''}
-    ORDER BY milepost
+    WHERE ${queryArgs.breakdown_field} IS NOT NULL
+    ${crashFilterClauses.whereClause ? ` AND ${crashFilterClauses.whereClause}` : ''}
+    GROUP BY ${queryArgs.breakdown_field}
+    ORDER BY ${queryArgs.breakdown_field}
     `;
     console.log(sql);
     return sql;
@@ -50,16 +56,20 @@ const schema = {
     querystring: {
         crashFilter: {
             type: 'string',
-            description: 'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}',
-        }, 
+            description: 'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'        }, 
         target_milepost: {
             type: 'string',
             description: 'specific milepost to be query. ex: 11.4'
         },
         target_sri: {
             type: 'string',
-            description: 'specific SR to be query. ex: 00000012__',
-        }
+            description: 'specific SRI to be query. ex: 00000012__ or STATE'
+        },
+        breakdown_field: {
+            type: 'string',
+            description: `"crash_type","surf_cond_code","road_median_code","year","acc_dow","environ_cond_code","road_char_code","surf_cond_code","dept_num","ramp_direction","light_cond_code"`,
+            default: "crash_type"
+        },
     }
 }
 
@@ -69,7 +79,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/crash-map/get-crash-list',
+        url: '/crash-map/get-sri-breakdown',
         schema: schema,
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)
@@ -82,7 +92,7 @@ module.exports = function (fastify, opts, next) {
                 });
 
                 var queryArgs = request.query;
-                if (queryArgs.crashFilter == undefined) {
+                if(queryArgs.crashFilter == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
@@ -90,7 +100,23 @@ module.exports = function (fastify, opts, next) {
                     });
                 }
 
-                if (queryArgs.target_milepost && queryArgs.target_sri == undefined) {
+                if(queryArgs.breakdown_field == undefined) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "breadkdown_field not submitted."
+                    });
+                }
+
+                if(!allowedFields.includes(queryArgs.breakdown_field)) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": `breadkdown_field not avaliable: ${queryArgs.breakdown_field}`
+                    });
+                }
+
+                if(queryArgs.target_milepost && queryArgs.target_sri == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
@@ -103,13 +129,13 @@ module.exports = function (fastify, opts, next) {
                     function onResult(err, result) {
                         release();
                         let returnRows = [];
-                        if (result) {
-                            if (result.hasOwnProperty('rows')) {
-                                returnRows = transcribeKeysArray(result.rows);
-                            }  
-                        }
+                        // if (result) {
+                        //     if (result.hasOwnProperty('rows')) {
+                        //         returnRows = transcribeKeysArray(result.rows);
+                        //     }  
+                        // }
 
-                        reply.send(err || {CrashList: returnRows})
+                        reply.send(err || {CrashList: result.rows})
                     }
                 )
             }

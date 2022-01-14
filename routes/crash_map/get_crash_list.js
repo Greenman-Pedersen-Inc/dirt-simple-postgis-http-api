@@ -22,7 +22,7 @@ const sql = (queryArgs) => {
     if (queryArgs.target_sri) {
         filterJson.sri = queryArgs.target_sri;
     }
-    
+
     const crashFilterClauses = makeCrashFilterQuery(filterJson, accidentsTableName);
     const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
 
@@ -113,14 +113,14 @@ module.exports = function (fastify, opts, next) {
                     sql(queryArgs),
                     function onResult(err, result) {
                         release();
-                        // let returnRows = [];
-                        // if (result) {
-                        //     if (result.hasOwnProperty('rows')) {
-                        //         returnRows = transcribeKeysArray(result.rows);
-                        //     }  
-                        // }
+                        let returnRows = [];
+                        if (result) {
+                            if (result.hasOwnProperty('rows')) {
+                                returnRows = transcribeKeysArray(result.rows);
+                            }  
+                        }
 
-                        reply.send(err || {CrashList: result.rows})
+                        reply.send(err || {CrashList: returnRows})
                     }
                 )
             }

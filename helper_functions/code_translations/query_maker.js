@@ -42,7 +42,7 @@ function createQueryDateRange(tableName, input) {
     else return `${tableName}.acc_date >= '${splitInputList[0]}'`;
 }
 
-function createQueryMilepost(mp, from, tableName, milepostColumn = "calc_sri") {
+function createQueryMilepost(mp, from, tableName, milepostColumn = "milepost") {
     if (from === "start") return `${tableName}.${milepostColumn} >= ${mp}`;
     else if (from === "end") return `${tableName}.${milepostColumn} < ${mp}`;
 }
@@ -89,10 +89,10 @@ function createQueryVehicleTotal(codeObject, tableName, input) {
     });
 }
 
-function makeFromClause(tableNameArray) {
+function makeFromClause(tableNameArray, accidentsTableName) {
     var fromClause = "";
     tableNameArray.forEach(tableName => {
-        fromClause += `INNER JOIN ${tableName} on ard_accidents.crashid = ${tableName}.crashid `;
+        fromClause += `INNER JOIN ${tableName} on ${accidentsTableName}.crashid = ${tableName}.crashid `;
     });
     return fromClause;
 }

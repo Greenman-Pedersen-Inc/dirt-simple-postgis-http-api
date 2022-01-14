@@ -2,12 +2,13 @@
 const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
+    const accidentsTableName = "ard_accidents_geom_partition"
     let parsed_filter = JSON.parse(query.filter)
     let selectedSRI = parsed_filter.sri;
 
     delete parsed_filter.sri;
 
-    let filter = makeCrashFilterQuery(parsed_filter);
+    let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
 
     let queryText = `
         with selected_segment_polygons as (

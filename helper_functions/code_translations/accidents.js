@@ -717,8 +717,8 @@ const filterDictonary =
     { title: 'Route Suffix', fieldName: 'route_sx', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     { title: 'SRI', fieldName: 'sri', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     { title: 'Milepost', fieldName: 'milepost', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Starting Milepost', fieldName: 'start_mp', query: function (startMp) { return createQueryMilepost(startMp, "start", tableName); } },
-    { title: 'Ending Milepost', fieldName: 'end_mp', query: function (endMp) { return createQueryMilepost(endMp, "end", tableName); } },
+    { title: 'Starting Milepost', fieldName: 'mp_start', query: function (startMp) { return createQueryMilepost(startMp, "start", tableName); } },
+    { title: 'Ending Milepost', fieldName: 'mp_end', query: function (endMp) { return createQueryMilepost(endMp, "end", tableName); } },
     {
         title: 'Road System',
         fieldName: 'road_sys_code',

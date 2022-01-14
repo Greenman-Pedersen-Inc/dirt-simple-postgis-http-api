@@ -11,27 +11,6 @@ const tableFiltersArray = [accidentsFilters, occupantsFilters, vehiclesFilters, 
 // CODE LOOKUP FUNCTIONS
 // *---------------*
 
-// function makeCrashFilterQuery(crashFilter) {
-//     const filterJson = JSON.parse(crashFilter);
-//     console.log(filterJson);
-//     var usedTables = [];
-//     var whereClauses = [];
-
-//     for (var key of Object.keys(filterJson)) {
-//         const codeTranslation = resolveFieldAlias(key);
-//         if (codeTranslation) {
-
-//             if (usedTables.indexOf(codeTranslation.table) === -1) { usedTables.push(codeTranslation.table) } // add the table in list of tables to construct the FROM clause with
-//             whereClauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
-//         }
-//     }
-
-//     return {
-//         fromClause: makeFromClause(usedTables),
-//         whereClause: makeWhereClause(whereClauses)
-//     }
-// }
-
 function resolveFieldAlias(targetFieldName) {
     for (let index = 0; index < tableFiltersArray.length; index++) {
         const filters = tableFiltersArray[index].filters;
@@ -71,7 +50,7 @@ function transcribeKeys(dataRowObject, translateValues = true) {
         var countyCode;
 
         for (let index = 0; index < tableFiltersArray.length; index++) {
-            const filters = tableFiltersArray[index];
+            const filters = tableFiltersArray[index].filters;
             let aliasList = filters.filter(filter => {
                 if (filter.fieldName === key || filter.moduleName === key) {
                     if (key.includes("mun_cty_co")) countyCode = value;

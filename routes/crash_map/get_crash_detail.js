@@ -1,6 +1,6 @@
-const { transcribeKeys, transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
-
 // get_crash_detail: Gets Accident, Vehicle, Occupant, Ped data in the Detailed Crash Information dialog
+
+const { transcribeKeys, transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 
 // *---------------*
 // route query

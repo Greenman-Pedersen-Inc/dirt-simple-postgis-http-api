@@ -1,7 +1,6 @@
-const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
-
-
 // get_cluster_detail: Gets all cases within a crash cluster
+
+const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 
 // *---------------*
 // route query

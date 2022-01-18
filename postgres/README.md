@@ -9,3 +9,13 @@ ogr2ogr -f "PostgreSQL" PG:"host=34.229.63.174 dbname=ard_data user=postgres pas
 
 ogr2ogr -f "PostgreSQL" PG:"host=34.229.63.174 dbname=ard_data user=postgres password=GPI2021!" "C:\Users\mcollins\OneDrive - Greenman-Pedersen, Inc\Downloads\County_Boundaries_of_NJ.geojson" -nln county_boundaries_of_nj -append
 ```
+
+Calculated centroids for the labels as follows:
+
+```
+ALTER TABLE municipal_boundaries_of_nj
+ADD COLUMN centroid double precision[];
+
+UPDATE public.municipal_boundaries_of_nj
+	SET centroid=array[ST_X(ST_Centroid(wkb_geometry)), ST_Y(ST_Centroid(wkb_geometry))]
+  ```

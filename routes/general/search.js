@@ -129,7 +129,7 @@ const schema = {
     searchText: {
       type: 'string',
       description: 'text to search on',
-      default: '40 easton ave'
+      default: ''
     },
     includeRoute: {
       type: 'boolean',
@@ -154,7 +154,7 @@ const schema = {
     includeGooglePlace: {
       type: 'boolean',
       description: 'search for a general place using google',
-      default: true
+      default: false
     },
     includeGoogleAddress: {
       type: 'boolean',

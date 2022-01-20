@@ -44,10 +44,10 @@ const sql = (params, query) => {
             on filtered_crash_data.internal_id = segment_polygons.internal_id
         )
 
-        SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom') AS mvt from clipped_results;
+        SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
 `
 
-console.log(queryText);
+// console.log(queryText);
 
 return queryText;
 }

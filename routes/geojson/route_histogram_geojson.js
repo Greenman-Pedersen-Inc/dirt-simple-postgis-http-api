@@ -13,32 +13,47 @@ const sql = (params, query) => {
         with selected_crashes as (
             select 
                 sri, 
-                milepost,
-                count(*) crash_count 
+                ROUND(FLOOR(milepost * 10) / 10, 1) AS rounded_mp,
+                CONCAT(CAST(ROUND(FLOOR(milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(milepost * 10) / 10, 1) + .09) AS mp_range,
+                count(*) crash_count
             from ard_accidents_geom_partition
             ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
-            group by sri, milepost
+            group by 1, 2
         ), route_data as (
-            select 
-                array[array[min(ST_XMin(st_transform(geom, 4326))), min(ST_YMin(st_transform(geom, 4326)))], array[max(ST_XMax(st_transform(geom, 4326))), max(ST_YMax(st_transform(geom, 4326)))]]
-            from segment_polygons
+            select *
+            from segment_polygon
             where sri = '${parsed_filter.sri}'
+        ), binned_data as (
+            select route_data.*, crash_count
+            from route_data
+            inner join selected_crashes
+            on selected_crashes.rounded_mp = route_data.mp
+            order by mp
         )
 
         select json_build_object(
             'features', 
-				json_agg(
-					json_build_object(
-						'sri', sri,
-						'milepost', milepost,
-						'crashes', crash_count
-					)
-				),
-            'bbox', (select * from route_data),
+                json_agg(
+                    json_build_object(
+                        'sri', sri,
+                        'milepost', mp,
+                        'crashes', crash_count
+                    )
+                ),
+            'bbox', array[
+                array[
+                    min(ST_XMin(st_transform(geom, 4326))),
+                    min(ST_YMin(st_transform(geom, 4326)))
+                ], 
+                array[
+                    max(ST_XMax(st_transform(geom, 4326))),
+                    max(ST_YMax(st_transform(geom, 4326)))
+                ]
+            ],
             'min_crashes', min(crash_count),
             'max_crashes', max(crash_count),
             'segments', count(*)
-        ) route_metrics from selected_crashes
+        ) route_metrics from binned_data
 `
     console.log(formattedQuery);
     return formattedQuery;

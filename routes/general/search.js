@@ -3,78 +3,85 @@ const https = require('https');
 // *---------------*
 // route query
 // *---------------*
-const sql = (params) => {
-  var sql = `SELECT county_name FROM public.ard_county WHERE county_code = '${params.countyCode}';`;
+const makeSeachQueries = (params) => {
+  var sqlQueries = [];
+  var sql;
 
   if (params.includeRoute) {
     if (params.locationCode) {
       const locationQuery = `${params.includeCounty.length == 2 ? `AND countycode = '${params.locationCode}'` : `AND municode = '${params.locationCode}'`}`;
       sql = `SELECT DISTINCT 
-        stndrd_rt_id AS "ResultID",
-        CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
-        'SRI' AS "ResultType"
+      'SRI' AS "ResultType",
+      CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
+        stndrd_rt_id AS "ResultID"
         FROM srilookuplocation  
         where UPPER(name)  
         Like '%${params.searchText.toUpperCase()}%'  
         ${locationQuery} 
         order by count  
-        desc limit 15`;
+        desc limit 10`;
     }
     else {
       sql = `SELECT 
-          stndrd_rt_id AS "ResultID",
-          CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
-          'SRI' AS "ResultType"
+      'SRI' AS "ResultType",
+      CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
+          stndrd_rt_id AS "ResultID"
           FROM srilookup  
           where UPPER(name)  
           Like '%${params.searchText.toUpperCase()}%'  
           order by count  
-          desc limit 15`;
+          desc limit 10`;
     }
+    console.log(sql)
+    sqlQueries.push(sql);
   }
-  else if (params.includeCounty) {
-    const countyQuery = params.includeCounty.toUpperCase().replace('COUNTY', '');
-    sql = `SELECT county_code,  
-      county_name,  
-      fips_code  
+  if (params.includeCounty) {
+    const countyQuery = params.searchText.toUpperCase().replace('COUNTY', '');
+    sql = `SELECT 'COUNTY' AS "ResultType",  
+      county_name AS "ResultText",  
+      fips_code AS "ResultID"
       FROM ard_county  
-      where county_name like '%${countyQuery}%'  
+      where UPPER(county_name) like '%${countyQuery}%'  
       and county_code not like '-%'  
       and county_code <> '00'  
       order by county_name  
       limit 5`;
+    console.log(sql)
+    sqlQueries.push(sql);
   }
-  else if (params.includeMunicipality) {
-    sql = `SELECT muni_name,  
-      county_name,  
-      muni_code,  
-      ard_municipality.county_code  
+  if (params.includeMunicipality) {
+    sql = `SELECT 'MUNICIPALITY' AS "ResultType",
+      CONCAT(muni_name, ', ', county_name) AS "ResultText",
+      CONCAT(ard_municipality.county_code, '-', muni_code) AS "ResultID" 
       FROM ard_county, ard_municipality  
       WHERE ard_municipality.county_code = ard_county.county_code  
-      and muni_name like '%${params.searchText}%'  
+      and UPPER(muni_name) like '%${params.searchText.toUpperCase()}%'  
       and muni_code not like '-%'  
       and muni_code <> '00'  
       order by muni_name  
       limit 5`;
+    console.log(sql)
+    sqlQueries.push(sql);
+
   }
-  else if (params.includeCaseNumber && params.searchText.length > 4) {
-    sql = `SELECT ard_accidents.mun_cty_co,  
-      ard_accidents.mun_mu,  
-      year,  
-      acc_case,  
-      ard_municipality.muni_name  
-      FROM public.ard_accidents  
-      inner join ard_municipality  
-      on ard_accidents.mun_cty_co = ard_municipality.county_code  
-      and ard_accidents.mun_mu = ard_municipality.muni_code  
-      inner join ard_county  
-      on ard_accidents.mun_cty_co = ard_county.county_code  
+  if (params.includeCaseNumber && params.searchText.length > 4) {
+    sql = `SELECT 
+    'CASE' AS "ResultType",
+      CONCAT(acc_case, ' ', muni_name) AS "ResultText",
+      crashid AS "ResultID"
+      FROM public.ard_accidents
+      inner join ard_municipality
+      on ard_accidents.mun_cty_co = ard_municipality.county_code
+      and ard_accidents.mun_mu = ard_municipality.muni_code
+      inner join ard_county
+      on ard_accidents.mun_cty_co = ard_county.county_code
       where acc_case = '${params.searchText}'  
       or acc_case LIKE '%${params.searchText}%'  
       limit 5`;
+    console.log(sql)
+    sqlQueries.push(sql);
   }
-  console.log(sql)
-  return sql;
+  return sqlQueries;
 }
 
 // returns google geocoded results for an address or place input.
@@ -89,9 +96,9 @@ function getGoogleResponse(urlPath, attributes) {
     path: urlPath,
     method: 'GET'
   }
-  
+
   return new Promise((resolve, reject) => {
-  https.get(options, res => {
+    https.get(options, res => {
       res.setEncoding('utf8');
       if (res.statusCode === 200) {
         let body = '';
@@ -111,10 +118,10 @@ function getGoogleResponse(urlPath, attributes) {
             resultsList.push(resultObject)
           });
           //console.log(resultsList)
-          resolve (resultsList);
+          resolve(resultsList);
         });
       }
-    });    
+    });
   })
 }
 
@@ -185,9 +192,26 @@ module.exports = function (fastify, opts, next) {
           "message": "unable to connect to database server"
         });
 
+        var sqlQueries = makeSeachQueries(request.query);
+        var resultsList = [];
+        var promises = [];
+
+        sqlQueries.forEach(query => {
+          const promise = new Promise((resolve, reject) => {
+            try {
+              const res = client.query(query);
+              return resolve(res);
+            }
+            catch (err) {
+              console.log(err.stack);
+              console.log(query);
+              return reject(error);
+            }
+          });
+          promises.push(promise);
+        });
+
         if (request.query.includeGooglePlace || request.query.includeGoogleAddress) {
-          var resultsList = [];
-          var promises = [];
           const searchTextFormatted = encodeURIComponent(`${request.query.searchText} near New Jersey`);
 
           if (request.query.includeGooglePlace) {
@@ -212,26 +236,29 @@ module.exports = function (fastify, opts, next) {
             const promise = getGoogleResponse(urlPath, attributes);
             promises.push(promise);
           }
+        }
 
-          Promise.all(promises).then((responseArray) => {
-            responseArray.forEach(reponse => {
-              reponse.forEach(result => {
-                resultsList.push(result);
+
+        Promise.all(promises).then((responseArray) => {
+          responseArray.forEach(response => {
+            //console.log(response)
+            if (response.rows) {
+              response.rows.forEach(row => {
+                resultsList.push(row);
               });
-            });
-            reply.send(err || { SearchResults: resultsList})
-          })
-        }
-
-        else {
-          client.query(
-            sql(request.query),
-            function onResult(err, result) {
-              release()
-              reply.send(err || { SearchResults: result.rows })
             }
-          );
-        }
+            else {
+              response.forEach(result => {
+                if (result.ResultText.includes('NJ, USA')) {
+                  resultsList.push(result);
+                }
+              });   
+            }
+          });
+          release();
+          reply.send(err || { SearchResults: resultsList })
+        })
+
       }
     }
   })

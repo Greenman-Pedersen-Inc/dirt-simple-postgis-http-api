@@ -79,7 +79,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/crash-map/get-crash-list',
+        url: '/crash-map/get-graph-data',
         schema: schema,
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)

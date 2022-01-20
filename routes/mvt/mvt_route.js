@@ -12,7 +12,7 @@ const sql = (params, query) => {
 
     let queryText = `
         with selected_segment_polygons as (
-            select internal_id, sri, mp from segment_polygons
+            select internal_id, sri, mp from segment_polygons_base
             where sri = '${selectedSRI}'
             and st_intersects(
                 geom,
@@ -39,8 +39,8 @@ const sql = (params, query) => {
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
                 ) as geom
             from filtered_crash_data
-            inner join segment_polygons
-            on filtered_crash_data.internal_id = segment_polygons.internal_id
+            inner join segment_polygons_base
+            on filtered_crash_data.internal_id = segment_polygons_base.internal_id
         )
 
         SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom') AS mvt from clipped_results;

@@ -3,7 +3,7 @@
 const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-
+    console.log("route histo",query.filter )
     let filter = makeCrashFilterQuery(query.filter);
     let parsed_filter = JSON.parse(query.filter)
     console.log(filter);
@@ -21,7 +21,7 @@ const sql = (params, query) => {
         ), route_data as (
             select 
                 array[array[min(ST_XMin(st_transform(geom, 4326))), min(ST_YMin(st_transform(geom, 4326)))], array[max(ST_XMax(st_transform(geom, 4326))), max(ST_YMax(st_transform(geom, 4326)))]]
-            from segment_polygons
+            from segment_polygons_base
             where sri = '${parsed_filter.sri}'
         )
 
@@ -98,4 +98,4 @@ module.exports = function(fastify, opts, next) {
     next()
 }
 
-module.exports.autoPrefix = '/'
+module.exports.autoPrefix = '/v1'

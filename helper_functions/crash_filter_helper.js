@@ -11,7 +11,7 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
     } else {
         filterJson = crashFilter;
     }
-    console.log(filterJson);
+    console.log("makeCrashFilterQuery: ", filterJson);
     var usedTables = [];
     var whereClauses = [];
 
@@ -24,7 +24,10 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
                     usedTables.push(codeTranslation.table);
                 } 
             }
-            whereClauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
+            const value = filterJson[key];
+            if (value !== undefined && value !== null && value !== '') {
+                whereClauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
+            }
         }
     }
 

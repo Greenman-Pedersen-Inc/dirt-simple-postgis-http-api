@@ -11,7 +11,7 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
     } else {
         filterJson = crashFilter;
     }
-    console.log("makeCrashFilterQuery: ", filterJson);
+    //console.log("makeCrashFilterQuery: ", filterJson);
     var usedTables = [];
     var whereClauses = [];
 

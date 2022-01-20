@@ -40,6 +40,7 @@ const sql = (params, query) => {
             'segments', count(*)
         ) route_metrics from selected_crashes
 `
+    console.log('routeHistogram');
     console.log(formattedQuery);
     return formattedQuery;
 }

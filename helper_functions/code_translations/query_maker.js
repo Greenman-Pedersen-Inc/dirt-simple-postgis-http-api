@@ -18,7 +18,11 @@ function createQueryClauseSingleton(codeObject, tableName, input, qualifier = '=
 // The input format will be parsed based on comma seperated values, for example: 01,02,03,04
 // The input value is converted as an SQL string.
 function createQueryClauseMultiple(codeObject, tableName, input) {
-    const splitInputList = input.split(',');
+    console.log("createQueryClauseMultiple")
+    console.log(codeObject)
+    console.log(tableName)
+    console.log(input)
+    const splitInputList = String(input).split(',');
     const formattedList = "'" + splitInputList.join("','") + "'"
 
     // if the codeObject has secondary columns, construct 'OR' clauses for each column in the array
@@ -35,21 +39,21 @@ function createQueryClauseMultiple(codeObject, tableName, input) {
 
 // input format: 2020-1-1;2021-1-31
 function createQueryDateRange(tableName, input) {
-    const splitInputList = input.split(';');
+    const splitInputList = String(input).split(';');
     if (splitInputList.length > 1) {
         return `(${tableName}.acc_date >= '${splitInputList[0]}' AND ${tableName}.acc_date <= '${splitInputList[1]}')`;
     }
     else return `${tableName}.acc_date >= '${splitInputList[0]}'`;
 }
 
-function createQueryMilepost(mp, from, tableName, milepostColumn = "calc_sri") {
+function createQueryMilepost(mp, from, tableName, milepostColumn = "milepost") {
     if (from === "start") return `${tableName}.${milepostColumn} >= ${mp}`;
     else if (from === "end") return `${tableName}.${milepostColumn} < ${mp}`;
 }
 
 // input format 24 hr clock: 0745;1320
 function createTimeDateRange(tableName, input) {
-    const splitInputList = input.split(';');
+    const splitInputList = String(input).split(';');
     if (splitInputList.length > 1) {
         return `(TO_TIMESTAMP(${tableName}.acc_time, 'HH24MI')::TIME BETWEEN '${splitInputList[0].substring(0,2)}:${splitInputList[0].substring(2)}'::TIME AND '${splitInputList[1].substring(0,2)}:${splitInputList[1].substring(2)}'::TIME)`;
     }
@@ -65,7 +69,7 @@ function createQueryVehicleTotal(codeObject, tableName, input) {
     var magniBound = []; // list of all crash magnitude vehicle filters
     var magniBoundPart = "1=1"; // magnitude query string
     var multiBoundPart = "1=1"; // multivehicle query string
-    const codeArray = input.split(',');
+    const codeArray = String(input).split(',');
     codeArray.forEach(code => {
         if (code.includes("multi")) {
             // strip out "multi" from the string as there is no corresponding
@@ -89,16 +93,17 @@ function createQueryVehicleTotal(codeObject, tableName, input) {
     });
 }
 
-function makeFromClause(tableNameArray) {
+function makeFromClause(tableNameArray, accidentsTableName) {
     var fromClause = "";
     tableNameArray.forEach(tableName => {
-        fromClause += `INNER JOIN ${tableName} on ard_accidents.crashid = ${tableName}.crashid `;
+        fromClause += `INNER JOIN ${tableName} on ${accidentsTableName}.crashid = ${tableName}.crashid `;
     });
     return fromClause;
 }
 
 function makeWhereClause(whereClauses) {
-    return whereClauses.join(" AND ");
+    if (whereClauses.length <= 0) return "1=1";
+    else return whereClauses.join(" AND ");
 }
 
 module.exports = {

@@ -3,7 +3,7 @@
 const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-
+    console.log("route histo",query.filter )
     let filter = makeCrashFilterQuery(query.filter);
     let parsed_filter = JSON.parse(query.filter)
     console.log(filter);
@@ -20,8 +20,14 @@ const sql = (params, query) => {
             ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
             group by 1, 2
         ), route_data as (
+<<<<<<< HEAD
             select *
             from segment_polygon
+=======
+            select 
+                array[array[min(ST_XMin(st_transform(geom, 4326))), min(ST_YMin(st_transform(geom, 4326)))], array[max(ST_XMax(st_transform(geom, 4326))), max(ST_YMax(st_transform(geom, 4326)))]]
+            from segment_polygons_base
+>>>>>>> eab41be1fb7b923fc743070972c3630f6946c8ce
             where sri = '${parsed_filter.sri}'
         ), binned_data as (
             select route_data.*, crash_count
@@ -113,4 +119,4 @@ module.exports = function(fastify, opts, next) {
     next()
 }
 
-module.exports.autoPrefix = '/'
+module.exports.autoPrefix = '/v1'

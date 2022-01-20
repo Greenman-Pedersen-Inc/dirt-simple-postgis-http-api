@@ -5,7 +5,8 @@ const sql = (params, query) => {
   let queryText = `
   with complete_data as(
     select 
-        intersected_crash_data.*, 
+        intersected_crash_data.*,
+        format_array(boundary_join.centroid) as centroid,
         ST_AsMVTGeom(
             boundary_join.wkb_geometry,
             ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
@@ -30,7 +31,7 @@ const sql = (params, query) => {
     SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
 `
 
-// console.log(queryText);
+console.log(queryText);
 
 return queryText;
 }

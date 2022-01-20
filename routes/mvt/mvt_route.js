@@ -34,6 +34,8 @@ const sql = (params, query) => {
         ), clipped_results as (
             select 
                 filtered_crash_data.*,
+                segment_polygons.sri,
+                segment_polygons.mp,
                 ST_AsMVTGeom(
                     geom,
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
@@ -43,10 +45,10 @@ const sql = (params, query) => {
             on filtered_crash_data.internal_id = segment_polygons_base.internal_id
         )
 
-        SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom') AS mvt from clipped_results;
+        SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
 `
 
-//console.log(queryText);
+// console.log(queryText);
 
 return queryText;
 }

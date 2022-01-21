@@ -12,7 +12,11 @@ const sql = (params, query) => {
 
     let queryText = `
         with selected_segment_polygons as (
-            select internal_id, sri, mp from segment_polygons_base
+            select 
+                internal_id, 
+                sri, 
+                mp
+            from segment_polygon
             where sri = '${selectedSRI}'
             and st_intersects(
                 geom,
@@ -21,12 +25,12 @@ const sql = (params, query) => {
         ), filtered_crash_data as (
             select 
                 selected_segment_polygons.internal_id,
-                count(*)
+                count(*) as crash_count
             from ard_accidents_geom_partition
             inner join selected_segment_polygons
             on ard_accidents_geom_partition.sri = selected_segment_polygons.sri
-            and ard_accidents_geom_partition.milepost = selected_segment_polygons.mp
-
+            and ard_accidents_geom_partition.rounded_mp = selected_segment_polygons.mp
+            
             -- including the SRI here makes the query MUCH slower
             ${filter ? ` where ${filter.whereClause}` : ''}
             
@@ -34,17 +38,16 @@ const sql = (params, query) => {
         ), clipped_results as (
             select 
                 filtered_crash_data.*,
-                segment_polygons.sri,
-                segment_polygons.mp,
+                segment_polygon.sri,
+                segment_polygon.mp,
                 ST_AsMVTGeom(
-                    geom,
+                    segment_polygon.geom,
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
                 ) as geom
             from filtered_crash_data
-            inner join segment_polygons_base
-            on filtered_crash_data.internal_id = segment_polygons_base.internal_id
+            inner join segment_polygon
+            on filtered_crash_data.internal_id = segment_polygon.internal_id
         )
-
         SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
 `
 

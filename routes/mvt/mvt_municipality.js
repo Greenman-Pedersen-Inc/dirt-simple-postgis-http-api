@@ -21,19 +21,19 @@ const sql = (params, query) => {
           ) as geom
           from (
               select
-                  crash_data.mun_cty_co, 
-                  crash_data.mun_mu,
-                  COUNT(crashid)::INTEGER crashes
+              ard_accidents_geom_partition.mun_cty_co, 
+              ard_accidents_geom_partition.mun_mu,
+              COUNT(crashid)::INTEGER crashes
               from municipal_boundaries_of_nj_3857 boundary_data
-              left join ard_accidents_geom_partition crash_data
-              on crash_data.mun_cty_co = boundary_data.mun_cty_co
-              and crash_data.mun_mu = boundary_data.mun_mu
+              left join ard_accidents_geom_partition
+              on ard_accidents_geom_partition.mun_cty_co = boundary_data.mun_cty_co
+              and ard_accidents_geom_partition.mun_mu = boundary_data.mun_mu
               where st_intersects(
                   wkb_geometry,
                   ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
               )
               ${whereClause ? ` AND ${whereClause}` : ''}
-              group by crash_data.mun_cty_co, crash_data.mun_mu
+              group by ard_accidents_geom_partition.mun_cty_co, ard_accidents_geom_partition.mun_mu
           ) as intersected_crash_data
           left join municipal_boundaries_of_nj_3857 boundary_join
           on intersected_crash_data.mun_cty_co = boundary_join.mun_cty_co

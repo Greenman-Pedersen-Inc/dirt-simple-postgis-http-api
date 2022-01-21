@@ -18,11 +18,7 @@ const sql = (params, query) => {
             group by 1, 2
         ), route_data as (
             select *
-<<<<<<< HEAD
-            from segment_polygons_base
-=======
             from segment_polygon
->>>>>>> b98ea178611028b25f6a4c7e55324d404749430b
             where sri = '${parsed_filter.sri}'
         ), binned_data as (
             select route_data.*, crash_count

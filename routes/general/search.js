@@ -39,7 +39,9 @@ const makeSeachQueries = (params) => {
     const countyQuery = params.searchText.toUpperCase().replace('COUNTY', '');
     sql = `SELECT 'COUNTY' AS "ResultType",  
       county_name AS "ResultText",  
-      fips_code AS "ResultID"
+      county_code AS "ResultID",
+      ST_X(ST_Transform(ST_SetSrid(ST_MakePoint(mercator_x, mercator_y), 3857), 4326)) AS "Latitude",
+      ST_Y(ST_Transform(ST_SetSrid(ST_MakePoint(mercator_x, mercator_y), 3857), 4326)) AS "Longitude"
       FROM ard_county  
       where UPPER(county_name) like '%${countyQuery}%'  
       and county_code not like '-%'  
@@ -52,7 +54,9 @@ const makeSeachQueries = (params) => {
   if (params.includeMunicipality) {
     sql = `SELECT 'MUNICIPALITY' AS "ResultType",
       CONCAT(muni_name, ', ', county_name) AS "ResultText",
-      CONCAT(ard_municipality.county_code, '-', muni_code) AS "ResultID" 
+      CONCAT(ard_municipality.county_code, muni_code) AS "ResultID",
+      ST_X(ST_Transform(ST_SetSrid(ST_MakePoint(ard_municipality.mercator_x, ard_municipality.mercator_y), 3857), 4326)) AS "Latitude",
+      ST_Y(ST_Transform(ST_SetSrid(ST_MakePoint(ard_municipality.mercator_x, ard_municipality.mercator_y), 3857), 4326)) AS "Longitude"
       FROM ard_county, ard_municipality  
       WHERE ard_municipality.county_code = ard_county.county_code  
       and UPPER(muni_name) like '%${params.searchText.toUpperCase()}%'  

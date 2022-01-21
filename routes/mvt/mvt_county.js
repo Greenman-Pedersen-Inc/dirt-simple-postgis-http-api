@@ -1,7 +1,16 @@
+const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+
 // route query
 // require the funciton 
 const sql = (params, query) => {
-  // funciton(params, queyr)!!!!!!
+  const accidentsTableName = 'ard_accidents_geom_partition';
+  var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+  if (query.crashFilter) {
+    let parsed_filter = JSON.parse(query.crashFilter);
+    let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+    whereClause = filter.whereClause;
+  } 
+
   let queryText = `
   with complete_data as(
     select 
@@ -13,17 +22,17 @@ const sql = (params, query) => {
         ) as geom
         from (
             select
-                crash_data.mun_cty_co, 
+            ard_accidents_geom_partition.mun_cty_co, 
                 COUNT(crashid)::INTEGER crashes
             from county_boundaries_of_nj_3857 boundary_data
-            left join ard_accidents_geom_partition crash_data
-            on crash_data.mun_cty_co = boundary_data.mun_cty_co
+            left join ard_accidents_geom_partition
+            on ard_accidents_geom_partition.mun_cty_co = boundary_data.mun_cty_co
             where st_intersects(
                 wkb_geometry,
                 ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
             )
-            ${query.filter ? ` AND ${query.filter}` : ''}
-            group by crash_data.mun_cty_co
+            ${whereClause ? ` AND ${whereClause}` : ''}
+            group by ard_accidents_geom_partition.mun_cty_co
         ) as intersected_crash_data
         left join county_boundaries_of_nj_3857 boundary_join
         on intersected_crash_data.mun_cty_co = boundary_join.mun_cty_co
@@ -79,7 +88,11 @@ return queryText;
       filter: {
         type: 'string',
         description: 'Optional filter parameters for a SQL WHERE statement.'
-      }
+      },
+      crashFilter: {
+        type: 'string',
+        description: 'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+      }, 
     }
   }
   

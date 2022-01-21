@@ -1,5 +1,15 @@
+const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+
 // route query
 const sql = (params, query) => {
+  const accidentsTableName = 'ard_accidents_geom_partition';
+  var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+  if (query.crashFilter) {
+    let parsed_filter = JSON.parse(query.crashFilter);
+    let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+    whereClause = filter.whereClause;
+  } 
+
     let queryText = `
     with complete_data as(
       select 
@@ -22,7 +32,7 @@ const sql = (params, query) => {
                   wkb_geometry,
                   ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
               )
-              ${query.filter ? ` AND ${query.filter}` : ''}
+              ${whereClause ? ` AND ${whereClause}` : ''}
               group by crash_data.mun_cty_co, crash_data.mun_mu
           ) as intersected_crash_data
           left join municipal_boundaries_of_nj_3857 boundary_join
@@ -32,8 +42,7 @@ const sql = (params, query) => {
       SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
     `
   
-    // console.log(queryText);
-    
+    console.log(queryText);
     return queryText;
   }
   

@@ -3,25 +3,26 @@
 const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-    console.log("route histo",query.filter )
     let filter = makeCrashFilterQuery(query.filter);
     let parsed_filter = JSON.parse(query.filter)
-    console.log(filter);
-
 
     let formattedQuery = `
         with selected_crashes as (
             select 
                 sri, 
-                ROUND(FLOOR(milepost * 10) / 10, 1) AS rounded_mp,
-                CONCAT(CAST(ROUND(FLOOR(milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(milepost * 10) / 10, 1) + .09) AS mp_range,
+                rounded_mp,
+                CONCAT(rounded_mp, ' - ', rounded_mp + .09) AS mp_range,
                 count(*) crash_count
             from ard_accidents_geom_partition
             ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
             group by 1, 2
         ), route_data as (
             select *
+<<<<<<< HEAD
             from segment_polygons_base
+=======
+            from segment_polygon
+>>>>>>> b98ea178611028b25f6a4c7e55324d404749430b
             where sri = '${parsed_filter.sri}'
         ), binned_data as (
             select route_data.*, crash_count

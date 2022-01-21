@@ -1,28 +1,39 @@
+const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+
 // route query
 const sql = (params, query) => {
+  const accidentsTableName = 'ard_accidents_geom_partition';
+  var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+  if (query.crashFilter) {
+    let parsed_filter = JSON.parse(query.crashFilter);
+    let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+    whereClause = filter.whereClause;
+  } 
+
     let queryText = `
     with complete_data as(
       select 
-          intersected_crash_data.*, 
+          intersected_crash_data.*,
+          format_array(boundary_join.centroid) as centroid,
           ST_AsMVTGeom(
               boundary_join.wkb_geometry,
               ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
           ) as geom
           from (
               select
-                  crash_data.mun_cty_co, 
-                  crash_data.mun_mu,
-                  COUNT(crashid)::INTEGER crashes
+              ard_accidents_geom_partition.mun_cty_co, 
+              ard_accidents_geom_partition.mun_mu,
+              COUNT(crashid)::INTEGER crashes
               from municipal_boundaries_of_nj_3857 boundary_data
-              left join ard_accidents_geom_partition crash_data
-              on crash_data.mun_cty_co = boundary_data.mun_cty_co
-              and crash_data.mun_mu = boundary_data.mun_mu
+              left join ard_accidents_geom_partition
+              on ard_accidents_geom_partition.mun_cty_co = boundary_data.mun_cty_co
+              and ard_accidents_geom_partition.mun_mu = boundary_data.mun_mu
               where st_intersects(
                   wkb_geometry,
                   ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
               )
-              ${query.filter ? ` AND ${query.filter}` : ''}
-              group by crash_data.mun_cty_co, crash_data.mun_mu
+              ${whereClause ? ` AND ${whereClause}` : ''}
+              group by ard_accidents_geom_partition.mun_cty_co, ard_accidents_geom_partition.mun_mu
           ) as intersected_crash_data
           left join municipal_boundaries_of_nj_3857 boundary_join
           on intersected_crash_data.mun_cty_co = boundary_join.mun_cty_co
@@ -31,8 +42,7 @@ const sql = (params, query) => {
       SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
     `
   
-    // console.log(queryText);
-    
+    console.log(queryText);
     return queryText;
   }
   

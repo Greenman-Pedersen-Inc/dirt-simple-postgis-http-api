@@ -13,7 +13,7 @@ const tableFiltersArray = [accidentsFilters, occupantsFilters, vehiclesFilters, 
 
 function resolveFieldAlias(targetFieldName) {
     for (let index = 0; index < tableFiltersArray.length; index++) {
-        const filters = tableFiltersArray[index];
+        const filters = tableFiltersArray[index].filters;
         let aliasList = filters.filter(filter => {
             if (filter.fieldName === targetFieldName || filter.moduleName === targetFieldName) {
                 return true;
@@ -21,6 +21,7 @@ function resolveFieldAlias(targetFieldName) {
         })
 
         if (aliasList.length === 1) { // exact match found, with no duplicates
+            aliasList[0]['table'] = tableFiltersArray[index].table;
             return aliasList[0];
         } else {
             console.log(targetFieldName, ' could not be found in ', index);
@@ -29,7 +30,7 @@ function resolveFieldAlias(targetFieldName) {
 };
 
 // transcribes fieldName keys into human-readble title as keys
-// dataObject is in format: {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}
+// dataObject is in format: [ {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}, {...}, {...} ]
 function transcribeKeysArray(dataRowsArray) {
     var transcribedRows = [];
     dataRowsArray.forEach(row => {
@@ -39,6 +40,8 @@ function transcribeKeysArray(dataRowsArray) {
     return transcribedRows;
 }
 
+// transcribes fieldName keys into human-readble title as keys
+// dataObject is in format: {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}
 function transcribeKeys(dataRowObject, translateValues = true) {
     var returnRow = {}
     for (const [key, value] of Object.entries(dataRowObject)) {
@@ -47,7 +50,7 @@ function transcribeKeys(dataRowObject, translateValues = true) {
         var countyCode;
 
         for (let index = 0; index < tableFiltersArray.length; index++) {
-            const filters = tableFiltersArray[index];
+            const filters = tableFiltersArray[index].filters;
             let aliasList = filters.filter(filter => {
                 if (filter.fieldName === key || filter.moduleName === key) {
                     if (key.includes("mun_cty_co")) countyCode = value;
@@ -178,5 +181,5 @@ function convertFeature(feature) {
 module.exports = {
     resolveFieldAlias: resolveFieldAlias,
     transcribeKeys: transcribeKeys,
-    transcribeKeysArray: transcribeKeysArray
+    transcribeKeysArray: transcribeKeysArray,
 }

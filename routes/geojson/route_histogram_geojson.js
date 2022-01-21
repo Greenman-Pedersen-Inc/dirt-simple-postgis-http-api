@@ -1,29 +1,58 @@
 // route query
+
+const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
+
 const sql = (params, query) => {
+        let filter = makeCrashFilterQuery(query.filter);
+        let parsed_filter = JSON.parse(query.filter)
+
         let formattedQuery = `
         with selected_crashes as (
-            select sri, milepost, mun_cty_co, mun_mu, count(*) crash_count from ard_accidents_geom_partition
-            ${query.filter ? ` where ${query.filter}` : ''}
-            group by mun_cty_co, mun_mu, sri, milepost
-        ), route_data as (
             select 
-                segment_polygons.sri,
-                segment_polygons.mp,
-                selected_crashes.crash_count,
-                segment_polygons.geom
-            from selected_crashes
-            inner join segment_polygons
-            on segment_polygons.sri = selected_crashes.sri
-            and segment_polygons.mp = selected_crashes.milepost
-            where milepost is not null
+                sri, 
+                rounded_mp,
+                CONCAT(rounded_mp, ' - ', rounded_mp + .09) AS mp_range,
+                count(*) crash_count
+            from ard_accidents_geom_partition
+            ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
+            group by 1, 2
+        ), route_data as (
+            select *
+            from segment_polygon
+            where sri = '${parsed_filter.sri}'
+        ), binned_data as (
+            select route_data.*, crash_count
+            from route_data
+            inner join selected_crashes
+            on selected_crashes.rounded_mp = route_data.mp
+            order by mp
         )
 
         select json_build_object(
-            'bbox', array[array[min(ST_XMin(st_transform(geom, 4326))), min(ST_YMin(st_transform(geom, 4326)))], array[max(ST_XMax(st_transform(geom, 4326))), max(ST_YMax(st_transform(geom, 4326)))]],
+            'features', 
+                json_agg(
+                    json_build_object(
+                        'sri', sri,
+                        'milepost', mp,
+                        'crash_count', crash_count
+                    )
+                ),
+            'bbox', array[
+                array[
+                    min(ST_XMin(st_transform(geom, 4326))),
+                    min(ST_YMin(st_transform(geom, 4326)))
+                ], 
+                array[
+                    max(ST_XMax(st_transform(geom, 4326))),
+                    max(ST_YMax(st_transform(geom, 4326)))
+                ]
+            ],
             'min_crashes', min(crash_count),
-            'max_crashes', max(crash_count)
-        ) route_metrics from route_data
+            'max_crashes', max(crash_count),
+            'segments', count(*)
+        ) route_metrics from binned_data
 `
+    console.log('routeHistogram');
     console.log(formattedQuery);
     return formattedQuery;
 }
@@ -36,6 +65,10 @@ const schema = {
     params: {},
     querystring: {
         filter: {
+            type: 'string',
+            description: 'Optional filter parameters for a SQL WHERE statement.'
+        },
+        sri: {
             type: 'string',
             description: 'Optional filter parameters for a SQL WHERE statement.'
         }
@@ -78,4 +111,4 @@ module.exports = function(fastify, opts, next) {
     next()
 }
 
-module.exports.autoPrefix = '/'
+module.exports.autoPrefix = '/v1'

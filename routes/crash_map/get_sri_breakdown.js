@@ -55,7 +55,8 @@ const schema = {
     querystring: {
         crashFilter: {
             type: 'string',
-            description: 'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'        }, 
+            description: 'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'        
+        }, 
         target_milepost: {
             type: 'string',
             description: 'specific milepost to be query. ex: 11.4'

@@ -1,6 +1,6 @@
 // route query
 const sql = (params, query) => {
-    let queryText = `
+        let queryText = `
         with complete_data as(
             with crash_data as (
                 SELECT geom
@@ -37,9 +37,9 @@ return queryText;
 // route schema
 const schema = {
 description:
-  'Return table as Mapbox Vector Tile (MVT) for Muni level',
+  'Return table as Mapbox Vector Tile (MVT) for Cluster level',
 tags: ['mvt'],
-summary: 'return Muni MVT',
+summary: 'return Cluster MVT',
 params: {
   table: {
     type: 'string',

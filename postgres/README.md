@@ -18,7 +18,7 @@ ADD COLUMN centroid double precision[];
 
 UPDATE public.municipal_boundaries_of_nj
     -- if a text array was desirable you could calculate it this way
-    -- set centroid=concat('[', ST_X(ST_Centroid(wkb_geometry)), ST_Y(ST_Centroid(wkb_geometry)), ']')
+    set centroid=concat('[', round(ST_X(ST_Centroid(wkb_geometry))::numeric, 4), round(ST_Y(ST_Centroid(wkb_geometry))::numeric,4), ']');
 	SET centroid=array[ST_X(ST_Centroid(wkb_geometry)), ST_Y(ST_Centroid(wkb_geometry))]
   ```
   

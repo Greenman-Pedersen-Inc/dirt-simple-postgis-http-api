@@ -51,7 +51,7 @@ const sql = (params, query) => {
         SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
 `
 
-console.log(queryText);
+//console.log(queryText);
 
 return queryText;
 }

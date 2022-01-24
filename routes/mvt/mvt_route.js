@@ -1,16 +1,16 @@
 // route query
-const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-    const accidentsTableName = "ard_accidents_geom_partition"
-    let parsed_filter = JSON.parse(query.filter)
-    let selectedSRI = parsed_filter.sri;
+        const accidentsTableName = "ard_accidents_geom_partition"
+        let parsed_filter = JSON.parse(query.filter)
+        let selectedSRI = parsed_filter.sri;
 
-    delete parsed_filter.sri;
+        delete parsed_filter.sri;
 
-    let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+        let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
 
-    let queryText = `
+        let queryText = `
         with selected_segment_polygons as (
             select 
                 internal_id, 
@@ -51,7 +51,7 @@ const sql = (params, query) => {
         SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
 `
 
-console.log(queryText);
+//console.log(queryText);
 
 return queryText;
 }

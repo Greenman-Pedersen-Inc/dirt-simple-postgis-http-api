@@ -10,17 +10,50 @@ ogr2ogr -f "PostgreSQL" PG:"host=34.229.63.174 dbname=ard_data user=postgres pas
 ogr2ogr -f "PostgreSQL" PG:"host=34.229.63.174 dbname=ard_data user=postgres password=GPI2021!" "C:\Users\mcollins\OneDrive - Greenman-Pedersen, Inc\Downloads\County_Boundaries_of_NJ.geojson" -nln county_boundaries_of_nj -append
 ```
 
-Calculated centroids for the labels as follows:
+## Centroid Calculation
 
 ```sql
 ALTER TABLE municipal_boundaries_of_nj
 ADD COLUMN centroid double precision[];
 
 UPDATE public.municipal_boundaries_of_nj
-	SET centroid=array[ST_X(ST_Centroid(wkb_geometry)), ST_Y(ST_Centroid(wkb_geometry))]
+    -- if a text array was desirable you could calculate it this way
+    -- set centroid=concat('[', round(ST_X(ST_Centroid(wkb_geometry))::numeric, 4), round(ST_Y(ST_Centroid(wkb_geometry))::numeric,4), ']');
+    SET centroid=array[ST_X(ST_Centroid(wkb_geometry)), ST_Y(ST_Centroid(wkb_geometry))]
   ```
   
-  # Segment Polygon Layer Updates
+## Bounding Box Calculation
+```sql
+-- add simple field to contain bounding box geometry for zooming to jurisdiction
+alter table municipal_boundaries_of_nj_3857 add bounding_box text;
+
+-- calculate bounding coordinates then format them into a string
+with text_bbox as (
+	select 
+		objectid, 
+		concat(
+			'[[', 
+			round(ST_XMin(ST_Extent(st_transform(wkb_geometry, 4326)))::numeric, 4), 
+			',' , 
+			round(ST_YMin(ST_Extent(st_transform(wkb_geometry, 4326)))::numeric, 4), 
+			'],[', 
+			round(ST_XMin(ST_Extent(st_transform(wkb_geometry, 4326)))::numeric, 4), 
+			',' , 
+			round(ST_YMin(ST_Extent(st_transform(wkb_geometry, 4326)))::numeric, 4),']]') concat_string
+	from county_boundaries_of_nj_3857
+	group by 1
+)
+
+-- update the new field and by joining the concatenated strings
+UPDATE public.county_boundaries_of_nj_3857
+SET bounding_box = text_bbox.concat_string
+from text_bbox
+where county_boundaries_of_nj_3857.objectid = text_bbox.objectid
+```
+
+
+# Segment Polygon Layer Updates
+Segment polygon layer was created from a supplied centerline file. This centerline was then split into 1/10th of a mile sections. These segments were then buffered for visualization. The segment polygons were then imported into the postgres database using web mercator projection.
   ```sql
   -- create an intersect of the segment polygons and the municipal boundaries
 SELECT internal_id, objectid, ST_Area(ST_INTERSECTION(geom, wkb_geometry))

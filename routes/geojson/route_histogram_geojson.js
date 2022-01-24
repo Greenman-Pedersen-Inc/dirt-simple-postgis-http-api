@@ -1,12 +1,12 @@
 // route query
 
-const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-    let filter = makeCrashFilterQuery(query.filter);
-    let parsed_filter = JSON.parse(query.filter)
+        let filter = makeCrashFilterQuery(query.filter);
+        let parsed_filter = JSON.parse(query.filter)
 
-    let formattedQuery = `
+        let formattedQuery = `
         with selected_crashes as (
             select 
                 sri, 

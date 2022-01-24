@@ -32,39 +32,34 @@ const makeSeachQueries = (params) => {
           order by count  
           desc limit 10`;
     }
-    console.log(sql)
+    // console.log(sql)
     sqlQueries.push(sql);
   }
   if (params.includeCounty) {
     const countyQuery = params.searchText.toUpperCase().replace('COUNTY', '');
     sql = `SELECT 'COUNTY' AS "ResultType",  
-      county_name AS "ResultText",  
-      county_code AS "ResultID",
-      ST_X(ST_Transform(ST_SetSrid(ST_MakePoint(mercator_x, mercator_y), 3857), 4326)) AS "Latitude",
-      ST_Y(ST_Transform(ST_SetSrid(ST_MakePoint(mercator_x, mercator_y), 3857), 4326)) AS "Longitude"
-      FROM ard_county  
-      where UPPER(county_name) like '%${countyQuery}%'  
-      and county_code not like '-%'  
-      and county_code <> '00'  
-      order by county_name  
+      county AS "ResultText",  
+      mun_cty_co AS "ResultID",
+      centroid,
+      bounding_box
+      FROM county_boundaries_of_nj_3857  
+      where UPPER(county) like '%${countyQuery}%'   
+      order by county 
       limit 5`;
-    console.log(sql)
+    // console.log(sql)
     sqlQueries.push(sql);
   }
   if (params.includeMunicipality) {
     sql = `SELECT 'MUNICIPALITY' AS "ResultType",
-      CONCAT(muni_name, ', ', county_name) AS "ResultText",
-      CONCAT(ard_municipality.county_code, muni_code) AS "ResultID",
-      ST_X(ST_Transform(ST_SetSrid(ST_MakePoint(ard_municipality.mercator_x, ard_municipality.mercator_y), 3857), 4326)) AS "Latitude",
-      ST_Y(ST_Transform(ST_SetSrid(ST_MakePoint(ard_municipality.mercator_x, ard_municipality.mercator_y), 3857), 4326)) AS "Longitude"
-      FROM ard_county, ard_municipality  
-      WHERE ard_municipality.county_code = ard_county.county_code  
-      and UPPER(muni_name) like '%${params.searchText.toUpperCase()}%'  
-      and muni_code not like '-%'  
-      and muni_code <> '00'  
-      order by muni_name  
+      CONCAT(mun, ', ', county) AS "ResultText",
+      mun_code AS "ResultID",
+      centroid,
+      bounding_box
+      FROM municipal_boundaries_of_nj_3857  
+      WHERE UPPER(mun) like '%${params.searchText.toUpperCase()}%'   
+      order by mun  
       limit 5`;
-    console.log(sql)
+    // console.log(sql)
     sqlQueries.push(sql);
 
   }
@@ -72,13 +67,15 @@ const makeSeachQueries = (params) => {
     sql = `SELECT 
     'CASE' AS "ResultType",
       CONCAT(acc_case, ' ', muni_name) AS "ResultText",
-      crashid AS "ResultID"
-      FROM public.ard_accidents
+      crashid AS "ResultID",
+      calc_longitude AS "Longitude",
+      calc_latitude AS "Latitude"
+      FROM public.ard_accidents_geom
       inner join ard_municipality
-      on ard_accidents.mun_cty_co = ard_municipality.county_code
-      and ard_accidents.mun_mu = ard_municipality.muni_code
+      on ard_accidents_geom.mun_cty_co = ard_municipality.county_code
+      and ard_accidents_geom.mun_mu = ard_municipality.muni_code
       inner join ard_county
-      on ard_accidents.mun_cty_co = ard_county.county_code
+      on ard_accidents_geom.mun_cty_co = ard_county.county_code
       where acc_case = '${params.searchText}'  
       or acc_case LIKE '%${params.searchText}%'  
       limit 5`;
@@ -91,6 +88,7 @@ const makeSeachQueries = (params) => {
 // returns google geocoded results for an address or place input.
 // resultKeyword is either "predictions" for PLACE or "results" for addresses
 function getGoogleResponse(urlPath, attributes) {
+  console.log(urlPath)
   var resultsList = [];
   const hostUrl = 'maps.googleapis.com';
   console.log(hostUrl + urlPath)
@@ -112,16 +110,18 @@ function getGoogleResponse(urlPath, attributes) {
         });
         res.on('end', () => {
           const searchResultsArray = JSON.parse(body)[attributes.results];
-          //console.log(searchResultsArray)
           searchResultsArray.forEach(searchResult => {
             const resultObject = {
               "ResultID": searchResult.place_id,
               "ResultText": searchResult[attributes.description],
               "ResultType": attributes.resultType
             }
+            if (searchResult.hasOwnProperty(attributes.geometry)) {
+              resultObject['Latitude'] = searchResult[attributes.geometry]['location']['lat'];
+              resultObject['Longitude'] = searchResult[attributes.geometry]['location']['lng'];
+            }
             resultsList.push(resultObject)
           });
-          //console.log(resultsList)
           resolve(resultsList);
         });
       }
@@ -234,7 +234,8 @@ module.exports = function (fastify, opts, next) {
             const attributes = {
               results: "results",
               description: "formatted_address",
-              resultType: "ADDRESS"
+              resultType: "ADDRESS",
+              geometry: "geometry"
             }
 
             const promise = getGoogleResponse(urlPath, attributes);
@@ -245,7 +246,7 @@ module.exports = function (fastify, opts, next) {
 
         Promise.all(promises).then((responseArray) => {
           responseArray.forEach(response => {
-            //console.log(response)
+            console.log(response)
             if (response.rows) {
               response.rows.forEach(row => {
                 resultsList.push(row);
@@ -253,7 +254,7 @@ module.exports = function (fastify, opts, next) {
             }
             else {
               response.forEach(result => {
-                if (result.ResultText.includes('NJ, USA')) {
+                if (result.ResultText.includes('NJ, USA') || result.ResultText.includes('NJ') || result.ResultText.includes('New Jersey, USA')) {
                   resultsList.push(result);
                 }
               });   

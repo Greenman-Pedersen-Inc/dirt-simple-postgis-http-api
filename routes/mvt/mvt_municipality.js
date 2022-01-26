@@ -1,9 +1,9 @@
-const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 // route query
 const sql = (params, query) => {
-  const accidentsTableName = 'ard_accidents_geom_partition';
-  var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+        const accidentsTableName = 'ard_accidents_geom_partition';
+        var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
   if (query.crashFilter) {
     let parsed_filter = JSON.parse(query.crashFilter);
     let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
@@ -11,36 +11,43 @@ const sql = (params, query) => {
   } 
 
     let queryText = `
-    with complete_data as(
-      select 
-          intersected_crash_data.*,
-          --format_array(boundary_join.centroid) as centroid,
-          boundary_join.centroid as centroid,
-          ST_AsMVTGeom(
-              boundary_join.wkb_geometry,
-              ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
-          ) as geom
-          from (
-              select
-              ard_accidents_geom_partition.mun_cty_co, 
-              ard_accidents_geom_partition.mun_mu,
-              COUNT(crashid)::INTEGER crashes
-              from municipal_boundaries_of_nj_3857 boundary_data
-              left join ard_accidents_geom_partition
-              on ard_accidents_geom_partition.mun_cty_co = boundary_data.mun_cty_co
-              and ard_accidents_geom_partition.mun_mu = boundary_data.mun_mu
-              where st_intersects(
-                  wkb_geometry,
-                  ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
-              )
-              ${whereClause ? ` AND ${whereClause}` : ''}
-              group by ard_accidents_geom_partition.mun_cty_co, ard_accidents_geom_partition.mun_mu
-          ) as intersected_crash_data
-          left join municipal_boundaries_of_nj_3857 boundary_join
-          on intersected_crash_data.mun_cty_co = boundary_join.mun_cty_co
-          and intersected_crash_data.mun_mu = boundary_join.mun_mu
-      )
-      SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
+        with selected_municipalities as (
+            select
+                ogc_fid,
+                mun_cty_co,
+                mun_mu,
+                mun_label,
+                concat(INITCAP(county), ' County'),
+                centroid,
+                bounding_box,
+                ST_AsMVTGeom(
+                    wkb_geometry,
+                    ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
+                ) as geom
+            from municipal_boundaries_of_nj_3857
+            where st_intersects(
+                wkb_geometry,
+                ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
+            )
+        ), filtered_crash_data as (
+            select
+                selected_municipalities.mun_cty_co,
+                selected_municipalities.mun_mu,
+                COUNT(*) crashes
+            from ard_accidents_geom_partition, selected_municipalities
+            WHERE ard_accidents_geom_partition.mun_cty_co = selected_municipalities.mun_cty_co
+            and ard_accidents_geom_partition.mun_mu = selected_municipalities.mun_mu
+            ${whereClause ? ` AND ${whereClause}` : ''}
+            group by selected_municipalities.mun_cty_co, selected_municipalities.mun_mu
+        ), clipped_results as (
+            select 
+                selected_municipalities.*,
+                filtered_crash_data.crashes
+            from selected_municipalities
+            left join filtered_crash_data
+            using (mun_cty_co, mun_mu)
+        )
+        SELECT ST_AsMVT(clipped_results.*, 'municipal_boundaries_of_nj_3857', 4096, 'geom', 'ogc_fid') AS mvt from clipped_results;
     `
   
     console.log(queryText);
@@ -133,4 +140,3 @@ const sql = (params, query) => {
   }
   
   module.exports.autoPrefix = '/v1'
-  

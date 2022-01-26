@@ -79,7 +79,7 @@ const makeSeachQueries = (params) => {
       where acc_case = '${params.searchText}'  
       or acc_case LIKE '%${params.searchText}%'  
       limit 5`;
-    console.log(sql)
+    //console.log(sql)
     sqlQueries.push(sql);
   }
   return sqlQueries;

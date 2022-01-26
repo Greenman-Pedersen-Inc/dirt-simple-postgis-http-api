@@ -5,10 +5,12 @@ const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_help
 const sql = (params, query) => {
   const accidentsTableName = 'ard_accidents_geom_partition';
   var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+  var fromClause = '';
   if (query.crashFilter) {
     let parsed_filter = JSON.parse(query.crashFilter);
     let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
     whereClause = filter.whereClause;
+    fromClause = filter.fromClause;
   } 
 
   let queryText = `
@@ -24,9 +26,10 @@ const sql = (params, query) => {
         from (
             select
             ard_accidents_geom_partition.mun_cty_co, 
-                COUNT(crashid)::INTEGER crashes
-            from county_boundaries_of_nj_3857 boundary_data
+                COUNT(ard_accidents_geom_partition.crashid)::INTEGER crashes
+            from county_boundaries_of_nj_3857 boundary_data 
             left join ard_accidents_geom_partition
+            ${fromClause ? ` ${fromClause}` : ''}
             on ard_accidents_geom_partition.mun_cty_co = boundary_data.mun_cty_co
             where st_intersects(
                 wkb_geometry,
@@ -41,7 +44,7 @@ const sql = (params, query) => {
     SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
 `
 
-//console.log(queryText);
+console.log(queryText);
 
 return queryText;
 }

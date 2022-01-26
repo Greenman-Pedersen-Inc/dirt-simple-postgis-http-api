@@ -69,28 +69,26 @@ function createQueryVehicleTotal(codeObject, tableName, input) {
     var magniBound = []; // list of all crash magnitude vehicle filters
     var magniBoundPart = "1=1"; // magnitude query string
     var multiBoundPart = "1=1"; // multivehicle query string
-    const codeArray = String(input).split(',');
-    codeArray.forEach(code => {
-        if (code.includes("multi")) {
-            // strip out "multi" from the string as there is no corresponding
-            // value in the database that would satisfy the condition.
-            multiBoundPart = `${tableName}.${codeObject.fieldName}${code.replace("multi", "")}`;
-        }
-        else {
-            // add the magnitude bound as these will be queried using an "or"
-            // statement so all values are valid.
-            magniBound.push(`${tableName}.${codeObject.fieldName}${code}`);
-        }
-        // if there are any magnitude bounds, put them all together
-        if (magniBound.length > 0) {
-            magniBoundPart = magniBound.join(" or ");
-        }
 
-        // join the two terms together before adding them to the final query
-        const query = "(" + multiBoundPart + " and (" + magniBoundPart + "))";
+    if (input.includes("multi")) {
+        // strip out "multi" from the string as there is no corresponding
+        // value in the database that would satisfy the condition.
+        multiBoundPart = `${tableName}.${codeObject.fieldName}${input.replace("multi", "")}`;
+    }
+    else {
+        // add the magnitude bound as these will be queried using an "or"
+        // statement so all values are valid.
+        magniBound.push(`${tableName}.${codeObject.fieldName}${input}`);
+    }
+    // if there are any magnitude bounds, put them all together
+    if (magniBound.length > 0) {
+        magniBoundPart = magniBound.join(" or ");
+    }
 
-        return query;
-    });
+    // join the two terms together before adding them to the final query
+    const query = "(" + multiBoundPart + " and (" + magniBoundPart + "))";
+    console.log(query);
+    return query;
 }
 
 function makeFromClause(tableNameArray, accidentsTableName) {

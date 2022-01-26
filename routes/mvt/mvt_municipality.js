@@ -43,7 +43,7 @@ const sql = (params, query) => {
       SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
     `
   
-    //console.log(queryText);
+    console.log(queryText);
     return queryText;
   }
   

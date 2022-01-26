@@ -34,7 +34,8 @@ const sql = (params, query) => {
             select
                 ard_accidents_geom_partition.mun_cty_co, 
                 COUNT(ard_accidents_geom_partition.*) crashes
-            from ard_accidents_geom_partition, selected_counties
+            from ard_accidents_geom_partition
+            INNER JOIN selected_counties ON ard_accidents_geom_partition.mun_cty_co = selected_counties.mun_cty_co
             ${fromClause ? ` ${fromClause}` : ''}
             WHERE ard_accidents_geom_partition.mun_cty_co = selected_counties.mun_cty_co
             ${whereClause ? ` AND ${whereClause}` : ''}

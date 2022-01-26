@@ -3,14 +3,9 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 // route query
 // require the funciton 
 const sql = (params, query) => {
-<<<<<<< HEAD
   const accidentsTableName = 'ard_accidents_geom_partition';
   var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
   var fromClause = '';
-=======
-        const accidentsTableName = 'ard_accidents_geom_partition';
-        var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
->>>>>>> d4013d9f5b3371376fe02f0802778e8645f49b55
   if (query.crashFilter) {
     let parsed_filter = JSON.parse(query.crashFilter);
     let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);

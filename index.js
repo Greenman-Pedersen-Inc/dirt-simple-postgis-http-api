@@ -54,8 +54,7 @@ function logRequest(request, reply, done) {
     // this will not log get requests that include the keywork 'lookup'
     if (endpoint.indexOf('lookup') < 0) {
         fastify.pg.connect(onConnect);
-    }
-    else {
+    } else {
         done()
     }
 }
@@ -106,8 +105,7 @@ function verifyToken(request, reply, done) {
 
                 if (result.rows.map(row => row.count).reduce((acc, count) => acc + count, 0) > 0) {
                     done();
-                }
-                else {
+                } else {
                     reply.send({ description: 'token validation unsuccesful!', tokenError: -999 });
                 }
             }
@@ -126,22 +124,22 @@ fastify.register(require('fastify-auth'))
 
 // postgres connection
 fastify.register(require('fastify-postgres'), {
-  connectionString: config.db
+    connectionString: config.db
 })
 
 // compression - add x-protobuf
 fastify.register(
-  require('fastify-compress'), {
-    customTypes: /^text\/|\+json$|\+text$|\+xml|x-protobuf$/
-  }
+    require('fastify-compress'), {
+        customTypes: /^text\/|\+json$|\+text$|\+xml|x-protobuf$/
+    }
 )
 
 // cache
 fastify.register(
-  require('fastify-caching'), {
-    privacy: 'private',
-    expiresIn: config.cache
-  }
+    require('fastify-caching'), {
+        privacy: 'private',
+        expiresIn: config.cache
+    }
 )
 
 // CORS
@@ -149,25 +147,25 @@ fastify.register(require('fastify-cors'))
 
 // swagger
 fastify.register(require('fastify-swagger'), {
-  exposeRoute: true,
-  swagger: config.swagger
+    exposeRoute: true,
+    swagger: config.swagger
 })
 
 // static documentation path
 fastify.register(require('fastify-static'), {
-  root: path.join(__dirname, 'documentation')
+    root: path.join(__dirname, 'documentation')
 })
 
 // routes
 fastify.register(require('fastify-autoload'), {
-  dir: path.join(__dirname, 'routes')
+    dir: path.join(__dirname, 'routes')
 })
 
 // Launch server
-fastify.listen(config.port, config.host || 'localhost', function (err, address) {
-  if (err) {
-    console.log(err)
-    process.exit(1)
-  }
-  console.info(`Server listening on ${address}`)
+fastify.listen(config.port, config.host || '127.0.0.1', function(err, address) {
+    if (err) {
+        console.log(err)
+        process.exit(1)
+    }
+    console.info(`Server listening on ${address}`)
 })

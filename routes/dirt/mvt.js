@@ -1,6 +1,6 @@
 // route query
 const sql = (params, query) => {
-  let query_text = `
+        let query_text = `
     WITH mvtgeom as (
       SELECT
         ST_AsMVTGeom (
@@ -30,7 +30,7 @@ const sql = (params, query) => {
     query.id_column ? `, '${query.id_column}'` : ''
   }) AS mvt from mvtgeom;
   `
-  // console.log(query_text)
+//   console.log(query_text)
   return query_text;
 }
 

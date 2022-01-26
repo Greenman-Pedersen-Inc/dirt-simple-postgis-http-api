@@ -21,12 +21,12 @@ const sql = (params, query) => {
                 centroid,
                 bounding_box,
                 ST_AsMVTGeom(
-                    wkb_geometry,
+                    geom_simplified,
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
                 ) as geom
             from municipal_boundaries_of_nj_3857
             where st_intersects(
-                wkb_geometry,
+                geom_simplified,
                 ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
             )
         ), filtered_crash_data as (

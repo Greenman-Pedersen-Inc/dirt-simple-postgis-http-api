@@ -34,10 +34,11 @@ const sql = (params, query) => {
                 selected_municipalities.mun_cty_co,
                 selected_municipalities.mun_mu,
                 COUNT(*) crashes
-            from ard_accidents_geom_partition, selected_municipalities
-            WHERE ard_accidents_geom_partition.mun_cty_co = selected_municipalities.mun_cty_co
+            from selected_municipalities
+            left join ard_accidents_geom_partition
+            on ard_accidents_geom_partition.mun_cty_co = selected_municipalities.mun_cty_co
             and ard_accidents_geom_partition.mun_mu = selected_municipalities.mun_mu
-            ${whereClause ? ` AND ${whereClause}` : ''}
+            ${whereClause ? ` WHERE ${whereClause}` : ''}
             group by selected_municipalities.mun_cty_co, selected_municipalities.mun_mu
         ), clipped_results as (
             select 

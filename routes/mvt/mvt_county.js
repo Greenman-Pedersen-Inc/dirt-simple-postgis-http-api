@@ -33,12 +33,12 @@ const sql = (params, query) => {
         ), filtered_crash_data as (
             select
                 ard_accidents_geom_partition.mun_cty_co, 
-                COUNT(ard_accidents_geom_partition.*) crashes
-            from ard_accidents_geom_partition
-            INNER JOIN selected_counties ON ard_accidents_geom_partition.mun_cty_co = selected_counties.mun_cty_co
+                COUNT(*) crashes
+            from selected_counties
+            INNER JOIN ard_accidents_geom_partition
+            ON ard_accidents_geom_partition.mun_cty_co = selected_counties.mun_cty_co
             ${fromClause ? ` ${fromClause}` : ''}
-            WHERE ard_accidents_geom_partition.mun_cty_co = selected_counties.mun_cty_co
-            ${whereClause ? ` AND ${whereClause}` : ''}
+            ${whereClause ? ` WHERE ${whereClause}` : ''}
             group by ard_accidents_geom_partition.mun_cty_co
         ), clipped_results as (
             select 

@@ -30,7 +30,7 @@ const sql = (params, query) => {
     query.id_column ? `, '${query.id_column}'` : ''
   }) AS mvt from mvtgeom;
   `
-//   console.log(query_text)
+  //console.log(query_text)
   return query_text;
 }
 

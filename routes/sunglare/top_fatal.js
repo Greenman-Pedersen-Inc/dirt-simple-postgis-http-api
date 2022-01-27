@@ -5,10 +5,10 @@ const sunglareHelper = require('../../helper_functions/sunglare_helper');
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-    var locationClause = sunglareHelper.createLocationClause(queryArgs);
-    var filterClause = sunglareHelper.createFilterClause(queryArgs);
+        var locationClause = sunglareHelper.createLocationClause(queryArgs);
+        var filterClause = sunglareHelper.createFilterClause(queryArgs);
 
-    var sql = `
+        var sql = `
     SELECT DISTINCT UPPER(public.srilookupname.name) "sri_name", accidents.* FROM
     (
         SELECT calc_sri, 
@@ -28,7 +28,7 @@ const sql = (queryArgs) => {
     LEFT JOIN public.srilookupname ON public.srilookupname.stndrd_rt_id = accidents.calc_sri
     WHERE fatal > 0 OR incapacitated > 0 
     ORDER BY fatal DESC, incapacitated DESC LIMIT 25;`;
-    console.log(sql);
+    //console.log(sql);
     return sql;
   }
 

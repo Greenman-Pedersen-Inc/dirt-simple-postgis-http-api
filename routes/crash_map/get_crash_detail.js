@@ -7,11 +7,11 @@ const { transcribeKeys, transcribeKeysArray } = require('../../helper_functions/
 // *---------------*
 function getQueries(queryArgs) {
     var queries = {};
-    queries.accidents = (`SELECT * FROM ard_accidents where ${getWhereClause(queryArgs, "accidents")}`);       // ACCIDENTS query
-    queries.vehicles = (`SELECT ${getColumns("vehicles")} FROM ard_vehicles where ${getWhereClause(queryArgs, "vehicles")}`);       // Vehicles query
-    queries.drivers = (`SELECT ${getColumns("drivers")} FROM ard_vehicles where ${getWhereClause(queryArgs, "vehicles")}`);       // drivers query
-    queries.occupants = (`SELECT * FROM ard_occupants where ${getWhereClause(queryArgs, "occupants")}`);       // Occupants query
-    queries.pedestrians = (`SELECT * FROM ard_pedestrians where ${getWhereClause(queryArgs, "pedestrians")}`);       // Pedestrians query
+    queries.accidents = (`SELECT * FROM ard_accidents where ${getWhereClause(queryArgs, "accidents")}`); // ACCIDENTS query
+    queries.vehicles = (`SELECT ${getColumns("vehicles")} FROM ard_vehicles where ${getWhereClause(queryArgs, "vehicles")}`); // Vehicles query
+    queries.drivers = (`SELECT ${getColumns("drivers")} FROM ard_vehicles where ${getWhereClause(queryArgs, "vehicles")}`); // drivers query
+    queries.occupants = (`SELECT * FROM ard_occupants where ${getWhereClause(queryArgs, "occupants")}`); // Occupants query
+    queries.pedestrians = (`SELECT * FROM ard_pedestrians where ${getWhereClause(queryArgs, "pedestrians")}`); // Pedestrians query
     return queries;
 }
 
@@ -19,11 +19,9 @@ function getWhereClause(queryArgs, table) {
     if (queryArgs.crashid) return `crashid = '${queryArgs.crashid}'`;
     if (table === "accidents") {
         return `mun_cty_co = '${queryArgs.county}' and mun_mu = '${queryArgs.municipality}' and acc_case = '${queryArgs.caseNumber}' and year ='${queryArgs.year}'`
-    }
-    else if (table === "vehicles" || table === "pedestrians") {
+    } else if (table === "vehicles" || table === "pedestrians") {
         return `acc_mun_cty_co = '${queryArgs.county}' and acc_mun_mu = '${queryArgs.municipality}' and acc_acc_case = '${queryArgs.caseNumber}' and acc_year ='${queryArgs.year}'`
-    }
-    else if (table === "occupants") {
+    } else if (table === "occupants") {
         return `veh_acc_mun_cty_co = '${queryArgs.county}' and veh_acc_mun_mu = '${queryArgs.municipality}' and veh_acc_acc_case = '${queryArgs.caseNumber}' and veh_acc_year ='${queryArgs.year}'`
     }
 }
@@ -72,12 +70,12 @@ const schema = {
 // *---------------*
 // create route
 // *---------------*
-module.exports = function (fastify, opts, next) {
+module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/crash-map/get-crash-detail',
         schema: schema,
-        handler: function (request, reply) {
+        handler: function(request, reply) {
             fastify.pg.connect(onConnect)
 
             function onConnect(err, client, release) {
@@ -94,8 +92,7 @@ module.exports = function (fastify, opts, next) {
                         "error": "Internal Server Error",
                         "message": "need crashid or case number and parameters"
                     });
-                }
-                else if (queryArgs.caseNumber !== undefined) {
+                } else if (queryArgs.caseNumber !== undefined) {
                     if (queryArgs.county === undefined || queryArgs.municipality === undefined || queryArgs.year === undefined) {
                         return reply.send({
                             "statusCode": 500,
@@ -114,11 +111,10 @@ module.exports = function (fastify, opts, next) {
                         try {
                             const res = client.query(queries[key]);
                             return resolve(res);
-                        }
-                        catch(err) {
-                            console.log(err.stack);
+                        } catch (err) {
+                            // console.log(err.stack);
                             return reject(error);
-                        }  
+                        }
                     });
                     promises.push(promise);
                 }
@@ -132,8 +128,7 @@ module.exports = function (fastify, opts, next) {
                         if (table === "accidents") {
                             crashData = transcribeKeys(data[0]);
                             // crashData = data[0];
-                        }
-                        else {
+                        } else {
                             crashData[table] = transcribeKeysArray(data);
                         }
                     }

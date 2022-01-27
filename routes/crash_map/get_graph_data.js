@@ -1,34 +1,32 @@
-
-
 /*
 JAN 18 2022 IN PROGRESS 
 get_graph_data: Gets a JSON containing data for crashes by month and crashes groupped by attribute
 */
 
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
-const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 // *---------------*
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-    // if target_milepost is defined, set start_mp and end_mp in the crashFilter object
-    const accidentsTableName = "ard_accidents_geom_partition";
-    let filterJson = JSON.parse(queryArgs.crashFilter);
+        // if target_milepost is defined, set start_mp and end_mp in the crashFilter object
+        const accidentsTableName = "ard_accidents_geom_partition";
+        let filterJson = JSON.parse(queryArgs.crashFilter);
 
-    if (queryArgs.target_sri) {
-        filterJson.sri = queryArgs.target_sri;
+        if (queryArgs.target_sri) {
+            filterJson.sri = queryArgs.target_sri;
 
-        if (queryArgs.target_milepost) {
-            filterJson.mp_start = queryArgs.target_milepost;
-            filterJson.mp_end = parseFloat(queryArgs.target_milepost) + 0.1;
+            if (queryArgs.target_milepost) {
+                filterJson.mp_start = queryArgs.target_milepost;
+                filterJson.mp_end = parseFloat(queryArgs.target_milepost) + 0.1;
+            }
         }
-    }
 
-    const crashFilterClauses = makeCrashFilterQuery(filterJson, accidentsTableName);
-    const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
+        const crashFilterClauses = makeCrashFilterQuery(filterJson, accidentsTableName);
+        const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
 
-    var sql = `
+        var sql = `
     SELECT *, directory as report_directory,
     CASE 
         WHEN directory IS NOT NULL OR directory <> '' THEN CONCAT('${njtr1Root}', directory, '/', dln, '.PDF') 
@@ -38,7 +36,7 @@ const sql = (queryArgs) => {
     ${crashFilterClauses.whereClause ? ` WHERE ${crashFilterClauses.whereClause}` : ''}
     ORDER BY milepost
     `;
-    console.log(sql);
+    // console.log(sql);
     return sql;
   }
 

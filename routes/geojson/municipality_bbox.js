@@ -6,7 +6,7 @@ const sql = (params, query) => {
             where mun_code = any('{${query.municipality_list}}'::text[])
     `
 
-    console.log(formattedQuery);
+    //console.log(formattedQuery);
     return formattedQuery;
 }
 

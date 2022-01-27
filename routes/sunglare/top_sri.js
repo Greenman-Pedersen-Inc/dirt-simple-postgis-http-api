@@ -6,9 +6,9 @@ const sunglareHelper = require('../../helper_functions/sunglare_helper');
 // *---------------*
 const sql = (queryArgs) => {
     var sql = sunglareHelper.makeReportQuery(queryArgs, 'default');
-    console.log(sql);
+    //console.log(sql);
     return sql;
-  }
+}
 
 // *---------------*
 // route schema
@@ -68,12 +68,12 @@ const schema = {
 // *---------------*
 // create route
 // *---------------*
-module.exports = function (fastify, opts, next) {
+module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/sunglare/top-sri',
         schema: schema,
-        handler: function (request, reply) {
+        handler: function(request, reply) {
             fastify.pg.connect(onConnect)
 
             function onConnect(err, client, release) {
@@ -102,7 +102,7 @@ module.exports = function (fastify, opts, next) {
                     sql(queryArgs),
                     function onResult(err, result) {
                         release()
-                        reply.send(err || {SriData: result.rows})
+                        reply.send(err || { SriData: result.rows })
                     }
                 );
             }

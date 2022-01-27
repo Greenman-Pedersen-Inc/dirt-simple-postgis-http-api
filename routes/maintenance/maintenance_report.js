@@ -8,9 +8,9 @@ const codeTranslator = require('../../helper_functions/code_translator');
 // route query
 // *---------------*
 const sql = (query) => {
-    // --- QUERY crash data based on time frame
-    let accidentQuery =
-    `
+        // --- QUERY crash data based on time frame
+        let accidentQuery =
+            `
     SELECT  
         dln,
         year,
@@ -113,7 +113,7 @@ module.exports = function (fastify, opts, next) {
                                 reply.send(err)
                             } else if (result && result.rowCount > 0) {
                                 const queryStrings = request.query;
-                                //console.log(result.rows);
+                                ////console.log(result.rows);
                                 var data = [];
 
                                 result.rows.forEach(row => {
@@ -135,15 +135,15 @@ module.exports = function (fastify, opts, next) {
                                     data.push(dataRow);
                                 });
 
-                                //console.log(data[0]);
+                                ////console.log(data[0]);
                                 const fileInfo = maintenanceHelper.fileExport(queryStrings, data);
     
                                 fileInfo.then((createdFile) => {
-                                    console.log(createdFile)
+                                    //console.log(createdFile)
                                     reply.send({ url: createdFile.fileName });
     
                                 }).catch((error) => {
-                                    console.log(error);
+                                    //console.log(error);
                                 })
                             } else {
                                 reply.code(204).send()

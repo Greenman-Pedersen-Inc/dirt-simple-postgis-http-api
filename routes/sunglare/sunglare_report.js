@@ -70,19 +70,19 @@ const schema = {
 // *---------------*
 // create route
 // *---------------*
-module.exports = function (fastify, opts, next) {
+module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/sunglare/report',
         schema: schema,
-        handler: function (request, reply) {
+        handler: function(request, reply) {
             fastify.pg.connect(onConnect)
 
             function onConnect(err, client, release) {
                 if (err) {
                     reply.send(err);
                     return;
-                } 
+                }
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
@@ -105,15 +105,14 @@ module.exports = function (fastify, opts, next) {
                         if (reportQueries.hasOwnProperty(key)) {
                             const promise = new Promise((resolve, reject) => {
                                 try {
-                                    console.log(reportQueries[key].query)
+                                    //console.log(reportQueries[key].query)
                                     const res = client.query(reportQueries[key].query);
                                     return resolve(res);
-                                }
-                                catch(err) {
-                                    console.log(err.stack);
-                                    console.log(reportQueries[key].query);
+                                } catch (err) {
+                                    //console.log(err.stack);
+                                    //console.log(reportQueries[key].query);
                                     return reject(error);
-                                }  
+                                }
                             });
                             promises.push(promise);
                         }
@@ -124,11 +123,10 @@ module.exports = function (fastify, opts, next) {
                             try {
                                 const res = client.query(reportHelper.getSriNameQuery(queryArgs.sri));
                                 return resolve(res);
-                            }
-                            catch(err) {
-                                console.log(err.stack);
+                            } catch (err) {
+                                //console.log(err.stack);
                                 return reject(error);
-                            }  
+                            }
                         });
                         promises.push(promise);
                     }
@@ -138,8 +136,7 @@ module.exports = function (fastify, opts, next) {
                         for (let i = 0; i < reportDataArray.length; i++) {
                             if (queryArgs.sri && i === reportDataArray.length - 1) {
                                 queryArgs.sriName = reportDataArray[i].rows[0].name;
-                            }
-                            else {
+                            } else {
                                 var data = reportDataArray[i].rows;
                                 var category = Object.keys(reportQueries)[i];
                                 reportQueries[category]["data"] = data;
@@ -149,11 +146,11 @@ module.exports = function (fastify, opts, next) {
                         // create report pdf
                         const fileInfo = reportHelper.makePredictiveReport(queryArgs, reportQueries, "Top SRI & Mileposts by Sun Glare", "sunglare_report");
                         fileInfo.then((createdFile) => {
-                            console.log(createdFile)
+                            //console.log(createdFile)
                             reply.send({ url: createdFile.fileName });
                         }).catch((error) => {
-                            console.log("report error");
-                            console.log(error);
+                            //console.log("report error");
+                            //console.log(error);
                         })
                         release()
                     });

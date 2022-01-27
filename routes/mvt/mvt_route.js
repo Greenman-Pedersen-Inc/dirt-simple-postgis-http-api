@@ -25,7 +25,7 @@ const sql = (params, query) => {
         ), filtered_crash_data as (
             select 
                 selected_segment_polygons.internal_id,
-                count(*) as crash_count
+                count(*) as crashes
             from ard_accidents_geom_partition
             inner join selected_segment_polygons
             on ard_accidents_geom_partition.sri = selected_segment_polygons.sri
@@ -48,10 +48,10 @@ const sql = (params, query) => {
             inner join segment_polygon
             on filtered_crash_data.internal_id = segment_polygon.internal_id
         )
-        SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
+        SELECT ST_AsMVT(clipped_results.*, 'segment_polygon', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
 `
 
-//console.log(queryText);
+// console.log(queryText);
 
 return queryText;
 }

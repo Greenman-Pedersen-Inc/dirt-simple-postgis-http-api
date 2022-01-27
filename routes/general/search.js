@@ -4,12 +4,12 @@ const https = require('https');
 // route query
 // *---------------*
 const makeSeachQueries = (params) => {
-  var sqlQueries = [];
-  var sql;
+        var sqlQueries = [];
+        var sql;
 
-  if (params.includeRoute) {
-    if (params.locationCode) {
-      const locationQuery = `${params.includeCounty.length == 2 ? `AND countycode = '${params.locationCode}'` : `AND municode = '${params.locationCode}'`}`;
+        if (params.includeRoute) {
+            if (params.locationCode) {
+                const locationQuery = `${params.includeCounty.length == 2 ? `AND countycode = '${params.locationCode}'` : `AND municode = '${params.locationCode}'`}`;
       sql = `SELECT DISTINCT 
       'SRI' AS "ResultType",
       CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
@@ -88,10 +88,10 @@ const makeSeachQueries = (params) => {
 // returns google geocoded results for an address or place input.
 // resultKeyword is either "predictions" for PLACE or "results" for addresses
 function getGoogleResponse(urlPath, attributes) {
-  console.log(urlPath)
+  //console.log(urlPath)
   var resultsList = [];
   const hostUrl = 'maps.googleapis.com';
-  console.log(hostUrl + urlPath)
+  //console.log(hostUrl + urlPath)
   const options = {
     hostname: hostUrl,
     port: 443,
@@ -106,7 +106,7 @@ function getGoogleResponse(urlPath, attributes) {
         let body = '';
         res.on('data', chunk => body += chunk);
         res.on('error', function (e) {
-          console.log("Got error: " + e.message);
+          //console.log("Got error: " + e.message);
         });
         res.on('end', () => {
           const searchResultsArray = JSON.parse(body)[attributes.results];
@@ -207,8 +207,8 @@ module.exports = function (fastify, opts, next) {
               return resolve(res);
             }
             catch (err) {
-              console.log(err.stack);
-              console.log(query);
+              //console.log(err.stack);
+              //console.log(query);
               return reject(error);
             }
           });
@@ -246,7 +246,7 @@ module.exports = function (fastify, opts, next) {
 
         Promise.all(promises).then((responseArray) => {
           responseArray.forEach(response => {
-            console.log(response)
+            //console.log(response)
             if (response.rows) {
               response.rows.forEach(row => {
                 resultsList.push(row);

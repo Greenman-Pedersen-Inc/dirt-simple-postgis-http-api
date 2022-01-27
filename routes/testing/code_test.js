@@ -1,4 +1,4 @@
-const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
+const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 // *---------------*
 // route query
@@ -6,7 +6,7 @@ const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_help
 const sql = (queryArgs) => {
 
     const crashFilterClauses = makeCrashFilterQuery(queryArgs.crashFilter);
-    console.log(crashFilterClauses)
+    //console.log(crashFilterClauses)
 
 
     // const returnQuery = `
@@ -16,7 +16,7 @@ const sql = (queryArgs) => {
     //     ${groupByClause ? ` GROUP BY ${groupByClause}`: ''}
     //     ${orderByClause ? ` ORDER BY ${orderByClause}`: ''}
     // `;
-  }
+}
 
 // *---------------*
 // route schema
@@ -39,12 +39,12 @@ const schema = {
 // *---------------*
 // create route
 // *---------------*
-module.exports = function (fastify, opts, next) {
+module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/test/code-test',
         schema: schema,
-        handler: function (request, reply) {
+        handler: function(request, reply) {
             fastify.pg.connect(onConnect)
 
             function onConnect(err, client, release) {
@@ -65,13 +65,13 @@ module.exports = function (fastify, opts, next) {
 
                 sql(queryArgs)
                 release()
-                // client.query(
-                //     sql(queryArgs),
-                //     function onResult(err, result) {
-                //         release()
-                //         //reply.send(err || {Crashes: result.rows})
-                //     }
-                // )
+                    // client.query(
+                    //     sql(queryArgs),
+                    //     function onResult(err, result) {
+                    //         release()
+                    //         //reply.send(err || {Crashes: result.rows})
+                    //     }
+                    // )
             }
         }
     })

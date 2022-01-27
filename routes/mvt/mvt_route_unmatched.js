@@ -38,24 +38,22 @@ const sql = (params, query) => {
             on ard_accidents_geom_partition.sri = juridiction_polygons.sri
             and ard_accidents_geom_partition.mun_cty_co = juridiction_polygons.mun_cty_co
             and ard_accidents_geom_partition.mun_mu = juridiction_polygons.mun_mu
-            where mp is null
+            where milepost is null
             
             -- including the SRI here makes the query MUCH slower
             ${filter ? ` AND ${filter.whereClause}` : ''}
             
-            group by selected_segment_polygons.internal_id
+            group by juridiction_polygons.internal_id
         ), clipped_results as (
             select
-                filtered_crash_data.crashes
-                juridiction_polygons.*,
-            from filtered_crash_data
-            inner join juridiction_polygons
+                filtered_crash_data.crashes,
+                juridiction_polygons.*
+            from juridiction_polygons
+            left join filtered_crash_data
             on filtered_crash_data.internal_id = juridiction_polygons.internal_id
         )
-        SELECT ST_AsMVT(clipped_results.*, 'segment_polygons', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
+        SELECT ST_AsMVT(clipped_results.*, 'route_municipal_buffer', 4096, 'geom', '${query.id_column}') AS mvt from clipped_results;
 `
-
-console.log(queryText);
 
 return queryText;
 }

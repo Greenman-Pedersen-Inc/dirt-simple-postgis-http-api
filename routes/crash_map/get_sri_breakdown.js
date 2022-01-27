@@ -3,37 +3,36 @@ get_sri_breakdown: Gets a list of number of crashes grouped by crash attribute c
 */
 
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
-const {makeCrashFilterQuery} = require('../../helper_functions/crash_filter_helper');
-const allowedFields = ["crash_type","surf_cond_code","road_median_code","year","acc_dow","environ_cond_code","road_char_code","surf_cond_code","dept_num","ramp_direction","light_cond_code"];
+const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
+const allowedFields = ["crash_type", "surf_cond_code", "road_median_code", "year", "acc_dow", "environ_cond_code", "road_char_code", "surf_cond_code", "dept_num", "ramp_direction", "light_cond_code"];
 
 // *---------------*
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-    // if target_milepost is defined, set start_mp and end_mp in the crashFilter object
-    const accidentsTableName = "ard_accidents_geom_partition";
-    let filterJson = JSON.parse(queryArgs.crashFilter);
+        // if target_milepost is defined, set start_mp and end_mp in the crashFilter object
+        const accidentsTableName = "ard_accidents_geom_partition";
+        let filterJson = JSON.parse(queryArgs.crashFilter);
 
-    if (queryArgs.target_sri) {
-        if (queryArgs.target_sri.toUpperCase() === "STATE") {
-            delete filterJson.sri;
-            delete filterJson.mp_start;
-            delete filterJson.mp_end;
-            delete filterJson.milepost;
+        if (queryArgs.target_sri) {
+            if (queryArgs.target_sri.toUpperCase() === "STATE") {
+                delete filterJson.sri;
+                delete filterJson.mp_start;
+                delete filterJson.mp_end;
+                delete filterJson.milepost;
+            } else {
+                filterJson.sri = queryArgs.target_sri;
+            }
+
+            if (queryArgs.target_milepost) {
+                filterJson.mp_start = queryArgs.target_milepost;
+                filterJson.mp_end = parseFloat(queryArgs.target_milepost) + 0.1;
+            }
         }
-        else {
-            filterJson.sri = queryArgs.target_sri;
-        }
 
-        if (queryArgs.target_milepost) {
-            filterJson.mp_start = queryArgs.target_milepost;
-            filterJson.mp_end = parseFloat(queryArgs.target_milepost) + 0.1;
-        }
-    }
+        const crashFilterClauses = makeCrashFilterQuery(filterJson, accidentsTableName);
 
-    const crashFilterClauses = makeCrashFilterQuery(filterJson, accidentsTableName);
-
-    var sql = `
+        var sql = `
     SELECT ${queryArgs.breakdown_field}, COALESCE(COUNT(*), 0)
     FROM ${accidentsTableName} ${crashFilterClauses.fromClause} 
     WHERE ${queryArgs.breakdown_field} IS NOT NULL
@@ -41,7 +40,7 @@ const sql = (queryArgs) => {
     GROUP BY ${queryArgs.breakdown_field}
     ORDER BY ${queryArgs.breakdown_field}
     `;
-    console.log(sql);
+    // console.log(sql);
     return sql;
   }
 

@@ -4,11 +4,11 @@ const https = require('https');
 // route query
 // *---------------*
 const sql = (params) => {
-  var sql = `SELECT county_name FROM public.ard_county WHERE county_code = '${params.countyCode}';`;
+        var sql = `SELECT county_name FROM public.ard_county WHERE county_code = '${params.countyCode}';`;
 
-  if (params.includeRoute) {
-    if (params.locationCode) {
-      const locationQuery = `${params.includeCounty.length == 2 ? `AND countycode = '${params.locationCode}'` : `AND municode = '${params.locationCode}'`}`;
+        if (params.includeRoute) {
+            if (params.locationCode) {
+                const locationQuery = `${params.includeCounty.length == 2 ? `AND countycode = '${params.locationCode}'` : `AND municode = '${params.locationCode}'`}`;
       sql = `SELECT DISTINCT 
         count(*)
         FROM srilookuplocation  
@@ -60,7 +60,7 @@ const sql = (params) => {
       or acc_case LIKE '%${params.searchText}%'  
       limit 5`;
   }
-  console.log(sql)
+//   console.log(sql)
   return sql;
 }
 
@@ -69,7 +69,7 @@ const sql = (params) => {
 function getGoogleResponse(urlPath, attributes) {
   var resultsList = [];
   const hostUrl = 'maps.googleapis.com';
-  console.log(hostUrl + urlPath)
+//   console.log(hostUrl + urlPath)
   const options = {
     hostname: hostUrl,
     port: 443,

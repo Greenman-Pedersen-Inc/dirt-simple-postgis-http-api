@@ -26,7 +26,7 @@ function saltHashPassword(userpassword) {
 }
 
 // create route
-module.exports = function (fastify, opts, next) {
+module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'POST',
         url: '/register',
@@ -44,7 +44,7 @@ module.exports = function (fastify, opts, next) {
                 required: ['username', 'pass', 'email']
             }
         },
-        handler: function (request, reply) {
+        handler: function(request, reply) {
             function onConnect(err, client, release) {
                 if (err) return reply.send({
                     "statusCode": 500,
@@ -52,7 +52,7 @@ module.exports = function (fastify, opts, next) {
                     "message": "unable to connect to database server: " + err
                 })
 
-                console.log(request.body)
+                // console.log(request.body)
 
                 client.query(
                     usersql(request.body),

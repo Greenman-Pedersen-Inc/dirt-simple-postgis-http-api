@@ -32,19 +32,19 @@ const schema = {
 // *---------------*
 // create route
 // *---------------*
-module.exports = function (fastify, opts, next) {
+module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/jurisidiction/report',
         schema: schema,
-        handler: function (request, reply) {
+        handler: function(request, reply) {
             fastify.pg.connect(onConnect)
 
             function onConnect(err, client, release) {
                 if (err) {
                     reply.send(err);
                     return;
-                } 
+                }
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
@@ -85,15 +85,16 @@ module.exports = function (fastify, opts, next) {
                                     try {
                                         const res = client.query(queryObj.query);
                                         return resolve(res);
-                                    }
-                                    catch(err) {
-                                        console.log(err.stack);
-                                        console.log(queryObj.query);
+                                    } catch (err) {
+                                        //console.log(err.stack);
+                                        // console.log(queryObj.query);
                                         return reject(error);
-                                    }  
+                                    }
                                 });
                                 promises.push(promise);
-                                categories.push({[queryObj.category]: queryObj.name});
+                                categories.push({
+                                    [queryObj.category]: queryObj.name
+                                });
                             });
                         }
                     }
@@ -103,17 +104,19 @@ module.exports = function (fastify, opts, next) {
                             var data = reportDataArray[i].rows;
                             var category = Object.keys(categories[i])[0];
                             var tableTitle = Object.values(categories[i])[0];
-                            reportData[category].push({[tableTitle]: data});
+                            reportData[category].push({
+                                [tableTitle]: data
+                            });
                         }
 
                         // create report pdf
                         const fileInfo = juriHelper.makeJurisdictionReport(queryArgs, reportData);
                         fileInfo.then((createdFile) => {
-                            console.log(createdFile)
+                            //console.log(createdFile)
                             reply.send({ url: createdFile.fileName });
                         }).catch((error) => {
-                            console.log("report error");
-                            console.log(error);
+                            //console.log("report error");
+                            //console.log(error);
                         })
                     });
                 }

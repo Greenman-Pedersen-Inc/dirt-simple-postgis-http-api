@@ -52,8 +52,8 @@ const sql = (params, query) => {
             'segments', count(*)
         ) route_metrics from binned_data
 `
-    console.log('routeHistogram');
-    console.log(formattedQuery);
+    // console.log('routeHistogram');
+    // console.log(formattedQuery);
     return formattedQuery;
 }
 

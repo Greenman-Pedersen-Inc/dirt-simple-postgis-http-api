@@ -19,7 +19,7 @@ function logRequest(request, reply, done) {
     const username = request.headers.username;
     const currentTime = new Date().getTime();
     const sql = (query, url, user, time) => {
-        console.log(query, url, user, time);
+        //console.log(query, url, user, time);
         var queryString = `
             INSERT INTO admin.traffic(
                 user_name, request_time, end_point, user_query)
@@ -164,7 +164,7 @@ fastify.register(require('fastify-autoload'), {
 // Launch server
 fastify.listen(config.port, config.host || '127.0.0.1', function(err, address) {
     if (err) {
-        console.log(err)
+        //console.log(err)
         process.exit(1)
     }
     console.info(`Server listening on ${address}`)

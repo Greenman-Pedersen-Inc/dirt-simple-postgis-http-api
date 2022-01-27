@@ -60,12 +60,12 @@ const schema = {
 // *---------------*
 // create route
 // *---------------*
-module.exports = function (fastify, opts, next) {
+module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/trends/crashes-by-attribute',
         schema: schema,
-        handler: function (request, reply) {
+        handler: function(request, reply) {
             fastify.pg.connect(onConnect)
 
             function onConnect(err, client, release) {
@@ -81,15 +81,13 @@ module.exports = function (fastify, opts, next) {
                         "error": "Internal Server Error",
                         "message": "need start year"
                     });
-                } 
-                else if (queryArgs.endYear == undefined) {
+                } else if (queryArgs.endYear == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
                         "message": "need start year"
                     });
-                }
-                else if (queryArgs.attribute == undefined) {
+                } else if (queryArgs.attribute == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
@@ -106,15 +104,14 @@ module.exports = function (fastify, opts, next) {
                     if (reportQueries.hasOwnProperty(key)) {
                         const promise = new Promise((resolve, reject) => {
                             try {
-                                console.log(reportQueries[key].query)
+                                //console.log(reportQueries[key].query)
                                 const res = client.query(reportQueries[key].query);
                                 return resolve(res);
-                            }
-                            catch(err) {
-                                console.log(err.stack);
-                                console.log(reportQueries[key].query);
+                            } catch (err) {
+                                //console.log(err.stack);
+                                //console.log(reportQueries[key].query);
                                 return reject(error);
-                            }  
+                            }
                         });
                         promises.push(promise);
                     }
@@ -129,8 +126,8 @@ module.exports = function (fastify, opts, next) {
 
                     reply.send({ GraphData: returnData });
                 }).catch((error) => {
-                    console.log("report error");
-                    console.log(error);
+                    //console.log("report error");
+                    //console.log(error);
                 });
 
             }

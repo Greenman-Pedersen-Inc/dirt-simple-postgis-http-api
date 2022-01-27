@@ -5,10 +5,10 @@ const sunglareHelper = require('../../helper_functions/sunglare_helper');
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-    var locationClause = sunglareHelper.createLocationClause(queryArgs);
-    var filterClause = sunglareHelper.createFilterClause(queryArgs);
+        var locationClause = sunglareHelper.createLocationClause(queryArgs);
+        var filterClause = sunglareHelper.createFilterClause(queryArgs);
 
-    var sql = `
+        var sql = `
     SELECT 
     SUBSTRING ( acc_time, 1, 2 ) crash_hr,
     COUNT(ard_accidents_sunglare.crashid), 
@@ -26,7 +26,7 @@ const sql = (queryArgs) => {
     ${filterClause  !== "" ? ` AND ${filterClause}` : '' }     
     GROUP BY crash_hr
     ORDER BY crash_hr;`;
-    console.log(sql);
+    //console.log(sql);
     return sql;
   }
 

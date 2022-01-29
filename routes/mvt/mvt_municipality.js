@@ -4,11 +4,12 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 const sql = (params, query) => {
         const accidentsTableName = 'ard_accidents_geom_partition';
         var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
-  if (query.crashFilter) {
-    let parsed_filter = JSON.parse(query.crashFilter);
-    let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
-    whereClause = filter.whereClause;
-  } 
+        
+        if (query.crashFilter) {
+            let parsed_filter = JSON.parse(query.crashFilter);
+            let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+            whereClause = filter.whereClause;
+        } 
 
     let queryText = `
         with selected_municipalities as (
@@ -17,7 +18,7 @@ const sql = (params, query) => {
                 mun_cty_co,
                 mun_mu,
                 mun_label,
-                concat(INITCAP(county), ' County'),
+                concat(INITCAP(county), ' County') county,
                 centroid,
                 bounding_box,
                 ST_AsMVTGeom(

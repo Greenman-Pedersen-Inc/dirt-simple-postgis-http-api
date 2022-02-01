@@ -44,11 +44,11 @@ const sql = (params, query) => {
                 GROUP BY kmean
             )
 
-            SELECT ST_AsMVT(*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
+            SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom') AS mvt from complete_data;
         `
 
 
-    //console.log(queryText);
+    // console.log(queryText);
     return queryText;
 }
 

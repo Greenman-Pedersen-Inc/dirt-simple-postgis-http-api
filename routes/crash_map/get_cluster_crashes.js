@@ -7,10 +7,10 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 // *---------------*
 const sql = (query) => {
         const accidentsTableName = 'ard_accidents_geom_partition';
-        const whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+        let whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
         
-        if (query.selectedFilters) {
-            const parsed_filter = JSON.parse(query.selectedFilters);
+        if (query.selectedfilters) {
+            const parsed_filter = JSON.parse(query.selectedfilters);
             const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
             whereClause = filter.whereClause;
         }
@@ -27,7 +27,7 @@ const sql = (query) => {
                 select count(*)
                 from crash_data
                 union all
-                select ${query.numClusters} -- num_clusters
+                select ${query.numclusters} -- num_clusters
             ), cluster_crash_ids as(
                 SELECT
                     crashid
@@ -39,7 +39,7 @@ const sql = (query) => {
                         ST_Centroid(geom) as geom_center
                     FROM crash_data
                 ) tsub
-                where kmean = ${query.clusterNumber} -- cluster_number
+                where kmean = ${query.clusternumber} -- cluster_number
             )
 
             select 
@@ -51,7 +51,7 @@ const sql = (query) => {
                 mun_mu,
                 acc_dow,
                 crash_type,
-                dln,
+                -- dln,
                 environ_cond_code,
                 light_cond_code,
                 no_injured,
@@ -65,11 +65,11 @@ const sql = (query) => {
                 route_sx,
                 surf_cond_code,
                 tot_veh_involved,
-                year,
-                CASE 
-                    WHEN complete_data.directory IS NOT NULL OR directory <> '' THEN CONCAT('${njtr1Root}', directory, '/', dln, '.PDF') 
-                    ELSE NULL
-                END AS URL
+                year
+                -- CASE 
+                --     WHEN crash_data.directory IS NOT NULL OR directory <> '' THEN CONCAT('${njtr1Root}', directory, '/', dln, '.PDF') 
+                --     ELSE NULL
+                -- END AS URL
             from cluster_crash_ids
             inner join crash_data
             using (crashid)
@@ -99,15 +99,15 @@ const schema = {
             type: 'integer',
             description: 'Y value of ZXY tile.'
         },
-        numClusters: {
+        numclusters: {
             type: 'integer',
             description: 'the number of clusters calculated to create for the zoom level'
         },
-        clusterNumber: {
+        clusternumber: {
             type: 'integer',
             description: 'the cluster number the crash is part of'
         },
-        selectedFilters: {
+        selectedfilters: {
             type: 'string',
             description: 'currently selected filters being used by the map',
         }
@@ -131,26 +131,57 @@ module.exports = function(fastify, opts, next) {
                         "message": "unable to connect to database server"
                     });
                 } else {
-                    if (request.query.selectedFilters == undefined) {
+                    if (request.query.z == undefined) {
                         return reply.send({
                             "statusCode": 500,
                             "error": "Internal Server Error",
-                            "message": "need at least one case ID within a cluster"
+                            "message": "need a z value"
                         });
-                    } else if (request.query.boundingBox == undefined) {
+                    } else if (request.query.x == undefined) {
                         return reply.send({
                             "statusCode": 500,
                             "error": "Internal Server Error",
-                            "message": "need at least one case ID within a cluster"
+                            "message": "need a x value"
+                        });
+                    } else if (request.query.y == undefined) {
+                        return reply.send({
+                            "statusCode": 500,
+                            "error": "Internal Server Error",
+                            "message": "need a y value"
+                        });
+                    } else if (request.query.numclusters == undefined) {
+                        return reply.send({
+                            "statusCode": 500,
+                            "error": "Internal Server Error",
+                            "message": "need a number of clusters value"
+                        });
+                    } else if (request.query.clusternumber == undefined) {
+                        return reply.send({
+                            "statusCode": 500,
+                            "error": "Internal Server Error",
+                            "message": "need the cluter identifier"
+                        });
+                    } else if (request.query.selectedfilters == undefined) {
+                        return reply.send({
+                            "statusCode": 500,
+                            "error": "Internal Server Error",
+                            "message": "need the pertinent filters to apply"
                         });
                     } else {
                         client.query(
                             sql(request.query),
                             function onResult(err, result) {
-                                const transcribedObject = transcribeKeysArray(result.rows);
-
                                 release();
-                                reply.send(err || { crashes: transcribedObject });
+
+                                if (err){
+                                    reply.send(err)
+                                } else if (result && result.rows) {
+                                    const transcribedObject = transcribeKeysArray(result.rows);
+
+                                    reply.send( { crashes: transcribedObject });
+                                } else {
+                                    reply.code(204);
+                                }
                             }
                         )
                     }

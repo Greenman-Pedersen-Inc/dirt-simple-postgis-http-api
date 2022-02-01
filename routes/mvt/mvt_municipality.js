@@ -2,14 +2,15 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 
 // route query
 const sql = (params, query) => {
-        const accidentsTableName = 'ard_accidents_geom_partition';
-        var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
-        
-        if (query.crashFilter) {
-            let parsed_filter = JSON.parse(query.crashFilter);
-            let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
-            whereClause = filter.whereClause;
-        } 
+  const accidentsTableName = 'ard_accidents_geom_partition';
+  var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+  var fromClause = '';
+  if (query.crashFilter) {
+    let parsed_filter = JSON.parse(query.crashFilter);
+    let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+    whereClause = filter.whereClause;
+    fromClause = filter.fromClause;
+  } 
 
     let queryText = `
         with selected_municipalities as (
@@ -39,6 +40,7 @@ const sql = (params, query) => {
             left join ard_accidents_geom_partition
             on ard_accidents_geom_partition.mun_cty_co = selected_municipalities.mun_cty_co
             and ard_accidents_geom_partition.mun_mu = selected_municipalities.mun_mu
+            ${fromClause ? ` ${fromClause}` : ''}
             ${whereClause ? ` WHERE ${whereClause}` : ''}
             group by selected_municipalities.mun_cty_co, selected_municipalities.mun_mu
         ), clipped_results as (

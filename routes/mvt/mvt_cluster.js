@@ -2,23 +2,26 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 
 // route query
 const sql = (params, query) => {
-        const accidentsTableName = 'ard_accidents_geom_partition';
-        const whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
-        if (query.crashFilter) {
-            const parsed_filter = JSON.parse(query.crashFilter);
-            const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
-            whereClause = filter.whereClause;
-        } 
+  const accidentsTableName = 'ard_accidents_geom_partition';
+  var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+  var fromClause = '';
+  if (query.crashFilter) {
+    let parsed_filter = JSON.parse(query.crashFilter);
+    let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+    whereClause = filter.whereClause;
+    fromClause = filter.fromClause;
+  }
 
-        const queryText = `
+  const queryText = `
  
             with crash_data as (
                 SELECT geom
                 FROM ard_accidents_geom_partition
+                ${fromClause ? ` ${fromClause}` : ''}
                 WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))
                 -- Optional filter for the query input
                 ${whereClause ? ` AND ${whereClause}` : ''}
-            ), crash_count as (
+                ), crash_count as (
                 select count(*)
                 from crash_data
                 union all
@@ -48,8 +51,13 @@ const sql = (params, query) => {
         `
 
 
+<<<<<<< HEAD
     // console.log(queryText);
     return queryText;
+=======
+  console.log(queryText);
+  return queryText;
+>>>>>>> 30d25332dc22cad2453923eb2fa3831ea6699089
 }
 
 // route schema

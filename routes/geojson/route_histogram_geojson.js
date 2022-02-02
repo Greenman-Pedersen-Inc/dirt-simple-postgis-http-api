@@ -3,7 +3,7 @@
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-        let filter = makeCrashFilterQuery(query.filter);
+        let filter = makeCrashFilterQuery(query.filter, 'ard_accidents_geom_partition');
         let parsed_filter = JSON.parse(query.filter)
 
         let formattedQuery = `
@@ -14,6 +14,7 @@ const sql = (params, query) => {
                 CONCAT(rounded_mp, ' - ', rounded_mp + .09) AS mp_range,
                 count(*) crash_count
             from ard_accidents_geom_partition
+            ${filter.fromClause ? ` ${filter.fromClause}` : ''}
             ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
             group by 1, 2
         ), route_data as (
@@ -53,7 +54,7 @@ const sql = (params, query) => {
         ) route_metrics from binned_data
 `
     // console.log('routeHistogram');
-    // console.log(formattedQuery);
+    console.log(formattedQuery);
     return formattedQuery;
 }
 
@@ -79,7 +80,7 @@ const schema = {
 module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/geojson/routeHistogram',
+        url: '/geojson/route-histogram',
         schema: schema,
         handler: function(request, reply) {
             fastify.pg.connect(onConnect)

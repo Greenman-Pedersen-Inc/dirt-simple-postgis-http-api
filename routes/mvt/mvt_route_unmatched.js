@@ -108,7 +108,7 @@ querystring: {
 module.exports = function(fastify, opts, next) {
 fastify.route({
   method: 'GET',
-  url: '/mvt/route_unmatched/:z/:x/:y',
+  url: '/mvt/route-unmatched/:z/:x/:y',
   schema: schema,
   handler: function(request, reply) {
     fastify.pg.connect(onConnect)

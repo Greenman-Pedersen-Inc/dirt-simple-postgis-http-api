@@ -46,8 +46,8 @@ const sql = (params, query) => {
         ), clipped_results as (
             select 
                   CASE 
-                  WHEN filtered_crash_data.crashes > 0 THEN filtered_crash_data.crashes
-                  WHEN filtered_crash_data.crashes IS NULL THEN 0
+                    WHEN filtered_crash_data.crashes > 0 THEN filtered_crash_data.crashes
+                    WHEN filtered_crash_data.crashes IS NULL THEN 0
                   ELSE 0
                 END AS crashes,
                 selected_municipalities.*

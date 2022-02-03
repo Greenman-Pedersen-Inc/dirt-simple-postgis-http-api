@@ -18,10 +18,6 @@ function createQueryClauseSingleton(codeObject, tableName, input, qualifier = '=
 // The input format will be parsed based on comma seperated values, for example: 01,02,03,04
 // The input value is converted as an SQL string.
 function createQueryClauseMultiple(codeObject, tableName, input) {
-    // console.log("createQueryClauseMultiple")
-    // console.log(codeObject)
-    // console.log(tableName)
-    // console.log(input)
     const splitInputList = String(input).split(',');
     const formattedList = "'" + splitInputList.join("','") + "'"
 
@@ -30,7 +26,7 @@ function createQueryClauseMultiple(codeObject, tableName, input) {
         var returnQueryArray = [];
         returnQueryArray.push(`${tableName}.${codeObject.fieldName} IN (${formattedList})`);
         codeObject.secondaryColumns.forEach(column => {
-            returnQueryArray.push(`${column} IN (${formattedList})`);
+            returnQueryArray.push(`${tableName}.${column} IN (${formattedList})`);
         });
         return `(${returnQueryArray.join(" OR ")})`;
     }

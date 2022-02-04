@@ -30,6 +30,7 @@ const sql = (params, query) => {
             inner join selected_segment_polygons
             on ard_accidents_geom_partition.sri = selected_segment_polygons.sri
             and ard_accidents_geom_partition.rounded_mp = selected_segment_polygons.mp
+            ${filter.fromClause ? ` ${filter.fromClause}` : ''}
             
             -- including the SRI here makes the query MUCH slower
             ${filter ? ` where ${filter.whereClause}` : ''}
@@ -51,7 +52,7 @@ const sql = (params, query) => {
         SELECT ST_AsMVT(clipped_results.*, 'segment_polygon', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
 `
 
-// console.log(queryText);
+console.log(queryText);
 
 return queryText;
 }

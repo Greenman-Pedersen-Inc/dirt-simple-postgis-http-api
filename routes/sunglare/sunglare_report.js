@@ -151,6 +151,7 @@ module.exports = function(fastify, opts, next) {
                         }).catch((error) => {
                             //console.log("report error");
                             //console.log(error);
+                            reply.send(error);
                         })
                         release()
                     });

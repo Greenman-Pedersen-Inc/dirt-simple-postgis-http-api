@@ -80,7 +80,9 @@ function transcribeKeys(dataRowObject, translateValues = true) {
                 break;
             }
         }
-        if (!found) returnRow[key] = rowValue;
+
+        // don't output keys that are not found. they will not be included in the results
+        //if (!found) returnRow[key] = rowValue;
     }
 
     return returnRow;

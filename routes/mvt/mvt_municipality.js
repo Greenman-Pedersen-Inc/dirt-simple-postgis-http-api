@@ -46,8 +46,8 @@ const sql = (params, query) => {
         ), clipped_results as (
             select 
                   CASE 
-                  WHEN filtered_crash_data.crashes > 0 THEN filtered_crash_data.crashes
-                  WHEN filtered_crash_data.crashes IS NULL THEN 0
+                    WHEN filtered_crash_data.crashes > 0 THEN filtered_crash_data.crashes
+                    WHEN filtered_crash_data.crashes IS NULL THEN 0
                   ELSE 0
                 END AS crashes,
                 selected_municipalities.*
@@ -58,7 +58,7 @@ const sql = (params, query) => {
         SELECT ST_AsMVT(clipped_results.*, 'municipal_boundaries_of_nj_3857', 4096, 'geom', 'ogc_fid') AS mvt from clipped_results;
     `
   
-    // console.log(queryText);
+    //console.log(queryText);
     return queryText;
   }
   

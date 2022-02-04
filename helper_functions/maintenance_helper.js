@@ -11,7 +11,7 @@ const { autoTable } = require("jspdf-autotable"); // will automatically load the
 require('./report_maker/fonts/SegoeUI/segoeui-normal');
 require('./report_maker/fonts/SegoeUI/seguisb-normal');
 
-const basePath = 'C:/AppDev/1 Official Projects/NJ Voyager/Node Server/dirt-simple-postgis-http-api/helper_functions/report_maker/';
+const basePath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/';
 
 function fileExport(queryStrings, data) {
     if (queryStrings.fileFormat == 'pdf') {

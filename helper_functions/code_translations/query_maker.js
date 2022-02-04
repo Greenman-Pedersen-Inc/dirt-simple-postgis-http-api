@@ -18,10 +18,6 @@ function createQueryClauseSingleton(codeObject, tableName, input, qualifier = '=
 // The input format will be parsed based on comma seperated values, for example: 01,02,03,04
 // The input value is converted as an SQL string.
 function createQueryClauseMultiple(codeObject, tableName, input) {
-    // console.log("createQueryClauseMultiple")
-    // console.log(codeObject)
-    // console.log(tableName)
-    // console.log(input)
     const splitInputList = String(input).split(',');
     const formattedList = "'" + splitInputList.join("','") + "'"
 
@@ -30,7 +26,7 @@ function createQueryClauseMultiple(codeObject, tableName, input) {
         var returnQueryArray = [];
         returnQueryArray.push(`${tableName}.${codeObject.fieldName} IN (${formattedList})`);
         codeObject.secondaryColumns.forEach(column => {
-            returnQueryArray.push(`${column} IN (${formattedList})`);
+            returnQueryArray.push(`${tableName}.${column} IN (${formattedList})`);
         });
         return `(${returnQueryArray.join(" OR ")})`;
     }
@@ -104,6 +100,33 @@ function makeWhereClause(whereClauses) {
     else return whereClauses.join(" AND ");
 }
 
+// Splits a code string by "," to return an array of codes
+// INPUT: "07,08,15,16,18"
+// OUTPUT: [07, 08, ...]
+function splitCodes(codeString) {
+    var splitCodes = [];
+    if (codeString !== undefined && codeString !== null) {
+        splitCodes = codeString.split(',');
+    }
+    return splitCodes;
+}
+
+// This formats the codes for the IN statement by adding single quotes and commas to each code from the request parameters.
+// EXAMPLE: enviornmentCode = "01,02,03"
+// RETURNS: "'01','02','03'"
+function formatCodes(codeString) {
+    var returnCodes = "";
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
+        var formattedCodes = [];
+        codes.forEach(splitCode => {
+            formattedCodes.push("'" + splitCode + "'");
+        });
+        returnCodes = formattedCodes.join(", ");
+    }
+    return returnCodes;
+}
+
 module.exports = {
     createQueryClauseSingleton: createQueryClauseSingleton,
     createQueryClauseMultiple: createQueryClauseMultiple,
@@ -112,5 +135,6 @@ module.exports = {
     createQueryMilepost: createQueryMilepost,
     createQueryVehicleTotal: createQueryVehicleTotal,
     makeFromClause: makeFromClause,
-    makeWhereClause: makeWhereClause
+    makeWhereClause: makeWhereClause,
+    formatCodes: formatCodes
 }

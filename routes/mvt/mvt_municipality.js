@@ -2,8 +2,8 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 
 // route query
 const sql = (params, query) => {
-  const accidentsTableName = 'ard_accidents_geom_partition';
-  var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+        const accidentsTableName = 'ard_accidents_geom_partition';
+        var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
   var fromClause = '';
   if (query.crashFilter) {
     let parsed_filter = JSON.parse(query.crashFilter);
@@ -58,7 +58,7 @@ const sql = (params, query) => {
         SELECT ST_AsMVT(clipped_results.*, 'municipal_boundaries_of_nj_3857', 4096, 'geom', 'ogc_fid') AS mvt from clipped_results;
     `
 
-    console.log(queryText);
+    // console.log(queryText);
     return queryText;
   }
   

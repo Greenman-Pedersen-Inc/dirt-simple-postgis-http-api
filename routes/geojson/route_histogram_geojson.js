@@ -7,55 +7,71 @@ const sql = (params, query) => {
         let parsed_filter = JSON.parse(query.filter)
 
         let formattedQuery = `
-        with selected_crashes as (
-            select 
-                sri, 
-                rounded_mp,
-                CONCAT(rounded_mp, ' - ', rounded_mp + .09) AS mp_range,
-                count(*) crash_count
-            from ard_accidents_geom_partition
-            ${filter.fromClause ? ` ${filter.fromClause}` : ''}
-            ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
-            group by 1, 2
-        ), route_data as (
-            select *
-            from segment_polygon
-            where sri = '${parsed_filter.sri}'
-        ), binned_data as (
-            select route_data.*, crash_count
-            from route_data
-            inner join selected_crashes
-            on selected_crashes.rounded_mp = route_data.mp
-            order by mp
-        )
+            with crash_data as (
+                select
+                    sri,
+                    rounded_mp,
+                    count(*) crash_count
+                from ard_accidents_geom_partition
+                ${filter.fromClause ? ` ${filter.fromClause}` : ''}
+                ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
+                group by 1, 2
+            ), 
+            route_data as (
+                select 
+                    mp, geom
+                from segment_polygon
+                where sri = '${parsed_filter.sri}'
+            ), 
+            start_mp_coordinates as (
+                select ST_AsGeoJSON(st_transform(st_centroid(geom), 4326)) geom_text
+                from route_data
+                where route_data.mp in (select min(rounded_mp) from crash_data)
+            ), 
+            end_mp_coordinates as (
+                select ST_AsGeoJSON(st_transform(st_centroid(geom), 4326)) geom_text
+                from route_data
+                where route_data.mp = (select max(rounded_mp) from crash_data)
+            )
 
-        select json_build_object(
-            'features', 
-                json_agg(
-                    json_build_object(
-                        'sri', sri,
-                        'milepost', mp,
-                        'crash_count', crash_count
-                    )
+            select json_build_object(
+                'start_mp', min(rounded_mp),
+                'end_mp', max(rounded_mp),
+                'crash_count', sum(crash_count),
+                'min_crashes', min(crash_count),
+                'max_crashes', max(crash_count),
+                'start_mp_point', (
+                    select
+                        CASE
+                            when count(*) > 0 THEN (select geom_text from start_mp_coordinates limit 1)
+                            else (
+                                SELECT ST_AsGeoJSON(st_transform(st_centroid(geom), 4326)) 
+                                from route_data
+                                order by mp
+                                limit 1
+                            )::text   
+                        END
+                    from start_mp_coordinates
                 ),
-            'bbox', array[
-                array[
-                    min(ST_XMin(st_transform(geom, 4326))),
-                    min(ST_YMin(st_transform(geom, 4326)))
-                ], 
-                array[
-                    max(ST_XMax(st_transform(geom, 4326))),
-                    max(ST_YMax(st_transform(geom, 4326)))
-                ]
-            ],
-            'min_crashes', min(crash_count),
-            'max_crashes', max(crash_count),
-            'segments', count(*)
-        ) route_metrics from binned_data
-`
-    // console.log('routeHistogram');
-    console.log(formattedQuery);
-    return formattedQuery;
+                'end_mp_point', (
+                    select
+                        CASE
+                            when count(*) > 0 THEN (select geom_text from end_mp_coordinates limit 1)
+                            else (
+                                SELECT ST_AsGeoJSON(st_transform(st_centroid(geom), 4326)) 
+                                from route_data
+                                order by mp desc
+                                limit 1
+                            )::text   
+                        END
+                    from end_mp_coordinates
+                ),
+                'segments', count(*)
+            ) route_metrics from crash_data
+        `
+
+        // console.log(formattedQuery);
+        return formattedQuery;
 }
 
 // route schema

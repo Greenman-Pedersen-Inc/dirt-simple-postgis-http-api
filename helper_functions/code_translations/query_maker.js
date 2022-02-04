@@ -135,6 +135,6 @@ module.exports = {
     createQueryMilepost: createQueryMilepost,
     createQueryVehicleTotal: createQueryVehicleTotal,
     makeFromClause: makeFromClause,
-    makeWhereClause: makeWhereClause.apply,
+    makeWhereClause: makeWhereClause,
     formatCodes: formatCodes
 }

@@ -97,17 +97,23 @@ module.exports = function (fastify, opts, next) {
                             }
                         });
 
-                        // zipping a file
+                        // zipping a file                        
                         zipper.zip(filePath + '.csv', function (error, zipped) {
                             if (!error) {
                                 zipped.compress(); // compress before exporting
-
-                                // var buff = zipped.memory(); // get the zipped file as a Buffer
 
                                 // or save the zipped file to disk
                                 zipped.save(filePath + ".zip", function (error) {
                                     if (!error) {
                                         reply.send({ url: csvFileName + '.zip' });
+                                        fs.unlink(filePath + '.csv', (err) => {
+                                            if (err) {
+                                              console.error(err)
+                                              return
+                                            }
+                                          
+                                            //file removed
+                                        })
                                     }
                                     else reply.send(error);
                                 });

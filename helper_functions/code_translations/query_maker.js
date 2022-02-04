@@ -100,6 +100,33 @@ function makeWhereClause(whereClauses) {
     else return whereClauses.join(" AND ");
 }
 
+// Splits a code string by "," to return an array of codes
+// INPUT: "07,08,15,16,18"
+// OUTPUT: [07, 08, ...]
+function splitCodes(codeString) {
+    var splitCodes = [];
+    if (codeString !== undefined && codeString !== null) {
+        splitCodes = codeString.split(',');
+    }
+    return splitCodes;
+}
+
+// This formats the codes for the IN statement by adding single quotes and commas to each code from the request parameters.
+// EXAMPLE: enviornmentCode = "01,02,03"
+// RETURNS: "'01','02','03'"
+function formatCodes(codeString) {
+    var returnCodes = "";
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
+        var formattedCodes = [];
+        codes.forEach(splitCode => {
+            formattedCodes.push("'" + splitCode + "'");
+        });
+        returnCodes = formattedCodes.join(", ");
+    }
+    return returnCodes;
+}
+
 module.exports = {
     createQueryClauseSingleton: createQueryClauseSingleton,
     createQueryClauseMultiple: createQueryClauseMultiple,
@@ -108,5 +135,6 @@ module.exports = {
     createQueryMilepost: createQueryMilepost,
     createQueryVehicleTotal: createQueryVehicleTotal,
     makeFromClause: makeFromClause,
-    makeWhereClause: makeWhereClause
+    makeWhereClause: makeWhereClause.apply,
+    formatCodes: formatCodes
 }

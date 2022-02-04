@@ -51,13 +51,8 @@ const sql = (params, query) => {
         `
 
 
-<<<<<<< HEAD
     // console.log(queryText);
     return queryText;
-=======
-  console.log(queryText);
-  return queryText;
->>>>>>> 30d25332dc22cad2453923eb2fa3831ea6699089
 }
 
 // route schema

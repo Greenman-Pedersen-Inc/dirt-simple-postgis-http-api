@@ -5,7 +5,7 @@
 // *---------------*
 const sql = (queryArgs) => {
     var sql = `
-    SELECT oid, * FROM public.user_queries WHERE user_name = '${queryArgs.userName}';
+    SELECT * FROM usermanagement.user_queries WHERE user_name = '${queryArgs.userName}';
     `;
     return sql;
   }
@@ -21,6 +21,7 @@ const schema = {
         userName: {
             type: 'string',
             description: 'User email to log into SV',
+            example: 'example@somewhere.org'
         }
     }
 }

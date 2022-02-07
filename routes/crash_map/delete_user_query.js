@@ -5,7 +5,7 @@
 // *---------------*
 const sql = (queryArgs) => {
     var sql = `
-    DELETE FROM public.user_queries WHERE user_name = '${queryArgs.userName}' AND oid = ${queryArgs.oid}
+    DELETE FROM usermanagement.user_queries WHERE user_name = '${queryArgs.userName}' AND oid = ${queryArgs.oid}
     `;
     return sql;
   }

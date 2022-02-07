@@ -5,7 +5,7 @@
 // *---------------*
 const sql = (queryArgs) => {
     var sql = `
-    INSERT INTO voyagerAdmin.user_queries (user_name, x_min, x_max, y_min, y_max, filters, filters_description, filters_title, results_text, min_mp, max_mp, zoom_level, rotation) 
+    INSERT INTO usermanagement.user_queries (user_name, x_min, x_max, y_min, y_max, filters, filters_description, filters_title, results_text, min_mp, max_mp, zoom_level, rotation) 
     VALUES ('${queryArgs.userName}', '${queryArgs.minX}', '${queryArgs.maxX}', '${queryArgs.minY}', '${queryArgs.maxX}', '${queryArgs.maxY}', '${queryArgs.crashFilter}', 
     '${queryArgs.filtersDescription}', '${queryArgs.filtersTitle}', '${queryArgs.resultsText}',' ${queryArgs.minMp}', '${queryArgs.maxMp}', 
     '${queryArgs.zoomLevel}', '${queryArgs.rotation}')

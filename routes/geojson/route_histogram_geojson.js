@@ -37,7 +37,11 @@ const sql = (params, query) => {
             select json_build_object(
                 'start_mp', min(rounded_mp),
                 'end_mp', max(rounded_mp),
-                'crash_count', sum(crash_count),
+                'crash_features', array_agg(
+                    json_build_object(
+                        'properties', crash_data.*
+                    )
+                ),
                 'min_crashes', min(crash_count),
                 'max_crashes', max(crash_count),
                 'start_mp_point', (

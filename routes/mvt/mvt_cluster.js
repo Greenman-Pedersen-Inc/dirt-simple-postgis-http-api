@@ -47,7 +47,7 @@ const sql = (params, query) => {
                     SELECT
                         cluster_id,
                         array_to_json(array_agg(crashid)) crash_array,
-                        count(*) as crashes,
+                        count(*) as crash_count,
                         ST_AsMVTGeom(
                             st_centroid(ST_Collect(cluster_geometry)),
                             ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
@@ -80,7 +80,7 @@ const sql = (params, query) => {
                 complete_data as(
                     SELECT
                         array_to_json(array_agg(crashid)) crash_array, 
-                        count(*) as crashes,
+                        count(*) as crash_count,
                         ST_AsMVTGeom(
                             ST_Transform(ST_SetSRID(ST_Centroid(ST_Extent(geom_center)), 4326), 3857),
                             ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})

@@ -120,7 +120,7 @@ const schema = {
 module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/crash/cluster',
+        url: '/crash/kmeans_cluster',
         schema: schema,
         handler: function(request, reply) {
             function onConnect(err, client, release) {

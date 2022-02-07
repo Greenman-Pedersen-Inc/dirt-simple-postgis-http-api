@@ -1,12 +1,12 @@
 // route query
 const sql = (params, query) => {
 
-    return `
+        return `
 SELECT ST_AsGeoJSON(complete_data.*, '', ${parseInt(query.precision, 10)}) AS geojson
 FROM (
     SELECT 
         -- kmean, 
-        count(*) as crashes,
+        count(*) as crash_count,
 
         -- ST_SetSRID(ST_Extent(geom_center), 4326) as bbox, 
         ST_SetSRID(ST_Centroid(ST_Extent(geom_center)), 4326) as geom

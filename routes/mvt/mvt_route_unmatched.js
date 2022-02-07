@@ -32,7 +32,7 @@ const sql = (params, query) => {
         ), filtered_crash_data as (
             select 
                 juridiction_polygons.internal_id,
-                count(*) as crashes
+                count(*) as crash_count
             from ard_accidents_geom_partition
             inner join juridiction_polygons
             on ard_accidents_geom_partition.sri = juridiction_polygons.sri
@@ -46,7 +46,7 @@ const sql = (params, query) => {
             group by juridiction_polygons.internal_id
         ), clipped_results as (
             select
-                filtered_crash_data.crashes,
+                filtered_crash_data.crash_count,
                 juridiction_polygons.*
             from juridiction_polygons
             left join filtered_crash_data

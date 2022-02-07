@@ -3,8 +3,8 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 // route query
 // require the funciton 
 const sql = (params, query) => {
-  const accidentsTableName = 'ard_accidents_geom_partition';
-  var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
+        const accidentsTableName = 'ard_accidents_geom_partition';
+        var whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
   var fromClause = '';
   if (query.crashFilter) {
     let parsed_filter = JSON.parse(query.crashFilter);
@@ -33,7 +33,7 @@ const sql = (params, query) => {
         ), filtered_crash_data as (
             select
                 ard_accidents_geom_partition.mun_cty_co, 
-                COUNT(*) crashes
+                COUNT(*) crash_count
             from selected_counties
             INNER JOIN ard_accidents_geom_partition
             ON ard_accidents_geom_partition.mun_cty_co = selected_counties.mun_cty_co
@@ -43,10 +43,10 @@ const sql = (params, query) => {
         ), clipped_results as (
             select 
                 CASE 
-                  WHEN filtered_crash_data.crashes > 0 THEN filtered_crash_data.crashes
-                  WHEN filtered_crash_data.crashes IS NULL THEN 0
+                  WHEN filtered_crash_data.crash_count > 0 THEN filtered_crash_data.crash_count
+                  WHEN filtered_crash_data.crash_count IS NULL THEN 0
                   ELSE 0
-                END AS crashes,
+                END AS crash_count,
                 selected_counties.*
             from selected_counties
             left join filtered_crash_data

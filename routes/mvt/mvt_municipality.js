@@ -35,7 +35,7 @@ const sql = (params, query) => {
             select
                 selected_municipalities.mun_cty_co,
                 selected_municipalities.mun_mu,
-                COUNT(*) crashes
+                COUNT(*) crash_count
             from selected_municipalities
             left join ard_accidents_geom_partition
             on ard_accidents_geom_partition.mun_cty_co = selected_municipalities.mun_cty_co
@@ -46,10 +46,10 @@ const sql = (params, query) => {
         ), clipped_results as (
             select 
                   CASE 
-                    WHEN filtered_crash_data.crashes > 0 THEN filtered_crash_data.crashes
-                    WHEN filtered_crash_data.crashes IS NULL THEN 0
+                    WHEN filtered_crash_data.crash_count > 0 THEN filtered_crash_data.crash_count
+                    WHEN filtered_crash_data.crash_count IS NULL THEN 0
                   ELSE 0
-                END AS crashes,
+                END AS crash_count,
                 selected_municipalities.*
             from selected_municipalities
             left join filtered_crash_data

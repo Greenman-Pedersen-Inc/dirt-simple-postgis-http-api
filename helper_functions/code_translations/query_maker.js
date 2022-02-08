@@ -33,6 +33,20 @@ function createQueryClauseMultiple(codeObject, tableName, input) {
     else return `${tableName}.${codeObject.fieldName} IN (${formattedList})`;
 }
 
+// input: 0113,1205
+// output: (mun_cty_co = '01' AND mun_mu = '13') OR (mun_cty_co = '12' AND mun_mu = '05') OR ...
+function createQueryClauseMunicipality(tableName, input) {
+    const splitInputList = String(input).split(',');
+    var returnQueryArray = [];
+
+    splitInputList.forEach(juriCode => {
+        const cty = juriCode.substring(0, 2);
+        const muni = juriCode.substring(2);
+        returnQueryArray.push(`(${tableName}.mun_cty_co = '${cty}' AND ${tableName}.mun_mu = '${muni}')`);
+    });
+    return '(' + returnQueryArray.join(' OR ') + ')';
+}
+
 // input format: 2020-1-1;2021-1-31
 function createQueryDateRange(tableName, input) {
     const splitInputList = String(input).split(';');
@@ -130,6 +144,7 @@ function formatCodes(codeString) {
 module.exports = {
     createQueryClauseSingleton: createQueryClauseSingleton,
     createQueryClauseMultiple: createQueryClauseMultiple,
+    createQueryClauseMunicipality: createQueryClauseMunicipality,
     createQueryDateRange: createQueryDateRange,
     createTimeDateRange: createTimeDateRange,
     createQueryMilepost: createQueryMilepost,

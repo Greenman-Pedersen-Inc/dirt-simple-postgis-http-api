@@ -24,7 +24,7 @@ function resolveFieldAlias(targetFieldName) {
             aliasList[0]['table'] = tableFiltersArray[index].table;
             return aliasList[0];
         } else {
-            console.log(targetFieldName, ' could not be found in ', index);
+            //console.log(targetFieldName, ' could not be found in ', index);
         }
     }
 };

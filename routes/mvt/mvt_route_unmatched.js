@@ -17,8 +17,6 @@ const sql = (params, query) => {
                 mun_cty_co,
                 mun_mu,
                 sri,
-                CONCAT(county_name, 'County') as county_name,
-                muni_name,
                 ST_AsMVTGeom(
                     geom,
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
@@ -32,7 +30,8 @@ const sql = (params, query) => {
         ), filtered_crash_data as (
             select 
                 juridiction_polygons.internal_id,
-                count(*) as crash_count
+                count(*) as crash_count,
+                array_to_json(array_agg(crashid)) crash_array
             from ard_accidents_geom_partition
             inner join juridiction_polygons
             on ard_accidents_geom_partition.sri = juridiction_polygons.sri
@@ -47,12 +46,13 @@ const sql = (params, query) => {
         ), clipped_results as (
             select
                 filtered_crash_data.crash_count,
+                filtered_crash_data.crash_array,
                 juridiction_polygons.*
             from juridiction_polygons
             left join filtered_crash_data
-            on filtered_crash_data.internal_id = juridiction_polygons.internal_id
+            using(internal_id)
         )
-        SELECT ST_AsMVT(clipped_results.*, 'route_municipal_buffer', 4096, 'geom', '${query.id_column}') AS mvt from clipped_results;
+        SELECT ST_AsMVT(clipped_results.*, 'route_municipal_buffer', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
 `
 
 return queryText;
@@ -60,48 +60,30 @@ return queryText;
 
 // route schema
 const schema = {
-description:
-  'Return table as Mapbox Vector Tile (MVT) for route level',
-tags: ['mvt'],
-summary: 'return route MVT',
-params: {
-  z: {
-    type: 'integer',
-    description: 'Z value of ZXY tile.'
-  },
-  x: {
-    type: 'integer',
-    description: 'X value of ZXY tile.'
-  },
-  y: {
-    type: 'integer',
-    description: 'Y value of ZXY tile.'
-  }
-},
-querystring: {
-  geom_column: {
-    type: 'string',
-    description: 'Optional geometry column of the table..',
-    default: 'wkb_geometry'
-  },
-  columns: {
-    type: 'string',
     description:
-      'Optional columns to return with MVT. The default is no columns.'
-  },
-  id_column: {
-    type: 'string',
-    description:
-      'Optional id column name to be used with Mapbox GL Feature State. This column must be an integer a string cast as an integer.'
-  },
-  filter: {
-    type: 'string',
-    description: 'Optional filter parameters for a SQL WHERE statement.'
-  },
-  sri: {
-      type: 'string'
-  }
-}
+    'Return table as Mapbox Vector Tile (MVT) for route level',
+    tags: ['mvt'],
+    summary: 'return route MVT',
+    params: {
+    z: {
+        type: 'integer',
+        description: 'Z value of ZXY tile.'
+    },
+    x: {
+        type: 'integer',
+        description: 'X value of ZXY tile.'
+    },
+    y: {
+        type: 'integer',
+        description: 'Y value of ZXY tile.'
+    }
+    },
+    querystring: {
+        filter: {
+            type: 'string',
+            description: 'Optional filter parameters for a SQL WHERE statement.'
+        }
+    }
 }
 
 // create route

@@ -1,10 +1,11 @@
 // get_cluster_detail: Gets all cases within a list of crash identifiers
+const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 
 // *---------------*
 // route query
 // *---------------*
-const sql = (query) => {
-    const crashValues = JSON.parse(params.crash_array)
+const sql = (body) => {
+    const crashValues = `'${JSON.parse(body.crash_array).join('\',\'')}'`
     const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
     const sql = `
             select 
@@ -36,7 +37,7 @@ const sql = (query) => {
                 --     ELSE NULL
                 -- END AS URL
             FROM ard_accidents_geom_partition
-            WHERE crashid in ()
+            WHERE crashid in (${crashValues})
         `;
 
     // console.log(sql);
@@ -50,11 +51,12 @@ const schema = {
     description: "Gets all cases within a crash cluster.",
     tags: ['crash-map'],
     summary: "Gets all crashes enumerated within a crash cluster.",
-    params: {
-        crash_array: {
-            type: 'string',
-            description: 'string of array of crashes associated with geometry, need to be parsed for input'
-        }
+    body: {
+        type: 'object',
+        properties: {
+            crash_array: { type: 'string' },
+        },
+        required: ['crash_array']
     }
 }
 
@@ -63,8 +65,8 @@ const schema = {
 // *---------------*
 module.exports = function(fastify, opts, next) {
     fastify.route({
-        method: 'GET',
-        url: '/crash/:crash_array',
+        method: 'POST',
+        url: '/crash',
         schema: schema,
         handler: function(request, reply) {
             function onConnect(err, client, release) {
@@ -75,15 +77,15 @@ module.exports = function(fastify, opts, next) {
                         "message": "unable to connect to database server"
                     });
                 } else {
-                    if (request.query.z == undefined) {
+                    if (request.body.crash_array == undefined) {
                         return reply.send({
                             "statusCode": 500,
                             "error": "Internal Server Error",
-                            "message": "need a z value"
+                            "message": "need a crash_array value"
                         });
                     } else {
                         client.query(
-                            sql(request.query),
+                            sql(request.body),
                             function onResult(err, result) {
                                 release();
 

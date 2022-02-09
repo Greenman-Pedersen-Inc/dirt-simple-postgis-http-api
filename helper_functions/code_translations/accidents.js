@@ -1,4 +1,4 @@
-const { createQueryClauseSingleton, createQueryClauseMultiple, createQueryDateRange, createTimeDateRange, createQueryMilepost, createQueryVehicleTotal } = require('./query_maker');
+const { createQueryClauseSingleton, createQueryClauseMultiple, createQueryClauseMunicipality, createQueryDateRange, createTimeDateRange, createQueryMilepost, createQueryVehicleTotal } = require('./query_maker');
 
 
 // *---------------*
@@ -621,7 +621,7 @@ const filterDictonary =
             { code: '2122', description: 'Washington Township' },
             { code: '2123', description: 'White Township' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) { return createQueryClauseMunicipality(tableName, input); }
     },
     { title: 'Case #', fieldName: 'acc_case', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     { title: 'Document Locator #', fieldName: 'dln', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },

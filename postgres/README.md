@@ -125,3 +125,13 @@ UPDATE public.segement_polygon_final
 	SET route_name = initcap(route_name)::text
 	where route_name is not null;
 ```
+
+# ARD Accidents Table
+
+
+To add the rounded milepost column for binning we run the following:
+```sql
+ALTER TABLE ard_accidents_geom_partition ADD rounded_mp numeric(4,1);
+CREATE INDEX ON public.ard_accidents_geom_partition (rounded_mp);
+UPDATE public.ard_accidents_geom_partition SET rounded_mp = ROUND(FLOOR(milepost * 10) / 10, 1);
+```

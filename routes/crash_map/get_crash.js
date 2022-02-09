@@ -92,9 +92,9 @@ module.exports = function(fastify, opts, next) {
                                 if (err) {
                                     reply.send(err)
                                 } else if (result && result.rows) {
-                                    const transcribedObject = transcribeKeysArray(result.rows);
+                                    // const transcribedObject = transcribeKeysArray(result.rows);
 
-                                    reply.send({ crashes: transcribedObject });
+                                    reply.send(result.rows);
                                 } else {
                                     reply.code(204);
                                 }

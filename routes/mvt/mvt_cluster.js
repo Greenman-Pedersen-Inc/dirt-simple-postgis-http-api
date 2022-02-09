@@ -119,7 +119,7 @@ const sql = (params, query) => {
             `
         }
 
-        console.log(queryText);
+        // console.log(queryText);
         return queryText;
 }
 

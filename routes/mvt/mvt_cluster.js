@@ -64,7 +64,7 @@ const sql = (params, query) => {
             queryText = `
                 with crash_data as (
                     SELECT 
-                        crashid,
+                    ard_accidents_geom_partition.crashid,
                         geom
                     FROM ard_accidents_geom_partition
                     ${fromClause ? ` ${fromClause}` : ''}
@@ -101,7 +101,7 @@ const sql = (params, query) => {
             `
         }
 
-        // console.log(queryText);
+        //console.log(queryText);
         return queryText;
 }
 

@@ -42,27 +42,28 @@ const schema = {
     querystring: {
         caseNumber: {
             type: 'string',
-            description: 'case number. ex: 20-21104-AC',
-            default: '20-21104-AC'
+            description: 'case number',
+            example: '20-21104-AC'
         },
         county: {
             type: 'string',
-            description: 'county code. ex: 11',
-            default: '11'
+            description: 'county code',
+            example: '11'
         },
         municipality: {
             type: 'string',
-            description: 'municipality code. ex: 07',
-            default: '07'
+            description: 'municipality code',
+            example: '07'
         },
         year: {
             type: 'string',
-            description: 'year the crash occured. ex: 2020',
-            default: '2020'
+            description: 'year the crash occured',
+            example: '2020'
         },
         crashid: {
             type: 'string',
-            description: 'crashid of the case. ex: 11-07-2020-20-21104-AC'
+            description: 'crashid of the case',
+            example: '11-07-2020-20-21104-AC'
         },
     }
 }
@@ -86,13 +87,16 @@ module.exports = function(fastify, opts, next) {
                 });
 
                 var queryArgs = request.query;
-                if (queryArgs.crashid === undefined && queryArgs.caseNumber === undefined) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need crashid or case number and parameters"
-                    });
-                } else if (queryArgs.caseNumber !== undefined) {
+                if (queryArgs.caseNumber === undefined) {
+                    if (queryArgs.crashid === undefined) {
+                        return reply.send({
+                            "statusCode": 500,
+                            "error": "Internal Server Error",
+                            "message": "need crashid"
+                        });
+                    }
+                }
+                if (queryArgs.caseNumber !== undefined) {
                     if (queryArgs.county === undefined || queryArgs.municipality === undefined || queryArgs.year === undefined) {
                         return reply.send({
                             "statusCode": 500,
@@ -133,7 +137,7 @@ module.exports = function(fastify, opts, next) {
                         }
                     }
 
-                    reply.send({ crash: crashData });
+                    reply.send( crashData );
                 });
             }
         }

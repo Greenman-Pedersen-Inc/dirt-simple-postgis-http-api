@@ -643,10 +643,10 @@ const filterDictonary =
         values: [
             { code: '-20', description: 'Not Recorded' },
             { code: '00', description: 'Unknown' },
-            { code: '01', description: 'Killed' },
-            { code: '02', description: 'Incapacitated' },
-            { code: '03', description: 'Moderate Injury' },
-            { code: '04', description: 'Complaint of Pain' },
+            { code: '01', description: 'Fatal Injury' },
+            { code: '02', description: 'Suspected Serious Injury' },
+            { code: '03', description: 'Possible Injury' },
+            { code: '04', description: 'No Apparent Injury' },
         ],
         query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },

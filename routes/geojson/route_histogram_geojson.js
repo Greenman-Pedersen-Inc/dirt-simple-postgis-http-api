@@ -74,7 +74,7 @@ const sql = (params, query) => {
             ) route_metrics from crash_data
         `
 
-        // console.log(formattedQuery);
+        //console.log(formattedQuery);
         return formattedQuery;
 }
 

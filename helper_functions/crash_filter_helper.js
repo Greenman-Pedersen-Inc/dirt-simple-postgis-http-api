@@ -11,9 +11,14 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
     } else {
         filterJson = crashFilter;
     }
-    //console.log("makeCrashFilterQuery: ", filterJson);
-    var usedTables = [];
-    var whereClauses = [];
+
+
+    const specialCategoryData = checkSpecialCategories(filterJson, accidentTableName);
+    //console.log(specialCategoryData);
+
+    var usedTables = specialCategoryData.usedTables;
+    var whereClauses = specialCategoryData.whereClauses;
+    filterJson = specialCategoryData.filterJson;
 
     for (var key of Object.keys(filterJson)) {
         const codeTranslation = resolveFieldAlias(key);
@@ -34,6 +39,42 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
     return {
         fromClause: makeFromClause(usedTables, accidentTableName),
         whereClause: makeWhereClause(whereClauses)
+    }
+}
+
+// check if the filters have pedestrian_phys_cond, occupant_phys_cond, trf_ctrl, driver_phys
+// each of these filter categories need to be nested by OR statements
+function checkSpecialCategories(filterJson, accidentTableName) {
+    var usedTables = [];
+    var whereClauses = [];
+
+    const specialCategories = [ 'pedestrian_phys_cond', 'occupant_phys_cond', 'trf_ctrl', 'driver_phys' ];
+    specialCategories.forEach(category => {
+        var clauses = [];
+        for (var key of Object.keys(filterJson)) {
+            if (key.includes(category)) {
+                const codeTranslation = resolveFieldAlias(key);
+                if (codeTranslation) {
+                    // add the table in list of tables to construct the FROM clause with
+                    if (codeTranslation.table !== accidentTableName) {
+                        if (usedTables.indexOf(codeTranslation.table) === -1) {
+                            usedTables.push(codeTranslation.table);
+                        } 
+                    }
+                    const value = filterJson[key];
+                    if (value !== undefined || value !== null || value !== '') {
+                        clauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
+                    }
+                    delete filterJson[key];
+                }
+            }
+        }
+        if (clauses.length > 0) whereClauses.push(clauses.join(' OR '));
+    });
+    return {
+        'usedTables': usedTables,
+        'whereClauses': whereClauses,
+        'filterJson': filterJson
     }
 }
 

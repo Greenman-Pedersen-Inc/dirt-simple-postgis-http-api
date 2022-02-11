@@ -4,19 +4,20 @@ const https = require('https');
 // route query
 // *---------------*
 const makeSeachQueries = (params) => {
-        var sqlQueries = [];
-        var sql;
+  var sqlQueries = [];
+  var sql;
 
-        if (params.includeRoute) {
-            if (params.locationCode) {
-                const locationQuery = `${params.includeCounty.length == 2 ? `AND countycode = '${params.locationCode}'` : `AND municode = '${params.locationCode}'`}`;
+  if (params.includeRoute) {
+    if (params.locationCode) {
+      const locationQuery = `${params.includeCounty.length == 2 ? `AND countycode = '${params.locationCode}'` : `AND municode = '${params.locationCode}'`}`;
       sql = `SELECT DISTINCT 
       'SRI' AS "ResultType",
       CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
         stndrd_rt_id AS "ResultID"
         FROM srilookuplocation  
         where UPPER(name)  
-        Like '%${params.searchText.toUpperCase()}%'  
+        Like $1
+        --Like '%${params.searchText.toUpperCase()}%'  
         ${locationQuery} 
         order by count  
         desc limit 10`;
@@ -28,12 +29,14 @@ const makeSeachQueries = (params) => {
           stndrd_rt_id AS "ResultID"
           FROM srilookup  
           where UPPER(name)  
-          Like '%${params.searchText.toUpperCase()}%'  
+          Like $1
+          --Like '%${params.searchText.toUpperCase()}%'  
           order by count  
           desc limit 10`;
     }
     // console.log(sql)
-    sqlQueries.push(sql);
+    sqlQueries.push( {'text': sql, 'values': ['%' + params.searchText.toUpperCase() + '%'] } );
+    // sqlQueries.push(sql);
   }
   if (params.includeCounty) {
     const countyQuery = params.searchText.toUpperCase().replace('COUNTY', '');
@@ -43,11 +46,13 @@ const makeSeachQueries = (params) => {
       centroid,
       bounding_box
       FROM county_boundaries_of_nj_3857  
-      where UPPER(county) like '%${countyQuery}%'   
+      --where UPPER(county) like '%${countyQuery}%'   
+      where UPPER(county) like $1  
       order by county 
       limit 5`;
     // console.log(sql)
-    sqlQueries.push(sql);
+    sqlQueries.push( {'text': sql, 'values': ['%' + countyQuery + '%'] } );
+    // sqlQueries.push(sql);
   }
   if (params.includeMunicipality) {
     sql = `SELECT 'MUNICIPALITY' AS "ResultType",
@@ -56,11 +61,13 @@ const makeSeachQueries = (params) => {
       centroid,
       bounding_box
       FROM municipal_boundaries_of_nj_3857  
-      WHERE UPPER(mun) like '%${params.searchText.toUpperCase()}%'   
+      --WHERE UPPER(mun) like '%${params.searchText.toUpperCase()}%'   
+      WHERE UPPER(mun) like $1  
       order by mun  
       limit 5`;
     // console.log(sql)
-    sqlQueries.push(sql);
+    sqlQueries.push( {'text': sql, 'values': ['%' + params.searchText.toUpperCase() + '%'] } );
+    // sqlQueries.push(sql);
 
   }
   if (params.includeCaseNumber && params.searchText.length > 4) {
@@ -70,17 +77,20 @@ const makeSeachQueries = (params) => {
       crashid AS "ResultID",
       calc_longitude AS "Longitude",
       calc_latitude AS "Latitude"
-      FROM public.ard_accidents_geom
+      FROM public.ard_accidents_geom_partition
       inner join ard_municipality
-      on ard_accidents_geom.mun_cty_co = ard_municipality.county_code
-      and ard_accidents_geom.mun_mu = ard_municipality.muni_code
+      on ard_accidents_geom_partition.mun_cty_co = ard_municipality.county_code
+      and ard_accidents_geom_partition.mun_mu = ard_municipality.muni_code
       inner join ard_county
-      on ard_accidents_geom.mun_cty_co = ard_county.county_code
-      where acc_case = '${params.searchText}'  
-      or acc_case LIKE '%${params.searchText}%'  
+      on ard_accidents_geom_partition.mun_cty_co = ard_county.county_code
+      --where acc_case = '${params.searchText}'  
+      --or acc_case LIKE '%${params.searchText}%'  
+      where acc_case = $1
+      or acc_case LIKE $2 
       limit 5`;
     //console.log(sql)
-    sqlQueries.push(sql);
+    sqlQueries.push( {'text': sql, 'values': [params.searchText, params.searchText + '%'] } );
+    // sqlQueries.push(sql);
   }
   return sqlQueries;
 }
@@ -257,7 +267,7 @@ module.exports = function (fastify, opts, next) {
                 if (result.ResultText.includes('NJ, USA') || result.ResultText.includes('NJ') || result.ResultText.includes('New Jersey, USA')) {
                   resultsList.push(result);
                 }
-              });   
+              });
             }
           });
           release();

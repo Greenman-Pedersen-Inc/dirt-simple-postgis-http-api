@@ -25,7 +25,8 @@ const sql = (params, query) => {
         ), filtered_crash_data as (
             select 
                 selected_segment_polygons.internal_id,
-                count(*) as crash_count
+                count(*) as crash_count,
+                array_to_json(array_agg(crashid)) as crash_array
             from ard_accidents_geom_partition
             inner join selected_segment_polygons
             on ard_accidents_geom_partition.sri = selected_segment_polygons.sri

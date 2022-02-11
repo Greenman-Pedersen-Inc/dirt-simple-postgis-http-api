@@ -27,9 +27,9 @@ const sql = (params, query) => {
             queryText = `
                 with crash_data as (
                     SELECT 
-                        ST_Transform(geom, 3857) as geom,
-                        crashid,
-                        sri
+                        ST_Transform(ard_accidents_geom_partition.geom, 3857) as geom,
+                        ard_accidents_geom_partition.crashid,
+                        ard_accidents_geom_partition.sri
                     FROM ard_accidents_geom_partition
                     ${fromClause ? ` ${fromClause}` : ''}
                     WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))
@@ -65,9 +65,9 @@ const sql = (params, query) => {
             queryText = `
                 with crash_data as (
                     SELECT
-                        crashid,
-                        sri,
-                        geom
+                        ard_accidents_geom_partition.crashid,
+                        ard_accidents_geom_partition.sri,
+                        ard_accidents_geom_partition.geom
                     FROM ard_accidents_geom_partition
                     ${fromClause ? ` ${fromClause}` : ''}
                     WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))

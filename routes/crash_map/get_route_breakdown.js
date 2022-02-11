@@ -21,7 +21,7 @@ const sql = (queryArgs) => {
         const crashFilterClauses = makeCrashFilterQuery(filterJson, accidentsTableName);
 
         const sql = `
-            SELECT ${queryArgs.breakdown_field}, COALESCE(COUNT(*), 0) as crash_count
+            SELECT ${queryArgs.breakdown_field} as code_value, COALESCE(COUNT(*), 0) as crash_count
             FROM ${accidentsTableName} ${crashFilterClauses.fromClause} 
             WHERE ${queryArgs.breakdown_field} IS NOT NULL
             ${crashFilterClauses.whereClause ? ` AND ${crashFilterClauses.whereClause}` : ''}
@@ -87,7 +87,7 @@ module.exports = function (fastify, opts, next) {
                         function onResult(err, result) {
                             release();
 
-                            reply.send(err || {route_breakdown: result.rows})
+                            reply.send(err || result.rows)
                         }
                     )
                 }

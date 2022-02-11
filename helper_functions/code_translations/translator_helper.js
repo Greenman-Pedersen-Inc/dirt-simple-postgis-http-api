@@ -44,45 +44,48 @@ function transcribeKeysArray(dataRowsArray) {
 // dataObject is in format: {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}
 function transcribeKeys(dataRowObject, translateValues = true) {
     var returnRow = {}
-    for (const [key, value] of Object.entries(dataRowObject)) {
-        var rowValue = value;
-        var found = false;
-        var countyCode;
 
-        for (let index = 0; index < tableFiltersArray.length; index++) {
-            const filters = tableFiltersArray[index].filters;
-            let aliasList = filters.filter(filter => {
-                if (filter.fieldName === key || filter.moduleName === key) {
-                    if (key.includes("mun_cty_co")) countyCode = value;
-                    return true;
-                }
-            })
+    if (dataRowObject && Object.entries(dataRowObject)) {
+        for (const [key, value] of Object.entries(dataRowObject)) {
+            var rowValue = value;
+            var found = false;
+            var countyCode;
 
-            if (aliasList.length === 1) { // exact match found, with no duplicates
-                if (key !== aliasList[0].title) {
-                    if (translateValues) {
-                        if (aliasList[0].values) {
-                            var dataValue = value;
-                            
-                            if (key.includes("mun_mu")) {
-                                if (value.length == 2) dataValue = countyCode + value;
-                            }
+            for (let index = 0; index < tableFiltersArray.length; index++) {
+                const filters = tableFiltersArray[index].filters;
+                let aliasList = filters.filter(filter => {
+                    if (filter.fieldName === key || filter.moduleName === key) {
+                        if (key.includes("mun_cty_co")) countyCode = value;
+                        return true;
+                    }
+                })
 
-                            let foundValue= aliasList[0].values.find(e => e.code === dataValue);
-                            if (foundValue) {
-                                if (foundValue.hasOwnProperty('description')) rowValue = foundValue.description;
+                if (aliasList.length === 1) { // exact match found, with no duplicates
+                    if (key !== aliasList[0].title) {
+                        if (translateValues) {
+                            if (aliasList[0].values) {
+                                var dataValue = value;
+
+                                if (key.includes("mun_mu")) {
+                                    if (value.length == 2) dataValue = countyCode + value;
+                                }
+
+                                let foundValue = aliasList[0].values.find(e => e.code === dataValue);
+                                if (foundValue) {
+                                    if (foundValue.hasOwnProperty('description')) rowValue = foundValue.description;
+                                }
                             }
                         }
+                        returnRow[aliasList[0].title] = rowValue;
+                        found = true;
                     }
-                    returnRow[aliasList[0].title] = rowValue;
-                    found = true;
+                    break;
                 }
-                break;
             }
-        }
 
-        // don't output keys that are not found. they will not be included in the results
-        //if (!found) returnRow[key] = rowValue;
+            // don't output keys that are not found. they will not be included in the results
+            //if (!found) returnRow[key] = rowValue;
+        }
     }
 
     return returnRow;
@@ -101,7 +104,7 @@ function convertTableCodes(valueStruct) {
                 if (valueStruct[i].field === 'Municipality') {
                     valueStruct[i].value = countyCode + valueStruct[i].value
                 }
-                if (typeof filters[j].values === 'undefined') { } else {
+                if (typeof filters[j].values === 'undefined') {} else {
                     for (k = 0; k < filters[j].values.length; k++) {
                         if (valueStruct[i].value === filters[j].values[k].code) {
                             valueStruct[i].value = filters[j].values[k].description;
@@ -142,7 +145,7 @@ function convertCodeDescription(fieldName, codeNumber) {
 function convertFeatureObjectValues(feature) {
     const formattedFeature = {};
 
-    Object.keys(feature).map(function (objectKey, index) {
+    Object.keys(feature).map(function(objectKey, index) {
         if (objectKey != "geom") {
             let value;
 
@@ -162,7 +165,7 @@ function convertFeatureObjectValues(feature) {
 function convertFeature(feature) {
     let formattedProperties = [];
 
-    Object.keys(feature).map(function (objectKey, index) {
+    Object.keys(feature).map(function(objectKey, index) {
         if (objectKey != "geom") {
             let alias = resolveFieldAlias(objectKey);
             let value = convertCodeDescription(objectKey, feature[objectKey]);

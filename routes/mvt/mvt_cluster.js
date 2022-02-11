@@ -64,17 +64,10 @@ const sql = (params, query) => {
          else {
             queryText = `
                 with crash_data as (
-<<<<<<< HEAD
                     SELECT
                         ard_accidents_geom_partition.crashid,
                         ard_accidents_geom_partition.sri,
                         ard_accidents_geom_partition.geom
-=======
-                    SELECT 
-                      ard_accidents_geom_partition.crashid,
-                        sri,
-                        geom
->>>>>>> ffc482fed9c0bb62b83ee6f0f17d4cdebe655ff5
                     FROM ard_accidents_geom_partition
                     ${fromClause ? ` ${fromClause}` : ''}
                     WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))

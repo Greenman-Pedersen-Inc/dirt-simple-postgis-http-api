@@ -11,11 +11,18 @@ const sql = (params, query) => {
                 select
                     sri,
                     rounded_mp,
+	 				county_name,
+	 				muni_name,
+	 				CASE 
+	 					WHEN rounded_mp IS NULL THEN CONCAT('No MP (', muni_name, ' - ', county_name, ')')
+	 					ELSE rounded_mp::TEXT
+	 				END as rounded_mp_text,
                     count(*) crash_count
-                from ard_accidents_geom_partition
+                from ard_accidents_geom_partition, ard_cty_muni
                 ${filter.fromClause ? ` ${filter.fromClause}` : ''}
-                ${filter.whereClause ? ` where ${filter.whereClause}` : ''}
-                group by 1, 2
+                WHERE ard_accidents_geom_partition.mun_cty_co = ard_cty_muni.county_code AND ard_accidents_geom_partition.mun_mu = ard_cty_muni.muni_code
+                ${filter.whereClause ? ` AND  ${filter.whereClause}` : ''}
+                group by 1, 2, 3, 4
             ), 
             route_data as (
                 select 
@@ -32,14 +39,20 @@ const sql = (params, query) => {
                 select ST_AsGeoJSON(st_transform(st_centroid(geom), 4326)) geom_text
                 from route_data
                 where route_data.mp = (select max(rounded_mp) from crash_data)
-            )
+            ),
+			histogram_data AS (
+				select sri, rounded_mp, rounded_mp_text, SUM(crash_count) AS crash_count from crash_data 
+				group by sri, rounded_mp, rounded_mp_text
+				ORDER BY SUBSTRING(rounded_mp_text FROM '([0-9]+)')::BIGINT ASC, rounded_mp_text -- do this ordering so that text numbers get sorted correctly
+			)
+
 
             select json_build_object(
                 'start_mp', min(rounded_mp),
                 'end_mp', max(rounded_mp),
                 'crash_features', array_agg(
                     json_build_object(
-                        'properties', crash_data.*
+                        'properties', histogram_data.*
                     )
                 ),
                 'min_crashes', min(crash_count),
@@ -49,11 +62,11 @@ const sql = (params, query) => {
                         CASE
                             when count(*) > 0 THEN (select geom_text from start_mp_coordinates limit 1)
                             else (
-                                SELECT ST_AsGeoJSON(st_transform(st_centroid(geom), 4326)) 
+                                SELECT ST_AsGeoJSON(st_transform(st_centroid(geom), 4326))
                                 from route_data
                                 order by mp
                                 limit 1
-                            )::text   
+                            )::text
                         END
                     from start_mp_coordinates
                 ),
@@ -62,19 +75,19 @@ const sql = (params, query) => {
                         CASE
                             when count(*) > 0 THEN (select geom_text from end_mp_coordinates limit 1)
                             else (
-                                SELECT ST_AsGeoJSON(st_transform(st_centroid(geom), 4326)) 
+                                SELECT ST_AsGeoJSON(st_transform(st_centroid(geom), 4326))
                                 from route_data
                                 order by mp desc
                                 limit 1
-                            )::text   
+                            )::text
                         END
                     from end_mp_coordinates
                 ),
                 'segments', count(*)
-            ) route_metrics from crash_data
+            ) route_metrics from histogram_data
         `
 
-        //console.log(formattedQuery);
+        console.log(formattedQuery);
         return formattedQuery;
 }
 

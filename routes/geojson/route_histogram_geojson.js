@@ -87,7 +87,7 @@ const sql = (params, query) => {
             ) route_metrics from histogram_data
         `
 
-        console.log(formattedQuery);
+        //console.log(formattedQuery);
         return formattedQuery;
 }
 

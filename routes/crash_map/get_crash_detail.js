@@ -120,6 +120,7 @@ module.exports = function(fastify, opts, next) {
                             return reject(error);
                         }
                     });
+
                     promises.push(promise);
                 }
 
@@ -138,6 +139,12 @@ module.exports = function(fastify, opts, next) {
                     }
 
                     reply.send( crashData );
+                }).catch(error => {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": error,
+                        "message": 'issue with crash id queries'
+                    });
                 });
             }
         }

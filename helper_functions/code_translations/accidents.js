@@ -1072,9 +1072,11 @@ const filterDictonary =
         query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     { title: 'Hit and Run', fieldName: 'hit_run', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
+    { title: 'Pedestrians Involved', fieldName: 'ped_involved', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
     { title: 'Calculated Longitude', fieldName: 'calc_latitude', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     { title: 'Calculated Latitude', fieldName: 'calc_longitude', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     { title: 'Pedestrian: Suspected Serious Injury', fieldName: 'ped_incapacitated', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
+
     { title: 'Cyclist: Fatal Injury', fieldName: 'cyclist_killed', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
     { title: 'Cyclist: Suspected Serious Injury', fieldName: 'cyclist_incapacitated', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
     { title: 'Cyclist: Suspected Minor Injury', fieldName: 'cyclist_moderate_pain', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },

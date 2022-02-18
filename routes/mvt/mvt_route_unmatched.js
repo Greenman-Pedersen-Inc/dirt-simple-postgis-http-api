@@ -2,17 +2,14 @@
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-  const accidentsTableName = "ard_accidents_geom_partition"
-  try {
-    if (query.filter && query.filter !== 'undefined') {
-      let parsed_filter = JSON.parse(query.filter)
-      let selectedSRI = parsed_filter.sri;
+    const accidentsTableName = 'ard_accidents_geom_partition';
+    let parsed_filter = JSON.parse(query.selected_filters);
+    const selectedSRI = parsed_filter.sri;
 
-      delete parsed_filter.sri;
+    delete parsed_filter.sri;
 
-      let filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
-
-      let queryText = `
+    const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+    const queryText = `
             with juridiction_polygons as (
                 select 
                     internal_id,
@@ -55,96 +52,118 @@ const sql = (params, query) => {
                 using(internal_id)
             )
             SELECT ST_AsMVT(clipped_results.*, 'route_municipal_buffer', 4096, 'geom', 'internal_id') AS mvt from clipped_results;
-    `
-      //console.log(queryText)
-      return queryText;
-    } else {
-      return '';
-    }
-  } catch (error) {
-    console.log(error)
-    return '';
-  }
-}
+    `;
+    //console.log(queryText)
+    return queryText;
+};
 
 // route schema
 const schema = {
-  description:
-    'Return table as Mapbox Vector Tile (MVT) for route level',
-  tags: ['mvt'],
-  summary: 'return route MVT',
-  params: {
-    z: {
-      type: 'integer',
-      description: 'Z value of ZXY tile.'
+    description: 'Return table as Mapbox Vector Tile (MVT) for route level',
+    tags: ['mvt'],
+    summary: 'return route MVT',
+    params: {
+        z: {
+            type: 'integer',
+            description: 'Z value of ZXY tile.'
+        },
+        x: {
+            type: 'integer',
+            description: 'X value of ZXY tile.'
+        },
+        y: {
+            type: 'integer',
+            description: 'Y value of ZXY tile.'
+        }
     },
-    x: {
-      type: 'integer',
-      description: 'X value of ZXY tile.'
-    },
-    y: {
-      type: 'integer',
-      description: 'Y value of ZXY tile.'
+    querystring: {
+        selected_filters: {
+            type: 'string',
+            description: 'Optional filter parameters for a SQL WHERE statement.'
+        }
     }
-  },
-  querystring: {
-    filter: {
-      type: 'string',
-      description: 'Optional filter parameters for a SQL WHERE statement.'
-    }
-  }
-}
+};
 
 // create route
 module.exports = function (fastify, opts, next) {
-  fastify.route({
-    method: 'GET',
-    url: '/mvt/route-unmatched/:z/:x/:y',
-    schema: schema,
-    handler: function (request, reply) {
-      fastify.pg.connect(onConnect)
+    fastify.route({
+        method: 'GET',
+        url: '/mvt/route-unmatched/:z/:x/:y',
+        schema: schema,
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect);
 
-      function onConnect(err, client, release) {
-        if (err)
-          return reply.send({
-            statusCode: 500,
-            error: 'Internal Server Error',
-            message: 'unable to connect to database server'
-          })
+            function onConnect(err, client, release) {
+                if (err) {
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
+                } else {
+                    try {
+                        if (request.query.selected_filters == undefined) {
+                            reply.send({
+                                statusCode: 500,
+                                error: 'Internal Server Error',
+                                message: 'crash filter not submitted'
+                            });
+                        } else {
+                            client.query(sql(request.params, request.query), function onResult(err, result) {
+                                release();
 
-        try {
-          const parsedQuery = sql(request.params, request.query);
+                                if (err) {
+                                    reply.send(err);
+                                } else {
+                                    if (result) {
+                                        if (result.rows && result.rows.length > 0) {
+                                            if (result.rows[0].mvt) {
+                                                const mvt = result.rows[0].mvt;
 
-          if (parsedQuery) {
-            client.query(sql(request.params, request.query), function onResult(
-              err,
-              result
-            ) {
-              release()
-              if (err) {
-                reply.send(err)
-              } else {
-                const mvt = result.rows[0].mvt
-                if (mvt.length === 0) {
-                  reply.code(204)
+                                                if (mvt.length === 0) {
+                                                    reply.code(204);
+                                                }
+
+                                                reply.header('Content-Type', 'application/x-protobuf').send(mvt);
+                                            } else {
+                                                reply.send({
+                                                    statusCode: 500,
+                                                    error: 'no mvt returned',
+                                                    message: request
+                                                });
+                                            }
+                                        } else {
+                                            reply.send({
+                                                statusCode: 500,
+                                                error: 'no rows returned',
+                                                message: request
+                                            });
+                                        }
+                                    } else {
+                                        reply.send({
+                                            statusCode: 500,
+                                            error: 'no data returned',
+                                            message: request
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        release();
+
+                        reply.send({
+                            statusCode: 500,
+                            error: 'issue with query',
+                            message: request
+                        });
+                    }
                 }
-                reply.header('Content-Type', 'application/x-protobuf').send(mvt)
-              }
-            })
-          }
-        } catch (error) {
-          release()
-
-          console.error(error, request.params, request.query);
-          reply.send({
-            statusCode: 500,
-            message: 'no query created'
-          })
+            }
         }
-      }
-    }
-  })
-  next()
-}
+    });
 
-module.exports.autoPrefix = '/v1'
+    next();
+};
+
+module.exports.autoPrefix = '/v1';

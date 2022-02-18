@@ -18,9 +18,11 @@ const sql = (params, query) => {
 	 					ELSE rounded_mp::TEXT
 	 				END as rounded_mp_text,
                     count(*) crash_count
-                from ard_accidents_geom_partition, ard_cty_muni
+                from ard_accidents_geom_partition
+                INNER JOIN ard_cty_muni
+                on ard_accidents_geom_partition.mun_cty_co = ard_cty_muni.county_code
+                and ard_accidents_geom_partition.mun_mu = ard_cty_muni.muni_code
                 ${filter.fromClause ? ` ${filter.fromClause}` : ''}
-                WHERE ard_accidents_geom_partition.mun_cty_co = ard_cty_muni.county_code AND ard_accidents_geom_partition.mun_mu = ard_cty_muni.muni_code
                 ${filter.whereClause ? ` AND  ${filter.whereClause}` : ''}
                 group by 1, 2, 3, 4
             ), 
@@ -122,7 +124,7 @@ module.exports = function(fastify, opts, next) {
                 if (err)
                     return reply.send({
                         statusCode: 500,
-                        error: 'Internal Server Error',
+                        error: err,
                         message: 'unable to connect to database server'
                     })
 
@@ -132,7 +134,11 @@ module.exports = function(fastify, opts, next) {
                 ) {
                     release()
                     if (err) {
-                        reply.send(err)
+                        return reply.send({
+                            statusCode: 500,
+                            error: err,
+                            message: 'unable to connect to database server'
+                        })
                     } else if (result.rows && result.rows.length > 0) {
                         reply.send(result.rows[0].route_metrics)
                     } else {

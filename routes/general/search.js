@@ -217,8 +217,6 @@ module.exports = function (fastify, opts, next) {
               return resolve(res);
             }
             catch (err) {
-              //console.log(err.stack);
-              //console.log(query);
               return reject(error);
             }
           });

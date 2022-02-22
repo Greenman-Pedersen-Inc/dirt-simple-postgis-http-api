@@ -44,7 +44,7 @@ const sql = (queryArgs) => {
         ${groupByClause ? ` ${groupByClause}` : ''}
     `;
 
-    console.log(query)
+    // console.log(query)
     return query;
   }
 

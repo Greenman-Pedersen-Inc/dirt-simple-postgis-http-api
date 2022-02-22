@@ -1,6 +1,8 @@
-const path = require('path')
-const config = require('./config')
-const fastify = require('fastify')()
+const path = require('path');
+const config = require('./config');
+const fastify = require('fastify')({
+    connectionTimeout: 5000
+});
 
 /**
  * Log requests made to the server in an administrative database for further analysis.
@@ -14,7 +16,7 @@ function logRequest(request, reply, done) {
     const queryInfo = {
         bounds: request.query.bounds,
         filter: request.query.filter
-    }
+    };
     const endpoint = request.raw.url.split('=')[0];
     const username = request.headers.username;
     const currentTime = new Date().getTime();
@@ -23,42 +25,40 @@ function logRequest(request, reply, done) {
         var queryString = `
             INSERT INTO admin.traffic(
                 user_name, request_time, end_point, user_query)
-                VALUES ('${user}', ${time}, '${url}', '${JSON.stringify(query).replace(/'/g, '\'\'')}');
+                VALUES ('${user}', ${time}, '${url}', '${JSON.stringify(query).replace(/'/g, "''")}');
         `;
 
         return queryString;
-    }
+    };
 
     function onConnect(err, client, release) {
-        if (err) return reply.send({
-            "statusCode": 500,
-            "error": "Internal Server Error",
-            "message": "unable to connect to database server: " + err
-        })
+        if (err)
+            return reply.send({
+                statusCode: 500,
+                error: 'Internal Server Error',
+                message: 'unable to connect to database server: ' + err
+            });
 
         release();
 
-        client.query(
-            sql(queryInfo, endpoint, username, currentTime),
-            function onResult(err, result) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to perform database operation: " + err
-                })
-                done();
-            }
-        )
+        client.query(sql(queryInfo, endpoint, username, currentTime), function onResult(err, result) {
+            if (err)
+                return reply.send({
+                    statusCode: 500,
+                    error: 'Internal Server Error',
+                    message: 'unable to perform database operation: ' + err
+                });
+            done();
+        });
     }
 
     // this will not log get requests that include the keywork 'lookup'
     if (endpoint.indexOf('lookup') < 0) {
         fastify.pg.connect(onConnect);
     } else {
-        done()
+        done();
     }
 }
-
 
 /**
  * Verifies a pre-existing token.
@@ -73,7 +73,7 @@ function verifyToken(request, reply, done) {
         var currentTime = new Date().getTime();
 
         return `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.requesttoken}' and expiration >= ${currentTime}`;
-    }
+    };
 
     /**
      *
@@ -81,35 +81,34 @@ function verifyToken(request, reply, done) {
      * @param {*} err
      * @param {*} client
      * @param {*} release
-     * @return {*} 
+     * @return {*}
      */
     function onConnect(err, client, release) {
-        if (err) return reply.send({
-            "statusCode": 500,
-            "error": "Internal Server Error",
-            "message": "unable to connect to database server: " + err
-        })
+        if (err)
+            return reply.send({
+                statusCode: 500,
+                error: 'Internal Server Error',
+                message: 'unable to connect to database server: ' + err
+            });
 
         release();
 
-        client.query(
-            sql(request.headers),
-            function onResult(err, result) {
-                const reducer = (accumulator, currentValue) => accumulator + currentValue.count;
+        client.query(sql(request.headers), function onResult(err, result) {
+            const reducer = (accumulator, currentValue) => accumulator + currentValue.count;
 
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to perform database operation: " + err
-                })
+            if (err)
+                return reply.send({
+                    statusCode: 500,
+                    error: 'Internal Server Error',
+                    message: 'unable to perform database operation: ' + err
+                });
 
-                if (result.rows.map(row => row.count).reduce((acc, count) => acc + count, 0) > 0) {
-                    done();
-                } else {
-                    reply.send({ description: 'token validation unsuccesful!', tokenError: -999 });
-                }
+            if (result.rows.map((row) => row.count).reduce((acc, count) => acc + count, 0) > 0) {
+                done();
+            } else {
+                reply.send({ description: 'token validation unsuccesful!', tokenError: -999 });
             }
-        )
+        });
     }
 
     fastify.pg.connect(onConnect);
@@ -118,54 +117,48 @@ function verifyToken(request, reply, done) {
 fastify.decorate('logRequest', logRequest);
 fastify.decorate('verifyToken', verifyToken);
 
-fastify.register(require('fastify-auth'))
-
-
+fastify.register(require('fastify-auth'));
 
 // postgres connection
 fastify.register(require('fastify-postgres'), {
     connectionString: config.db
-})
+});
 
 // compression - add x-protobuf
-fastify.register(
-    require('fastify-compress'), {
-        customTypes: /^text\/|\+json$|\+text$|\+xml|x-protobuf$/
-    }
-)
+fastify.register(require('fastify-compress'), {
+    customTypes: /^text\/|\+json$|\+text$|\+xml|x-protobuf$/
+});
 
 // cache
-fastify.register(
-    require('fastify-caching'), {
-        privacy: 'private',
-        expiresIn: config.cache
-    }
-)
+fastify.register(require('fastify-caching'), {
+    privacy: 'private',
+    expiresIn: config.cache
+});
 
 // CORS
-fastify.register(require('fastify-cors'))
+fastify.register(require('fastify-cors'));
 
 // swagger
 fastify.register(require('fastify-swagger'), {
     exposeRoute: true,
     swagger: config.swagger
-})
+});
 
 // static documentation path
 fastify.register(require('fastify-static'), {
     root: path.join(__dirname, 'documentation')
-})
+});
 
 // routes
 fastify.register(require('fastify-autoload'), {
     dir: path.join(__dirname, 'routes')
-})
+});
 
 // Launch server
-fastify.listen(config.port, config.host || '127.0.0.1', function(err, address) {
+fastify.listen(config.port, config.host || '127.0.0.1', function (err, address) {
     if (err) {
         //console.log(err)
-        process.exit(1)
+        process.exit(1);
     }
-    console.info(`Server listening on ${address}`)
-})
+    console.info(`Server listening on ${address}`);
+});

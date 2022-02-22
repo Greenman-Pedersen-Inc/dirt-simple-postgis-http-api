@@ -97,7 +97,7 @@ function createQueryVehicleTotal(codeObject, tableName, input) {
 
     // join the two terms together before adding them to the final query
     const query = "(" + multiBoundPart + " and (" + magniBoundPart + "))";
-    console.log(query);
+    //console.log(query);
     return query;
 }
 

@@ -155,7 +155,7 @@ module.exports = function (fastify, opts, next) {
 
                     reply.send({
                         statusCode: 500,
-                        error: 'issue with query',
+                        error: error,
                         message: request
                     });
                 }

@@ -57,7 +57,7 @@ const makeSeachQueries = (params) => {
   if (params.includeMunicipality) {
     sql = `SELECT 'MUNICIPALITY' AS "ResultType",
       CONCAT(mun, ', ', county) AS "ResultText",
-      mun_code AS "ResultID",
+      ssn AS "ResultID",
       centroid,
       bounding_box
       FROM municipal_boundaries_of_nj_3857  

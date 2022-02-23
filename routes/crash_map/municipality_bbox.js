@@ -3,7 +3,7 @@ const sql = (params, query) => {
     let formattedQuery = `
         SELECT bounding_box
             FROM public.municipal_boundaries_of_nj_3857
-            where mun_code = any('{${query.municipality_list}}'::text[])
+            where ssn = any('{${query.municipality_list}}'::text[])
     `
 
     //console.log(formattedQuery);

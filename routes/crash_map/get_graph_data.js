@@ -5,39 +5,47 @@ get_graph_data: Gets a JSON containing data for crashes by month and crashes gro
 
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
+const dataTypes = ['Temporal', 'Speed'];
 
 // *---------------*
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-        // if target_milepost is defined, set start_mp and end_mp in the crashFilter object
-        const accidentsTableName = "ard_accidents_geom_partition";
-        let filterJson = JSON.parse(queryArgs.crashFilter);
+    const accidentsTableName = "ard_accidents_geom_partition";
+    const parsed_filter = JSON.parse(queryArgs.selected_filters);
+    const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+    const whereClause = filter.whereClause;
+    const fromClause = filter.fromClause;
 
-        if (queryArgs.target_sri) {
-            filterJson.sri = queryArgs.target_sri;
+    const groupByClause = `${queryArgs.dataType === 'Speed' ? 
+    'GROUP BY speed_range ORDER BY speed_range' : `GROUP BY ${accidentsTableName}.year, acc_month ORDER BY ${accidentsTableName}.year, acc_month` }`;
 
-            if (queryArgs.target_milepost) {
-                filterJson.mp_start = queryArgs.target_milepost;
-                filterJson.mp_end = parseFloat(queryArgs.target_milepost) + 0.1;
-            }
-        }
-
-        const crashFilterClauses = makeCrashFilterQuery(filterJson, accidentsTableName);
-        const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
-
-        var sql = `
-    SELECT *, directory as report_directory,
-    CASE 
-        WHEN directory IS NOT NULL OR directory <> '' THEN CONCAT('${njtr1Root}', directory, '/', dln, '.PDF') 
-        ELSE NULL
-    END AS "URL"
-    FROM ${accidentsTableName} ${crashFilterClauses.fromClause} 
-    ${crashFilterClauses.whereClause ? ` WHERE ${crashFilterClauses.whereClause}` : ''}
-    ORDER BY milepost
+    var selectStatement = `COUNT(${accidentsTableName}.crashid) "Crash Count", ${accidentsTableName}.year "Year", acc_month`;
+    if (queryArgs.dataType === 'Speed') selectStatement = `        
+        CASE WHEN posted_speed < 10 THEN '< 10 mph'
+        WHEN posted_speed >= 10 AND posted_speed < 20 THEN '10-19 mph'
+        WHEN posted_speed >= 20 AND posted_speed < 30 THEN '20-29 mph'
+        WHEN posted_speed >= 30 AND posted_speed < 40 THEN '30-39 mph'
+        WHEN posted_speed >= 40 AND posted_speed < 50 THEN '40-49 mph'
+        WHEN posted_speed >= 50 AND posted_speed < 60 THEN '50-59 mph'
+        WHEN posted_speed <= 60 THEN '≥ 60 mph'
+        ELSE 'Unknown'
+        END speed_range,
+        COUNT(ard_accidents_geom_partition.crashid)
     `;
-    // console.log(sql);
-    return sql;
+
+    const query = `
+        SELECT 
+        ${selectStatement}
+        FROM ${accidentsTableName}
+        ${fromClause ? ` ${fromClause}` : ''}
+        WHERE geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)
+        ${whereClause ? ` AND ${whereClause}` : ''}
+        ${groupByClause ? ` ${groupByClause}` : ''}
+    `;
+
+    // console.log(query)
+    return query;
   }
 
 // *---------------*
@@ -48,25 +56,35 @@ const schema = {
     tags: ['crash-map'],
     summary: "Gets a list of all crash cases within a specified milepost and crash filter. The crash filter should have the SRI if the milepost attribute is specified.",
     querystring: {
-        crashFilter: {
+        selected_filters: {
             type: 'string',
-            description: 'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}',
-        }, 
-        min_x: {
-            type: 'string',
-            description: 'min x of map extent'
+            description: 'stringified JSON of crash filter object',
+            example: '{"year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
         },
-        min_y: {
+        dataType: {
             type: 'string',
-            description: 'min y of map extent',
+            description: 'type of data results that should be exported: Temporal, Speed',
+            example: 'Temporal'
         },
-        max_x: {
-            type: 'string',
-            description: 'max x of map extent',
+        boundingBoxMinX: {
+            type: 'number',
+            description: 'left point of the map extent',
+            example: -75.18347186057379
         },
-        max_y: {
-            type: 'string',
-            description: 'max y of map extent',
+        boundingBoxMinY: {
+            type: 'number',
+            description: 'bottom point of the map extent',
+            example: 39.89214724158961
+        },
+        boundingBoxMaxX: {
+            type: 'number',
+            description: 'right point of the map extent',
+            example: -74.99457847510519
+        },
+        boundingBoxMaxY: {
+            type: 'number',
+            description: 'top point of the map extent',
+            example: -39.93906091093021
         }
     }
 }
@@ -90,19 +108,25 @@ module.exports = function (fastify, opts, next) {
                 });
 
                 var queryArgs = request.query;
-                if (queryArgs.crashFilter == undefined) {
+                if (queryArgs.selected_filters == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
                         "message": "crash filter not submitted"
                     });
                 }
-
-                if (queryArgs.target_milepost && queryArgs.target_sri == undefined) {
+                if (queryArgs.dataType == undefined) {
                     return reply.send({
                         "statusCode": 500,
                         "error": "Internal Server Error",
-                        "message": "target sri is not defined."
+                        "message": "data type not submitted"
+                    });
+                }
+                if (!dataTypes.includes(queryArgs.dataType)) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "data type invalid"
                     });
                 }
 
@@ -117,7 +141,7 @@ module.exports = function (fastify, opts, next) {
                             }  
                         }
 
-                        reply.send(err || {CrashList: returnRows})
+                        reply.send(err || {GraphData: returnRows})
                     }
                 )
             }

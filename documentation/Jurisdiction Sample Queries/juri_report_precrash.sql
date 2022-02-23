@@ -1,4 +1,4 @@
-    WITH JuriTotal AS (SELECT COUNT(*) AS JuriTotal from ard_pedestrians where acc_mun_cty_co = '01' AND acc_mun_mu = '01'
+    WITH JuriTotal AS (SELECT COUNT(*) AS JuriTotal from ard_pedestrians_partition where acc_mun_cty_co = '01' AND acc_mun_mu = '01'
     and acc_year >= 2015 and acc_year <= 2019),
 
     StateTotal AS (SELECT SUM(statecount) AS StateTotal FROM state_trends.ped_precrash_state WHERE year >= 2015 AND year <= 2019)
@@ -15,7 +15,7 @@
                 WHEN pre_crash_type IS NULL THEN '-20'
                 ELSE pre_crash_type
                 END), count(*) AS JuriCount
-                FROM ard_pedestrians
+                FROM ard_pedestrians_partition
                 WHERE acc_mun_cty_co = '01' AND acc_mun_mu = '01' AND (acc_year >= 2015 and acc_year <= 2019)
                 GROUP BY pre_crash_type ORDER BY pre_crash_type
             ) AS preCrashCount

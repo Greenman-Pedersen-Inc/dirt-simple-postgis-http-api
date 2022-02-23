@@ -1,4 +1,4 @@
-    WITH JuriTotal AS (SELECT COUNT(*) AS JuriTotal from ard_pedestrians where acc_mun_cty_co = '01' AND acc_mun_mu = '01'  
+    WITH JuriTotal AS (SELECT COUNT(*) AS JuriTotal from ard_pedestrians_partition where acc_mun_cty_co = '01' AND acc_mun_mu = '01'  
     and acc_year >= 2015 and acc_year <= 2019),
 
     StateTotal AS (SELECT SUM(statecount) AS StateTotal FROM state_trends.ped_age_state WHERE year >= 2015 AND year <= 2019)
@@ -24,7 +24,7 @@
             ELSE 'Unknown'
             END
             AS AgeBucket
-            FROM ard_pedestrians where acc_mun_cty_co = '01' AND acc_mun_mu = '01' and acc_year >= 2015 and acc_year <= 2019
+            FROM ard_pedestrians_partition where acc_mun_cty_co = '01' AND acc_mun_mu = '01' and acc_year >= 2015 and acc_year <= 2019
         ) AS ageData
         GROUP BY AgeBucket ORDER BY AgeBucket
     ) AS Juri

@@ -8,17 +8,28 @@ const { createQueryClauseSingleton, createQueryClauseMultiple } = require('./que
 // ATTRIBUTE DEFINITIONS
 //  title: human-readable title of the column
 //  fieldName: column name from the database table
-//  moduleName: JSON attribute name. Usually not needed unless a naming distinguish needs to be made between same DB columns names such as Vehicle and Pedrestian table column 'contr_circum_code1' 
+//  moduleName: JSON attribute name. Usually not needed unless a naming distinguish needs to be made between same DB columns names such as Vehicle and Pedrestian table column 'contr_circum_code1'
 //  secondaryColumns: array of alternative fieldnames associated with this column. Used to combine multiple 'OR' clauses such as 'Contributing Circumstances 1 OR 2'
 //  query: function which formats the SQL query clause of the column
 
 // *---------------*
-const tableName = "ard_occupants";
+const tableName = 'ard_occupants_partition';
 
-const filterDictonary = 
-[
-    { title: 'Crash Identifier', fieldName: 'crashid', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Year', fieldName: 'veh_acc_year', query: function (input) { return createQueryClauseMultiple(this, tableName, input); } },
+const filterDictonary = [
+    {
+        title: 'Crash Identifier',
+        fieldName: 'crashid',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
+    {
+        title: 'Year',
+        fieldName: 'veh_acc_year',
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
+    },
     {
         title: 'County',
         fieldName: 'veh_acc_mun_cty_co',
@@ -45,7 +56,9 @@ const filterDictonary =
             { code: '20', description: 'Union' },
             { code: '21', description: 'Warren' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Municipality',
@@ -620,11 +633,31 @@ const filterDictonary =
             { code: '2122', description: 'Washington Township' },
             { code: '2123', description: 'White Township' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
-    { title: 'Case #', fieldName: 'veh_acc_acc_case', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Vehicle ID', fieldName: 'veh_id', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Occupant ID', fieldName: 'id', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    {
+        title: 'Case #',
+        fieldName: 'veh_acc_acc_case',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
+    {
+        title: 'Vehicle ID',
+        fieldName: 'veh_id',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
+    {
+        title: 'Occupant ID',
+        fieldName: 'id',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
     {
         title: 'Severity Rating',
         fieldName: 'severity_rating',
@@ -633,9 +666,11 @@ const filterDictonary =
             { code: '4', description: 'Suspected Serious Injury' },
             { code: '3', description: 'Suspected Minor Injury' },
             { code: '2', description: 'Possible Injury' },
-            { code: '1', description: 'No Apparent Injury' },
+            { code: '1', description: 'No Apparent Injury' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Physical Condition',
@@ -646,175 +681,231 @@ const filterDictonary =
             { code: '01', description: 'Fatal Injury' },
             { code: '02', description: 'Suspected Serious Injury' },
             { code: '03', description: 'Possible Injury' },
-            { code: '04', description: 'No Apparent Injury' },
+            { code: '04', description: 'No Apparent Injury' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Occupant Position',
         fieldName: 'position_in_code',
         values: [
-            { code: '00', description: 'Unknown'},
-            { code: '01', description: 'Driver'},
-            { code: '02', description: 'Passenger'},
-            { code: '03', description: 'Passenger'},
-            { code: '04', description: 'Passenger'},
-            { code: '05', description: 'Passenger'},
-            { code: '06', description: 'Passenger'},
-            { code: '07', description: 'Passenger'},
-            { code: '08', description: 'Passenger'},
-            { code: '09', description: 'Passenger'},
-            { code: '10', description: 'Cargo Area'},
-            { code: '11', description: 'Riding/Hanging On Outside'},
-            { code: "-20", description: "NOT RECORDED"}
+            { code: '00', description: 'Unknown' },
+            { code: '01', description: 'Driver' },
+            { code: '02', description: 'Passenger' },
+            { code: '03', description: 'Passenger' },
+            { code: '04', description: 'Passenger' },
+            { code: '05', description: 'Passenger' },
+            { code: '06', description: 'Passenger' },
+            { code: '07', description: 'Passenger' },
+            { code: '08', description: 'Passenger' },
+            { code: '09', description: 'Passenger' },
+            { code: '10', description: 'Cargo Area' },
+            { code: '11', description: 'Riding/Hanging On Outside' },
+            { code: '-20', description: 'NOT RECORDED' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Ejection Type',
         fieldName: 'ejection_code',
         values: [
-            { code: '00', description: 'Unknown'},
-            { code: '01', description: 'Not Ejected'},
-            { code: '02', description: 'Partial Ejection'},
-            { code: '03', description: 'Ejected'},
-            { code: '04', description: 'Trapped'},
-            { code: "-20", description: "NOT RECORDED"}
+            { code: '00', description: 'Unknown' },
+            { code: '01', description: 'Not Ejected' },
+            { code: '02', description: 'Partial Ejection' },
+            { code: '03', description: 'Ejected' },
+            { code: '04', description: 'Trapped' },
+            { code: '-20', description: 'NOT RECORDED' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
-    { title: 'Age', fieldName: 'age', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    {
+        title: 'Age',
+        fieldName: 'age',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
     {
         title: 'Gender',
         fieldName: 'sex',
         values: [
-            { code: '-50', description: 'NJ REQUIRED - NOT REPORTED'},
-            { code: '-5', description: 'NOT AVAILABLE'},
-            { code: '-10', description: 'NOT KNOWN'},
-            { code: '-15', description: 'NOT REPORTING'},
-            { code: '-20', description: 'NOT RECORDED'},
-            { code: '-25', description: 'NOT APPLICABLE'},
-            { code: '-99', description: 'INVALID VALUE SUPPLIED'},
-            { code: 'F', description: 'Female'},
-            { code: 'M', description: 'Male'},
-            { code: 'T', description: 'Transgender'},
-            { code: 'U', description: 'Unknown'}
+            { code: '-50', description: 'NJ REQUIRED - NOT REPORTED' },
+            { code: '-5', description: 'NOT AVAILABLE' },
+            { code: '-10', description: 'NOT KNOWN' },
+            { code: '-15', description: 'NOT REPORTING' },
+            { code: '-20', description: 'NOT RECORDED' },
+            { code: '-25', description: 'NOT APPLICABLE' },
+            { code: '-99', description: 'INVALID VALUE SUPPLIED' },
+            { code: 'F', description: 'Female' },
+            { code: 'M', description: 'Male' },
+            { code: 'T', description: 'Transgender' },
+            { code: 'U', description: 'Unknown' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Injury Location',
         fieldName: 'loc_injury_code',
         values: [
-            { code: '-20', description: 'NOT RECORDED'},
-            { code: '00', description: 'Unknown'},
-            { code: '01', description: 'Head'},
-            { code: '02', description: 'Face'},
-            { code: '03', description: 'Eye'},
-            { code: '04', description: 'Neck'},
-            { code: '05', description: 'Chest'},
-            { code: '06', description: 'Back'},
-            { code: '07', description: 'Shoulder-Upper Arm'},
-            { code: '08', description: 'Elbow/Lower Arm/Hand'},
-            { code: '09', description: 'Abdomen/Pelvis'},
-            { code: '10', description: 'Hip-Upper Leg'},
-            { code: '11', description: 'Knee/Lower Leg/Foot'},
-            { code: '12', description: 'Entire Body'}
+            { code: '-20', description: 'NOT RECORDED' },
+            { code: '00', description: 'Unknown' },
+            { code: '01', description: 'Head' },
+            { code: '02', description: 'Face' },
+            { code: '03', description: 'Eye' },
+            { code: '04', description: 'Neck' },
+            { code: '05', description: 'Chest' },
+            { code: '06', description: 'Back' },
+            { code: '07', description: 'Shoulder-Upper Arm' },
+            { code: '08', description: 'Elbow/Lower Arm/Hand' },
+            { code: '09', description: 'Abdomen/Pelvis' },
+            { code: '10', description: 'Hip-Upper Leg' },
+            { code: '11', description: 'Knee/Lower Leg/Foot' },
+            { code: '12', description: 'Entire Body' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Injury Type',
         fieldName: 'type_injury_code',
         values: [
-            { code: '-20', description: 'NOT RECORDED'},
-            { code: '00', description: 'Unknown'},
-            { code: '01', description: 'Head'},
-            { code: '02', description: 'Face'},
-            { code: '03', description: 'Eye'},
-            { code: '04', description: 'Neck'},
-            { code: '05', description: 'Chest'},
-            { code: '06', description: 'Back'},
-            { code: '07', description: 'Shoulder-Upper Arm'},
-            { code: '08', description: 'Elbow/Lower Arm/Hand'},
-            { code: '09', description: 'Abdomen/Pelvis'},
-            { code: '10', description: 'Hip-Upper Leg'},
-            { code: '11', description: 'Knee/Lower Leg/Foot'},
-            { code: '12', description: 'Entire Body'}
+            { code: '-20', description: 'NOT RECORDED' },
+            { code: '00', description: 'Unknown' },
+            { code: '01', description: 'Head' },
+            { code: '02', description: 'Face' },
+            { code: '03', description: 'Eye' },
+            { code: '04', description: 'Neck' },
+            { code: '05', description: 'Chest' },
+            { code: '06', description: 'Back' },
+            { code: '07', description: 'Shoulder-Upper Arm' },
+            { code: '08', description: 'Elbow/Lower Arm/Hand' },
+            { code: '09', description: 'Abdomen/Pelvis' },
+            { code: '10', description: 'Hip-Upper Leg' },
+            { code: '11', description: 'Knee/Lower Leg/Foot' },
+            { code: '12', description: 'Entire Body' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Refused Medical Treatment',
         fieldName: 'flg_ref_medical',
         values: [
-            { code: '-20', description: 'NOT RECORDED'},
-            { code: '00', description: 'Unknown'},
-            { code: '01', description: 'Yes'},
-            { code: '02', description: 'No'},
+            { code: '-20', description: 'NOT RECORDED' },
+            { code: '00', description: 'Unknown' },
+            { code: '01', description: 'Yes' },
+            { code: '02', description: 'No' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Safety Equipment Available',
         fieldName: 'safety_avail_code',
         values: [
-            { code: '00', description: 'Unknown'},
-            { code: '01', description: 'None Used'},
-            { code: '02', description: 'Lap Belt Only'},
-            { code: '03', description: 'Harness Only'},
-            { code: '04', description: 'Lap Belt & Harness'},
-            { code: '05', description: 'Child Restraint – Forward Facing'},
-            { code: '06', description: 'Child Restraint – Rear Facing'},
-            { code: '07', description: 'Child Restraint -Booster'},
-            { code: '08', description: 'Helmet'},
-            { code: '09', description: 'Unapproved Helmet'},
-            { code: '10', description: 'Airbag'},
-            { code: '11', description: 'Airbag & Seat Belts'},
-            { code: '12', description: 'Safety Vests(Ped Only)'},
-            { code: '99', description: 'Other'},
-            { code: '-20', description: 'NOT RECORDED'}
+            { code: '00', description: 'Unknown' },
+            { code: '01', description: 'None Used' },
+            { code: '02', description: 'Lap Belt Only' },
+            { code: '03', description: 'Harness Only' },
+            { code: '04', description: 'Lap Belt & Harness' },
+            { code: '05', description: 'Child Restraint – Forward Facing' },
+            { code: '06', description: 'Child Restraint – Rear Facing' },
+            { code: '07', description: 'Child Restraint -Booster' },
+            { code: '08', description: 'Helmet' },
+            { code: '09', description: 'Unapproved Helmet' },
+            { code: '10', description: 'Airbag' },
+            { code: '11', description: 'Airbag & Seat Belts' },
+            { code: '12', description: 'Safety Vests(Ped Only)' },
+            { code: '99', description: 'Other' },
+            { code: '-20', description: 'NOT RECORDED' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Safety Equipment Used',
         fieldName: 'safety_used_code',
         values: [
-            { code: '00', description: 'Unknown'},
-            { code: '01', description: 'None Used'},
-            { code: '02', description: 'Lap Belt Only'},
-            { code: '03', description: 'Harness Only'},
-            { code: '04', description: 'Lap Belt & Harness'},
-            { code: '05', description: 'Child Restraint – Forward Facing'},
-            { code: '06', description: 'Child Restraint – Rear Facing'},
-            { code: '07', description: 'Child Restraint -Booster'},
-            { code: '08', description: 'Helmet'},
-            { code: '09', description: 'Unapproved Helmet'},
-            { code: '10', description: 'Airbag'},
-            { code: '11', description: 'Airbag & Seat Belts'},
-            { code: '12', description: 'Safety Vests (Ped Only)'},
-            { code: '99', description: 'Other'},
-            { code: '-20', description: 'NOT RECORDED'}
+            { code: '00', description: 'Unknown' },
+            { code: '01', description: 'None Used' },
+            { code: '02', description: 'Lap Belt Only' },
+            { code: '03', description: 'Harness Only' },
+            { code: '04', description: 'Lap Belt & Harness' },
+            { code: '05', description: 'Child Restraint – Forward Facing' },
+            { code: '06', description: 'Child Restraint – Rear Facing' },
+            { code: '07', description: 'Child Restraint -Booster' },
+            { code: '08', description: 'Helmet' },
+            { code: '09', description: 'Unapproved Helmet' },
+            { code: '10', description: 'Airbag' },
+            { code: '11', description: 'Airbag & Seat Belts' },
+            { code: '12', description: 'Safety Vests (Ped Only)' },
+            { code: '99', description: 'Other' },
+            { code: '-20', description: 'NOT RECORDED' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
     {
         title: 'Airbag Depolyment',
         fieldName: 'airbag_deploy',
         values: [
-            { code: '01', description: 'Front'},
-            { code: '02', description: 'Side'},
-            { code: '03', description: 'Other ((Knee, Airbelt, etc.)'},
-            { code: '04', description: 'Combination'}
+            { code: '01', description: 'Front' },
+            { code: '02', description: 'Side' },
+            { code: '03', description: 'Other ((Knee, Airbelt, etc.)' },
+            { code: '04', description: 'Combination' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) {
+            return createQueryClauseMultiple(this, tableName, input);
+        }
     },
-    { title: 'Hospital Code', fieldName: 'hospital_code', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Infant Age', fieldName: 'infant_age', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Update Date', fieldName: 'update_date', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Date of Death', fieldName: 'dte_death', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Time of Death', fieldName: 'tme_death', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    {
+        title: 'Hospital Code',
+        fieldName: 'hospital_code',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
+    {
+        title: 'Infant Age',
+        fieldName: 'infant_age',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
+    {
+        title: 'Update Date',
+        fieldName: 'update_date',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
+    {
+        title: 'Date of Death',
+        fieldName: 'dte_death',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    },
+    {
+        title: 'Time of Death',
+        fieldName: 'tme_death',
+        query: function (input) {
+            return createQueryClauseSingleton(this, tableName, input);
+        }
+    }
 ];
 
 const codeDefinitions = {

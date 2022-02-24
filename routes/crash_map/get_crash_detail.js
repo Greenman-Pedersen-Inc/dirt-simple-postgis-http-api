@@ -8,10 +8,10 @@ const { transcribeKeys, transcribeKeysArray } = require('../../helper_functions/
 function getQueries(queryArgs) {
     var queries = {};
     queries.accidents = (`SELECT * FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, "accidents")}`); // ACCIDENTS query
-    queries.vehicles = (`SELECT ${getColumns("vehicles")} FROM ard_vehicles where ${getWhereClause(queryArgs, "vehicles")}`); // Vehicles query
-    queries.drivers = (`SELECT ${getColumns("drivers")} FROM ard_vehicles where ${getWhereClause(queryArgs, "vehicles")}`); // drivers query
-    queries.occupants = (`SELECT * FROM ard_occupants where ${getWhereClause(queryArgs, "occupants")}`); // Occupants query
-    queries.pedestrians = (`SELECT * FROM ard_pedestrians where ${getWhereClause(queryArgs, "pedestrians")}`); // Pedestrians query
+    queries.vehicles = (`SELECT ${getColumns("vehicles")} FROM ard_vehicles_partition where ${getWhereClause(queryArgs, "vehicles")}`); // Vehicles query
+    queries.drivers = (`SELECT ${getColumns("drivers")} FROM ard_vehicles_partition where ${getWhereClause(queryArgs, "vehicles")}`); // drivers query
+    queries.occupants = (`SELECT * FROM ard_occupants_partition where ${getWhereClause(queryArgs, "occupants")}`); // Occupants query
+    queries.pedestrians = (`SELECT * FROM ard_pedestrians_partition where ${getWhereClause(queryArgs, "pedestrians")}`); // Pedestrians query
     return queries;
 }
 

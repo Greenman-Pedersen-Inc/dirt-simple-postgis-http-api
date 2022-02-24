@@ -69,7 +69,7 @@ function checkSpecialCategories(filterJson, accidentTableName) {
                 }
             }
         }
-        if (clauses.length > 0) whereClauses.push(clauses.join(' OR '));
+        if (clauses.length > 0) whereClauses.push( '(' + clauses.join(' OR ') + ')');
     });
     return {
         'usedTables': usedTables,

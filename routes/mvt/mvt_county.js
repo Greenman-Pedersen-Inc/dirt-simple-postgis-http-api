@@ -49,7 +49,6 @@ const sql = (params, query) => {
         )
         SELECT ST_AsMVT(clipped_results.*, 'county_boundaries_of_nj_3857', 4096, 'geom', 'ogc_fid') AS mvt from clipped_results;
     `;
-
     return queryText;
 };
 

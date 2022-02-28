@@ -12,9 +12,8 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
         filterJson = crashFilter;
     }
 
-
+    // check if the filter is within: 'pedestrian_phys_cond', 'occupant_phys_cond', 'trf_ctrl', 'driver_phys'
     const specialCategoryData = checkSpecialCategories(filterJson, accidentTableName);
-    //console.log(specialCategoryData);
 
     var usedTables = specialCategoryData.usedTables;
     var whereClauses = specialCategoryData.whereClauses;
@@ -48,7 +47,7 @@ function checkSpecialCategories(filterJson, accidentTableName) {
     var usedTables = [];
     var whereClauses = [];
 
-    const specialCategories = [ 'pedestrian_phys_cond', 'occupant_phys_cond', 'trf_ctrl', 'driver_phys' ];
+    const specialCategories = [ 'pedestrian_phys_cond', 'occupant_phys_cond', 'pedestrian_cyclist_phys_cond', 'trf_ctrl', 'driver_phys' ];
     specialCategories.forEach(category => {
         var clauses = [];
         for (var key of Object.keys(filterJson)) {

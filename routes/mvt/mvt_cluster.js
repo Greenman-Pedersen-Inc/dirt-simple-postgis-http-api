@@ -157,6 +157,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/mvt/cluster/:z/:x/:y',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
 

@@ -674,7 +674,8 @@ const filterDictonary = [
             { code: '01', description: 'Fatal Injury' },
             { code: '02', description: 'Suspected Serious Injury' },
             { code: '03', description: 'Suspected Minor Injury' },
-            { code: '04', description: 'Possible Injury' }
+            { code: '04', description: 'Possible Injury' },
+            { code: '05', description: 'No Apperent Injury' }
         ],
         query: function (input) {
             return createQueryClauseMultiple(this, tableName, input);

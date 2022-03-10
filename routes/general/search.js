@@ -83,14 +83,13 @@ const makeSeachQueries = (params) => {
       and ard_accidents_geom_partition.mun_mu = ard_municipality.muni_code
       inner join ard_county
       on ard_accidents_geom_partition.mun_cty_co = ard_county.county_code
-      --where acc_case = '${params.searchText}'  
-      --or acc_case LIKE '%${params.searchText}%'  
-      where acc_case = $1
-      or acc_case LIKE $2 
+      --where acc_case = $1
+      --or acc_case LIKE $2 
+      WHERE acc_case LIKE $1
       limit 5`;
     //console.log(sql)
-    sqlQueries.push( {'text': sql, 'values': [params.searchText, params.searchText + '%'] } );
-    // sqlQueries.push(sql);
+    // sqlQueries.push( {'text': sql, 'values': [params.searchText, params.searchText + '%'] } );
+    sqlQueries.push( {'text': sql, 'values': [params.searchText + '%'] } );
   }
   return sqlQueries;
 }

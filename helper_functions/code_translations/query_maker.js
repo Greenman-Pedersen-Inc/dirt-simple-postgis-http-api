@@ -101,6 +101,30 @@ function createQueryVehicleTotal(codeObject, tableName, input) {
     return query;
 }
 
+/**
+ * Creates a WHERE clause which appends pedestrian and cyclist crash counts
+ * @date 2022-02-28
+ * @param {object} codeObject - { title: '...', fieldName: '...', query: function() {...} }
+ * @param {string}  tableName - table name of the column
+ * @param {string}  input - value to query
+ * @param {string}  qualifier - custom qualifier if not '='
+ * @returns {string} WHERE clause
+ */
+function createQueryPedCyclist(codeObject, tableName) {
+    if (codeObject.fieldName.includes('killed')) {
+        return `(${tableName}.pedestrian_phys_cond_killed > 0 OR ${tableName}.cyclist_killed > 0)`;
+    }
+    else if (codeObject.fieldName.includes('incapacitated')) {
+        return `(${tableName}.pedestrian_phys_cond_incapacitated > 0 OR ${tableName}.cyclist_incapacitated > 0)`;
+    }
+    else if (codeObject.fieldName.includes('moderate_injury')) {
+        return `(${tableName}.pedestrian_phys_cond_moderate_injury > 0 OR ${tableName}.cyclist_moderate_pain > 0)`;
+    }
+    else if (codeObject.fieldName.includes('complaint_pain')) {
+        return `(${tableName}.pedestrian_phys_cond_complaint_pain > 0 OR ${tableName}.cyclist_complaint_of_pain > 0)`;
+    }
+}
+
 function makeFromClause(tableNameArray, accidentsTableName) {
     var fromClause = "";
     tableNameArray.forEach(tableName => {
@@ -149,6 +173,7 @@ module.exports = {
     createTimeDateRange: createTimeDateRange,
     createQueryMilepost: createQueryMilepost,
     createQueryVehicleTotal: createQueryVehicleTotal,
+    createQueryPedCyclist: createQueryPedCyclist,
     makeFromClause: makeFromClause,
     makeWhereClause: makeWhereClause,
     formatCodes: formatCodes

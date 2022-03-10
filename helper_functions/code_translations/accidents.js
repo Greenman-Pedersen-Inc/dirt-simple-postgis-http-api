@@ -1,4 +1,4 @@
-const { createQueryClauseSingleton, createQueryClauseMultiple, createQueryClauseMunicipality, createQueryDateRange, createTimeDateRange, createQueryMilepost, createQueryVehicleTotal } = require('./query_maker');
+const { createQueryClauseSingleton, createQueryClauseMultiple, createQueryClauseMunicipality, createQueryDateRange, createTimeDateRange, createQueryMilepost, createQueryVehicleTotal, createQueryPedCyclist } = require('./query_maker');
 
 
 // *---------------*
@@ -1055,6 +1055,11 @@ const filterDictonary =
     { title: 'Pedestrian Physical Condition: Possible Injury', fieldName: 'pedestrian_phys_cond_complaint_pain', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
     { title: 'Pedestrian Physical Condition: Unknown', fieldName: 'pedestrian_phys_cond_unknown', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
     
+    { title: 'Pedestrian & Cyclist Physical Condition: Fatal Injury', fieldName: 'pedestrian_cyclist_phys_cond_killed', query: function (input) { return createQueryPedCyclist(this, tableName); } },
+    { title: 'Pedestrian & Cyclist Physical Condition: Suspected Serious Injury', fieldName: 'pedestrian_cyclist_phys_cond_incapacitated', query: function (input) { return createQueryPedCyclist(this, tableName); } },
+    { title: 'Pedestrian & Cyclist Physical Condition: Suspected Minor Injury', fieldName: 'pedestrian_cyclist_phys_cond_moderate_injury', query: function (input) { return createQueryPedCyclist(this, tableName); } },
+    { title: 'Pedestrian & Cyclist Physical Condition: Possible Injury', fieldName: 'pedestrian_cyclist_phys_cond_complaint_pain', query: function (input) { return createQueryPedCyclist(this, tableName); } },    
+
     {
         title: 'Functional Class',
         fieldName: 'functional_class',

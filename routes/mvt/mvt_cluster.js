@@ -163,6 +163,8 @@ module.exports = function (fastify, opts, next) {
 
             function onConnect(err, client, release) {
                 if (err) {
+                    release();
+
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
@@ -171,6 +173,8 @@ module.exports = function (fastify, opts, next) {
                 } else {
                     try {
                         if (request.query.selected_filters == undefined) {
+                            release();
+
                             reply.send({
                                 statusCode: 500,
                                 error: 'Internal Server Error',

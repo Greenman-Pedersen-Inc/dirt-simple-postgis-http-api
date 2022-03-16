@@ -5,7 +5,7 @@
 // *---------------*
 const sql = (queryArgs) => {
     var sql = `
-    SELECT * FROM usermanagement.user_queries WHERE user_name = '${queryArgs.userName}';
+    SELECT * FROM usermanagement.user_queries_new WHERE user_name = '${queryArgs.userName}';
     `;
     return sql;
   }

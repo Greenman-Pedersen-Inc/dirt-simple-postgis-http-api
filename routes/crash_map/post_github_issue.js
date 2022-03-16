@@ -4,7 +4,7 @@ const githubName = "snopachinda-gpi";
 const githubRepoOwner = "Greenman-Pedersen-Inc";
 const repoName = "voyager-bug-tracker";
 const imgRepoName = "voyager-images";
-const token = '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';
+const token = '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';
 
 
 // *---------------*

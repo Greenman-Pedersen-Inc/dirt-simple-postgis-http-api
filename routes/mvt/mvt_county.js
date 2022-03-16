@@ -95,69 +95,74 @@ module.exports = function (fastify, opts, next) {
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
+                if (err) {
+                    release();
+
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-
-                try {
-                    if (request.query.selected_filters == undefined) {
-                        reply.send({
-                            statusCode: 500,
-                            error: 'Internal Server Error',
-                            message: 'crash filter not submitted'
-                        });
-                    } else {
-                        client.query(sql(request.params, request.query), function onResult(err, result) {
+                } else {
+                    try {
+                        if (request.query.selected_filters == undefined) {
                             release();
 
-                            if (err) {
-                                reply.send(err);
-                            } else {
-                                if (result) {
-                                    if (result.rows && result.rows.length > 0) {
-                                        if (result.rows[0].mvt) {
-                                            const mvt = result.rows[0].mvt;
+                            reply.send({
+                                statusCode: 500,
+                                error: 'Internal Server Error',
+                                message: 'crash filter not submitted'
+                            });
+                        } else {
+                            client.query(sql(request.params, request.query), function onResult(err, result) {
+                                release();
 
-                                            if (mvt.length === 0) {
-                                                reply.code(204);
+                                if (err) {
+                                    reply.send(err);
+                                } else {
+                                    if (result) {
+                                        if (result.rows && result.rows.length > 0) {
+                                            if (result.rows[0].mvt) {
+                                                const mvt = result.rows[0].mvt;
+
+                                                if (mvt.length === 0) {
+                                                    reply.code(204);
+                                                }
+
+                                                reply.header('Content-Type', 'application/x-protobuf').send(mvt);
+                                            } else {
+                                                reply.send({
+                                                    statusCode: 500,
+                                                    error: 'no mvt returned',
+                                                    message: request
+                                                });
                                             }
-
-                                            reply.header('Content-Type', 'application/x-protobuf').send(mvt);
                                         } else {
                                             reply.send({
                                                 statusCode: 500,
-                                                error: 'no mvt returned',
+                                                error: 'no rows returned',
                                                 message: request
                                             });
                                         }
                                     } else {
                                         reply.send({
                                             statusCode: 500,
-                                            error: 'no rows returned',
+                                            error: 'no data returned',
                                             message: request
                                         });
                                     }
-                                } else {
-                                    reply.send({
-                                        statusCode: 500,
-                                        error: 'no data returned',
-                                        message: request
-                                    });
                                 }
-                            }
+                            });
+                        }
+                    } catch (error) {
+                        release();
+
+                        reply.send({
+                            statusCode: 500,
+                            error: error,
+                            message: request
                         });
                     }
-                } catch (error) {
-                    release();
-
-                    reply.send({
-                        statusCode: 500,
-                        error: error,
-                        message: request
-                    });
                 }
             }
         }

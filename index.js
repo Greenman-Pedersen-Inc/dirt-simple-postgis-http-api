@@ -32,24 +32,39 @@ function logRequest(request, reply, done) {
     };
 
     function onConnect(err, client, release) {
-        if (err)
+        if (err) {
+            release();
+
             return reply.send({
                 statusCode: 500,
                 error: 'Internal Server Error',
                 message: 'unable to connect to database server: ' + err
             });
+        } else {
+            try {
+                client.query(sql(queryInfo, endpoint, username, currentTime), function onResult(err, result) {
+                    release();
 
-        release();
+                    if (err) {
+                        return reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error: Inner Query Error',
+                            message: 'unable to perform database operation: ' + err
+                        });
+                    } else {
+                        done();
+                    }
+                });
+            } catch (error) {
+                release();
 
-        client.query(sql(queryInfo, endpoint, username, currentTime), function onResult(err, result) {
-            if (err)
                 return reply.send({
                     statusCode: 500,
-                    error: 'Internal Server Error',
-                    message: 'unable to perform database operation: ' + err
+                    error: 'Internal Server Error: Outer Query Error',
+                    message: 'unable to perform database operation: ' + error
                 });
-            done();
-        });
+            }
+        }
     }
 
     // this will not log get requests that include the keywork 'lookup'
@@ -84,31 +99,43 @@ function verifyToken(request, reply, done) {
      * @return {*}
      */
     function onConnect(err, client, release) {
-        if (err)
+        if (err) {
+            release();
+
             return reply.send({
                 statusCode: 500,
                 error: 'Internal Server Error',
                 message: 'unable to connect to database server: ' + err
             });
+        } else {
+            try {
+                client.query(sql(request.headers), function onResult(err, result) {
+                    release();
 
-        release();
+                    if (err) {
+                        return reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error: Inner Query Error',
+                            message: 'unable to perform database operation: ' + err
+                        });
+                    } else {
+                        if (result.rows.map((row) => row.count).reduce((acc, count) => acc + count, 0) > 0) {
+                            done();
+                        } else {
+                            reply.send({ description: 'token validation unsuccesful!', tokenError: -999 });
+                        }
+                    }
+                });
+            } catch (error) {
+                release();
 
-        client.query(sql(request.headers), function onResult(err, result) {
-            const reducer = (accumulator, currentValue) => accumulator + currentValue.count;
-
-            if (err)
                 return reply.send({
                     statusCode: 500,
-                    error: 'Internal Server Error',
-                    message: 'unable to perform database operation: ' + err
+                    error: 'Internal Server Error: Outer Query Error',
+                    message: 'unable to perform database operation: ' + error
                 });
-
-            if (result.rows.map((row) => row.count).reduce((acc, count) => acc + count, 0) > 0) {
-                done();
-            } else {
-                reply.send({ description: 'token validation unsuccesful!', tokenError: -999 });
             }
-        });
+        }
     }
 
     fastify.pg.connect(onConnect);

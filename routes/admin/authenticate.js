@@ -63,34 +63,53 @@ module.exports = function (fastify, opts, next) {
         },
         handler: function (request, reply, done) {
             function onConnect(err, client, release) {
-                if (err)
+                if (err) {
+                    release();
+
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server: ' + err
                     });
+                } else {
+                    try {
+                        client.query(sql(request.body), function onResult(err, result) {
+                            release();
 
-                client.query(sql(request.body), function onResult(err, result) {
-                    release();
+                            if (err) {
+                                return reply.send({
+                                    statusCode: 500,
+                                    error: 'Internal Server Error: Inner Query Error',
+                                    message: 'unable to perform database operation: ' + err
+                                });
+                            } else {
+                                if (result.rows && result.rows.length > 0) {
+                                    if (result.rows[0].token === '-1000') {
+                                        result.rows = {
+                                            description: 'user/password authentication unsuccesful!',
+                                            tokenError: -1000
+                                        };
+                                    } else {
+                                        reply.send(err || result.rows);
+                                    }
+                                } else {
+                                    reply.send({
+                                        description: 'user/password authentication unsuccesful!',
+                                        tokenError: -1001
+                                    });
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        release();
 
-                    if (err)
                         return reply.send({
                             statusCode: 500,
-                            error: 'Internal Server Error',
-                            message: 'unable to perform database operation: ' + err
+                            error: 'Internal Server Error: Outer Query Error',
+                            message: 'unable to perform database operation: ' + error
                         });
-
-                    if (result.rows && result.rows.length > 0) {
-                        if (result.rows[0].token === '-1000') {
-                            result.rows = {
-                                description: 'user/password authentication unsuccesful!',
-                                tokenError: -1000
-                            };
-                        }
                     }
-
-                    reply.send(err || result.rows);
-                });
+                }
             }
 
             fastify.pg.connect(onConnect);

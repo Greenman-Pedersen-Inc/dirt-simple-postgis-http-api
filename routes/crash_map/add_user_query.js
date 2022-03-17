@@ -5,10 +5,12 @@
 // *---------------*
 const sql = (queryArgs) => {
     var sql = `
-    INSERT INTO usermanagement.user_queries (user_name, x_min, x_max, y_min, y_max, filters, filters_description, filters_title, results_text, min_mp, max_mp, zoom_level, rotation) 
-    VALUES ('${queryArgs.userName}', '${queryArgs.minX}', '${queryArgs.maxX}', '${queryArgs.minY}', '${queryArgs.maxX}', '${queryArgs.maxY}', '${queryArgs.crashFilter}', 
-    '${queryArgs.filtersDescription}', '${queryArgs.filtersTitle}', '${queryArgs.resultsText}',' ${queryArgs.minMp}', '${queryArgs.maxMp}', 
-    '${queryArgs.zoomLevel}', '${queryArgs.rotation}')
+    INSERT INTO usermanagement.user_queries_new 
+    (user_name, x_min, x_max, y_min, y_max, filters, filters_description, filters_title, results_text, min_mp, max_mp, zoom_level, rotation, pitch) 
+    VALUES (
+    '${queryArgs.userName}', '${queryArgs.boundingBoxMinX}', '${queryArgs.boundingBoxMaxX}', '${queryArgs.boundingBoxMinY}', '${queryArgs.boundingBoxMaxY}', '${queryArgs.filters}', 
+    '${queryArgs.filtersDescription}', '${decodeURI(queryArgs.filtersTitle)}', '${queryArgs.resultsText}',' ${queryArgs.minMp}', '${queryArgs.maxMp}', 
+    '${queryArgs.zoomLevel}', '${queryArgs.rotation}', '${queryArgs.pitch}')
     `;
     return sql;
   }
@@ -33,13 +35,17 @@ const schema = {
             type: 'string',
             description: 'SV generated filter description.',
         },
-        crashFilter: {
+        filters: {
             type: 'string',
             description: 'JSON string of selected filters.',
         },
         rotation: {
             type: 'string',
             description: 'Map rotation when user saves query.',
+        },
+        pitch: {
+            type: 'string',
+            description: 'Map pitch when user saves query.',
         },
         zoomLevel: {
             type: 'string',
@@ -57,21 +63,21 @@ const schema = {
             type: 'string',
             description: 'max milepost of query.',
         },
-        minX: {
+        boundingBoxMinX: {
             type: 'string',
-            description: 'min x of map.',
+            description: 'top left corner x position',
         },
-        minY: {
+        boundingBoxMinY: {
             type: 'string',
-            description: 'min y of map.',
+            description: 'bottom right y value',
         },
-        maxX: {
+        boundingBoxMaxX: {
             type: 'string',
-            description: 'max x of map.',
+            description: 'bottom right x value',
         },
-        maxY: {
+        boundingBoxMaxY: {
             type: 'string',
-            description: 'max y of map.',
+            description: 'top left y value',
         }
     }
 }
@@ -81,7 +87,7 @@ const schema = {
 // *---------------*
 module.exports = function (fastify, opts, next) {
     fastify.route({
-        method: 'PUT',
+        method: 'POST',
         url: '/crash-map/add-user-query',
         schema: schema,
         handler: function (request, reply) {
@@ -106,8 +112,11 @@ module.exports = function (fastify, opts, next) {
                 client.query(
                     sql(queryArgs),
                     function onResult(err, result) {
-                        release()
-                        reply.send(err || result.rows)
+                        release();
+                        var result = {};
+                        if (err) result = {success: false, error: err}
+                        else result = {success: true}
+                        reply.send(err || result)
                     }
                 )
             }

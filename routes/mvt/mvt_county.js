@@ -104,16 +104,16 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 } else {
-                    try {
-                        if (request.query.selected_filters == undefined) {
-                            release();
+                    if (request.query.selected_filters == undefined) {
+                        release();
 
-                            reply.send({
-                                statusCode: 500,
-                                error: 'Internal Server Error',
-                                message: 'crash filter not submitted'
-                            });
-                        } else {
+                        reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'crash filter not submitted'
+                        });
+                    } else {
+                        try {
                             client.query(sql(request.params, request.query), function onResult(err, result) {
                                 release();
 
@@ -153,15 +153,15 @@ module.exports = function (fastify, opts, next) {
                                     }
                                 }
                             });
-                        }
-                    } catch (error) {
-                        release();
+                        } catch (error) {
+                            release();
 
-                        reply.send({
-                            statusCode: 500,
-                            error: error,
-                            message: request
-                        });
+                            reply.send({
+                                statusCode: 500,
+                                error: error,
+                                message: request
+                            });
+                        }
                     }
                 }
             }

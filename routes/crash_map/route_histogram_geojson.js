@@ -116,32 +116,61 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/geojson/route-histogram',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect);
+            const queryArgs = request.query;
 
             function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
+                if (err) {
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: err,
                         message: 'unable to connect to database server'
                     });
-
-                client.query(sql(request.params, request.query), function onResult(err, result) {
+                } else if (queryArgs.crashFilter == undefined) {
                     release();
-                    if (err) {
-                        return reply.send({
-                            statusCode: 500,
-                            error: err,
-                            message: 'unable to connect to database server'
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'crash filter not submitted'
+                    });
+                } else if (queryArgs.sri == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'target sri is not defined.'
+                    });
+                } else {
+                    try {
+                        client.query(sql(request.params, request.query), function onResult(err, result) {
+                            release();
+                            if (err) {
+                                reply.send({
+                                    statusCode: 500,
+                                    error: err,
+                                    message: 'unable to connect to database server'
+                                });
+                            } else if (result.rows && result.rows.length > 0) {
+                                reply.send(result.rows[0].route_metrics);
+                            } else {
+                                reply.code(204);
+                            }
                         });
-                    } else if (result.rows && result.rows.length > 0) {
-                        reply.send(result.rows[0].route_metrics);
-                    } else {
-                        reply.code(204);
+                    } catch (error) {
+                        release();
+
+                        reply.send({
+                            statusCode: 500,
+                            error: error,
+                            message: request
+                        });
                     }
-                });
+                }
             }
+
+            fastify.pg.connect(onConnect);
         }
     });
     next();

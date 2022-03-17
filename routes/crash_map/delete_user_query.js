@@ -8,7 +8,7 @@ const sql = (queryArgs) => {
     DELETE FROM usermanagement.user_queries WHERE user_name = '${queryArgs.userName}' AND oid = ${queryArgs.oid}
     `;
     return sql;
-  }
+};
 
 // *---------------*
 // route schema
@@ -20,14 +20,14 @@ const schema = {
     querystring: {
         userName: {
             type: 'string',
-            description: 'User email to log into SV',
+            description: 'User email to log into SV'
         },
         oid: {
             type: 'string',
-            description: 'unique ID for the query object',
+            description: 'unique ID for the query object'
         }
     }
-}
+};
 
 // *---------------*
 // create route
@@ -37,43 +37,56 @@ module.exports = function (fastify, opts, next) {
         method: 'DELETE',
         url: '/crash-map/delete-user-query',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
-
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                const queryArgs = request.query;
 
-                var queryArgs = request.query;
-                if (queryArgs.userName == undefined) {
+                if (err) {
+                    release();
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need user name"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
                     });
-                }
-                if (queryArgs.oid == undefined) {
+                } else if (queryArgs.userName == undefined) {
+                    release();
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need oid"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need user name'
                     });
-                }
+                } else if (queryArgs.oid == undefined) {
+                    release();
 
-                client.query(
-                    sql(queryArgs),
-                    function onResult(err, result) {
-                        release()
-                        reply.send(err || result.rows)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need oid'
+                    });
+                } else {
+                    try {
+                        client.query(sql(queryArgs), function onResult(err, result) {
+                            release();
+
+                            reply.send(err || result.rows);
+                        });
+                    } catch (err) {
+                        release();
+
+                        reply.send({
+                            statusCode: 500,
+                            error: err,
+                            message: request
+                        });
                     }
-                )
+                }
             }
-        }
-    })
-    next()
-}
 
-module.exports.autoPrefix = '/v1'
+            fastify.pg.connect(onConnect);
+        }
+    });
+    next();
+};
+
+module.exports.autoPrefix = '/v1';

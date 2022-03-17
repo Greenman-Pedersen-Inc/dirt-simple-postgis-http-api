@@ -11,17 +11,21 @@ const dataTypes = ['Temporal', 'Speed'];
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-    const accidentsTableName = "ard_accidents_geom_partition";
+    const accidentsTableName = 'ard_accidents_geom_partition';
     const parsed_filter = JSON.parse(queryArgs.selected_filters);
     const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
     const whereClause = filter.whereClause;
     const fromClause = filter.fromClause;
 
-    const groupByClause = `${queryArgs.dataType === 'Speed' ? 
-    'GROUP BY speed_range ORDER BY speed_range' : `GROUP BY ${accidentsTableName}.year, acc_month ORDER BY ${accidentsTableName}.year, acc_month` }`;
+    const groupByClause = `${
+        queryArgs.dataType === 'Speed'
+            ? 'GROUP BY speed_range ORDER BY speed_range'
+            : `GROUP BY ${accidentsTableName}.year, acc_month ORDER BY ${accidentsTableName}.year, acc_month`
+    }`;
 
     var selectStatement = `COUNT(${accidentsTableName}.crashid) "Crash Count", ${accidentsTableName}.year "Year", acc_month`;
-    if (queryArgs.dataType === 'Speed') selectStatement = `        
+    if (queryArgs.dataType === 'Speed')
+        selectStatement = `        
         CASE WHEN posted_speed < 10 THEN '< 10 mph'
         WHEN posted_speed >= 10 AND posted_speed < 20 THEN '10-19 mph'
         WHEN posted_speed >= 20 AND posted_speed < 30 THEN '20-29 mph'
@@ -39,22 +43,25 @@ const sql = (queryArgs) => {
         ${selectStatement}
         FROM ${accidentsTableName}
         ${fromClause ? ` ${fromClause}` : ''}
-        WHERE geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)
+        WHERE geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${
+        queryArgs.boundingBoxMaxX
+    }, ${queryArgs.boundingBoxMaxY}, 4326)
         ${whereClause ? ` AND ${whereClause}` : ''}
         ${groupByClause ? ` ${groupByClause}` : ''}
     `;
 
     // console.log(query)
     return query;
-  }
+};
 
 // *---------------*
 // route schema
 // *---------------*
 const schema = {
-    description: "Gets a list of all crash cases within a specified milepost and crash filter.",
+    description: 'Gets a list of all crash cases within a specified milepost and crash filter.',
     tags: ['crash-map'],
-    summary: "Gets a list of all crash cases within a specified milepost and crash filter. The crash filter should have the SRI if the milepost attribute is specified.",
+    summary:
+        'Gets a list of all crash cases within a specified milepost and crash filter. The crash filter should have the SRI if the milepost attribute is specified.',
     querystring: {
         selected_filters: {
             type: 'string',
@@ -87,7 +94,7 @@ const schema = {
             example: -39.93906091093021
         }
     }
-}
+};
 
 // *---------------*
 // create route
@@ -97,57 +104,82 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/crash-map/get-graph-data',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            const queryArgs = request.query;
 
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
+                } else if (queryArgs.selected_filters == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'crash filter not submitted'
+                    });
+                } else if (queryArgs.dataType == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'data type not submitted'
+                    });
+                } else if (!dataTypes.includes(queryArgs.dataType)) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'data type invalid'
+                    });
+                } else {
+                    try {
+                        client.query(sql(queryArgs), function onResult(err, result) {
+                            release();
 
-                var queryArgs = request.query;
-                if (queryArgs.selected_filters == undefined) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "crash filter not submitted"
-                    });
-                }
-                if (queryArgs.dataType == undefined) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "data type not submitted"
-                    });
-                }
-                if (!dataTypes.includes(queryArgs.dataType)) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "data type invalid"
-                    });
-                }
-
-                client.query(
-                    sql(queryArgs),
-                    function onResult(err, result) {
+                            if (err) {
+                                reply.send(err);
+                            } else {
+                                if (result) {
+                                    if (result.hasOwnProperty('rows')) {
+                                        reply.send({ GraphData: transcribeKeysArray(result.rows) });
+                                    } else {
+                                        reply.send({
+                                            statusCode: 500,
+                                            error: 'no rows returned',
+                                            message: request
+                                        });
+                                    }
+                                } else {
+                                    reply.send({
+                                        statusCode: 500,
+                                        error: 'no data returned',
+                                        message: request
+                                    });
+                                }
+                            }
+                        });
+                    } catch (error) {
                         release();
-                        let returnRows = [];
-                        if (result) {
-                            if (result.hasOwnProperty('rows')) {
-                                returnRows = transcribeKeysArray(result.rows);
-                            }  
-                        }
 
-                        reply.send(err || {GraphData: returnRows})
+                        reply.send({
+                            statusCode: 500,
+                            error: error,
+                            message: request
+                        });
                     }
-                )
+                }
             }
-        }
-    })
-    next()
-}
 
-module.exports.autoPrefix = '/v1'
+            fastify.pg.connect(onConnect);
+        }
+    });
+    next();
+};
+
+module.exports.autoPrefix = '/v1';

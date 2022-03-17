@@ -94,11 +94,14 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/mvt/municipality/:z/:x/:y',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
                 if (err) {
+                    release();
+
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
@@ -107,6 +110,8 @@ module.exports = function (fastify, opts, next) {
                 } else {
                     try {
                         if (request.query.selected_filters == undefined) {
+                            release();
+
                             reply.send({
                                 statusCode: 500,
                                 error: 'Internal Server Error',

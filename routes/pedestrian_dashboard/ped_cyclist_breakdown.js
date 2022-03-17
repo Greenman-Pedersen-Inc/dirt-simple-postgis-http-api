@@ -80,7 +80,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/ped-dashboard/get-ped-cyclist-breakdown',
+        url: '/ped-dashboard/ped-cyclist-breakdown',
         schema: schema,
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)

@@ -1,48 +1,55 @@
-// update_password: gets the user's new password, encrypts it, and stores it in the database
+// update_user_info: updates the categories in the user_info table based on user_name
 
-const crypto = require('crypto');
 
+// route register
 const usersql = (requestBody) => {
-    var securePassword = saltHashPassword(requestBody.pass)
+    var attributes = [];
+    var values = [];
+    var index = 1;
+    for (const  [key, value] of Object.entries(requestBody)) {
+        if (key !== 'username') {
+            if (value != null) {
+                values.push(value);
+                attributes.push(`${key} = ${'$' + index}`);
+                index++;
+            }
+        }
+        else {
+            values.push(value);
+            index++;
+        }
+    }
 
     const sql = `UPDATE admin.user_info
-	SET password = '${securePassword}' WHERE user_name = $1;`;
-    return sql;
-}
+	SET ${attributes.join(',')} WHERE user_name = $1;`;
 
-function sha512(password, salt) {
-    var hash = crypto.createHmac('sha512', salt); /** Hashing algorithm sha512 */
-    hash.update(password);
-    var value = hash.digest('hex');
     return {
-        salt: salt,
-        passwordHash: value
-    };
-};
-
-function saltHashPassword(userpassword) {
-    var salt = 'gpiisthebestcompanytoworkforifanybodyasks'; /** Gives us salt of length 16 */
-    var passwordData = sha512(userpassword, salt);
-
-    return passwordData.passwordHash;
+        query: sql,
+        values: values
+    }
 }
 
 // create route
 module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'PUT',
-        url: '/update-pw',
+        url: '/update-user-info',
         schema: {
-            description: `gets the user's new password, encrypts it, and stores it in the database`,
+            description: 'updates the categories in the user_info table based on user_name',
             tags: ['admin'],
-            summary: `gets the user's new password, encrypts it, and stores it in the database`,
+            summary: 'updates the categories in the user_info table based on user_name',
             body: {
                 type: 'object',
                 properties: {
                     username: { type: 'string' },
-                    pass: { type: 'string' },
+                    beg_access_date: {type: 'string'},
+                    end_access_date: {type: 'string'},
+                    notes: {type: 'string'},
+                    has_access: {type: 'boolean'},
+                    update_date: {type: 'string'},
+                    email_date: {type: 'string'},
                 },
-                required: ['username', 'pass']
+                required: ['username']
             }
         },
         handler: function(request, reply) {
@@ -53,12 +60,12 @@ module.exports = function(fastify, opts, next) {
                     "message": "unable to connect to database server: " + err
                 })
 
-                // console.log(request.body)
-                const values = [request.body.username];
+                const queryParameters = usersql(request.body);
+                
                 client.query(
-                    usersql(request.body), values,
+                    queryParameters.query, queryParameters.values,
                     function onResult(err, result) {
-                        release()
+                        release();
 
                         if (err) return reply.send({
                             "statusCode": 500,

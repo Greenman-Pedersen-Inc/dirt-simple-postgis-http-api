@@ -1,48 +1,38 @@
-// update_password: gets the user's new password, encrypts it, and stores it in the database
+// remove_user_access: 'updates the has_access field in the admin.user_roles table'
 
-const crypto = require('crypto');
 
+// route register
 const usersql = (requestBody) => {
-    var securePassword = saltHashPassword(requestBody.pass)
-
     const sql = `UPDATE admin.user_info
-	SET password = '${securePassword}' WHERE user_name = $1;`;
-    return sql;
-}
+	SET has_access = false, update_date = NOW() 
+    ${requestBody.notes ? `, notes = $2` : ''}
+    WHERE user_name = $1;`;
 
-function sha512(password, salt) {
-    var hash = crypto.createHmac('sha512', salt); /** Hashing algorithm sha512 */
-    hash.update(password);
-    var value = hash.digest('hex');
+    var values = [requestBody.username];
+    if (requestBody.notes) values.push(requestBody.notes);
+    
     return {
-        salt: salt,
-        passwordHash: value
-    };
-};
-
-function saltHashPassword(userpassword) {
-    var salt = 'gpiisthebestcompanytoworkforifanybodyasks'; /** Gives us salt of length 16 */
-    var passwordData = sha512(userpassword, salt);
-
-    return passwordData.passwordHash;
+        query: sql,
+        values: values
+    }
 }
 
 // create route
 module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'PUT',
-        url: '/update-pw',
+        url: '/remove-user-access',
         schema: {
-            description: `gets the user's new password, encrypts it, and stores it in the database`,
+            description: 'updates the has_access field in the admin.user_roles table',
             tags: ['admin'],
-            summary: `gets the user's new password, encrypts it, and stores it in the database`,
+            summary: 'updates the has_access field in the admin.user_roles table',
             body: {
                 type: 'object',
                 properties: {
                     username: { type: 'string' },
-                    pass: { type: 'string' },
+                    notes: { type: 'string' }
                 },
-                required: ['username', 'pass']
+                required: ['username']
             }
         },
         handler: function(request, reply) {
@@ -53,12 +43,12 @@ module.exports = function(fastify, opts, next) {
                     "message": "unable to connect to database server: " + err
                 })
 
-                // console.log(request.body)
-                const values = [request.body.username];
+                const queryParameters = usersql(request.body);
+                
                 client.query(
-                    usersql(request.body), values,
+                    queryParameters.query, queryParameters.values,
                     function onResult(err, result) {
-                        release()
+                        release();
 
                         if (err) return reply.send({
                             "statusCode": 500,

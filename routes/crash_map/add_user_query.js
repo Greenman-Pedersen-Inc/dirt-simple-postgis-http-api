@@ -3,16 +3,29 @@
 // *---------------*
 // route query
 // *---------------*
-const sql = (queryArgs) => {
+const getQuery = (queryArgs) => {
+    const params = ['user_name', 'x_min', 'x_max', 'y_min', 'y_max', 'filters', 'filters_description', 'filters_title', 'results_text', 'min_mp', 'max_mp', 'zoom_level', 'rotation', 'pitch', 'quick_filter_menu'];
+    var valuesParams = [];
+    for (let index = 0; index < params.length; index++) {
+        valuesParams.push('$' + (index + 1));
+    }
+    const values = [ queryArgs.userName, queryArgs.boundingBoxMinX, queryArgs.boundingBoxMaxX, queryArgs.boundingBoxMinY, queryArgs.boundingBoxMaxY, queryArgs.filters, 
+    queryArgs.filtersDescription, decodeURI(queryArgs.filtersTitle), queryArgs.resultsText, queryArgs.minMp, queryArgs.maxMp, 
+    queryArgs.zoomLevel, queryArgs.rotation, queryArgs.pitch, queryArgs.isQuickFilter ];
+
     var sql = `
     INSERT INTO usermanagement.user_queries_new 
-    (user_name, x_min, x_max, y_min, y_max, filters, filters_description, filters_title, results_text, min_mp, max_mp, zoom_level, rotation, pitch) 
+    (${params.join(',')}) 
     VALUES (
-    '${queryArgs.userName}', '${queryArgs.boundingBoxMinX}', '${queryArgs.boundingBoxMaxX}', '${queryArgs.boundingBoxMinY}', '${queryArgs.boundingBoxMaxY}', '${queryArgs.filters}', 
-    '${queryArgs.filtersDescription}', '${decodeURI(queryArgs.filtersTitle)}', '${queryArgs.resultsText}',' ${queryArgs.minMp}', '${queryArgs.maxMp}', 
-    '${queryArgs.zoomLevel}', '${queryArgs.rotation}', '${queryArgs.pitch}')
+        ${valuesParams.join(',')}
+    )
     `;
-    return sql;
+
+    //console.log(sql)
+    return {
+        query: sql,
+        values: values
+    };
   }
 
 // *---------------*
@@ -78,6 +91,10 @@ const schema = {
         boundingBoxMaxY: {
             type: 'string',
             description: 'top left y value',
+        },
+        isQuickFilter: {
+            type: 'boolean',
+            description: 'is the query from the quick filter?',
         }
     }
 }
@@ -109,8 +126,9 @@ module.exports = function (fastify, opts, next) {
                     });
                 }
 
+                const queryParams = getQuery(queryArgs);
                 client.query(
-                    sql(queryArgs),
+                    queryParams.query, queryParams.values,
                     function onResult(err, result) {
                         release();
                         var result = {};

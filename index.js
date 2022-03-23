@@ -87,7 +87,7 @@ function verifyToken(request, reply, done) {
     const sql = (headers) => {
         var currentTime = new Date().getTime();
 
-        return `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.requesttoken}' and expiration >= ${currentTime}`;
+        return `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.token}' and expiration >= ${currentTime}`;
     };
 
     /**

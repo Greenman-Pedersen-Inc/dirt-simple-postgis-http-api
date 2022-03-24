@@ -5,7 +5,7 @@
 // *---------------*
 const sql = (queryArgs) => {
     var sql = `
-    DELETE FROM usermanagement.user_queries WHERE user_name = '${queryArgs.userName}' AND oid = ${queryArgs.oid}
+    DELETE FROM usermanagement.user_queries_new WHERE user_name = '${queryArgs.userName}' AND oid = ${queryArgs.oid}
     `;
     return sql;
 };
@@ -68,8 +68,14 @@ module.exports = function (fastify, opts, next) {
                     try {
                         client.query(sql(queryArgs), function onResult(err, result) {
                             release();
+                            var result = {};
+                            if (err) result = { success: false, error: err };
+                            else result = { success: true };
+                            reply.send(err || result);
+                            // client.query(sql(queryArgs), function onResult(err, result) {
+                            //     release();
 
-                            reply.send(err || result.rows);
+                            //     reply.send(err || result.rows);
                         });
                     } catch (err) {
                         release();

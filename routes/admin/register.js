@@ -3,9 +3,31 @@ const crypto = require('crypto');
 
 const usersql = (requestBody) => {
     var securePassword = saltHashPassword(requestBody.pass);
+    var attributes = [];
+    var values = [];
+    var paramValues = [];
+    var index = 1;
+    for (const [key, value] of Object.entries(requestBody)) {
+        if (key === 'username') attributes.push('user_name');
+        else if (key === 'pass') attributes.push('password');
+        else attributes.push(key);
 
-    return `INSERT INTO admin.user_info(user_name, password, email)
-	VALUES ('${requestBody.username}', '${securePassword}', '${requestBody.email}');`;
+        if (key === 'pass') values.push(securePassword);
+        else values.push(value);
+
+        paramValues.push('$' + index);
+        index++;
+    }
+
+    // return `INSERT INTO admin.user_info(user_name, password, email)
+    // VALUES ('${requestBody.username}', '${securePassword}', '${requestBody.email}');`;
+    const sql = `INSERT INTO admin.user_info(${attributes.join(',')})
+	VALUES (${paramValues.join(',')});`;
+
+    return {
+        query: sql,
+        values: values
+    };
 };
 
 function sha512(password, salt) {
@@ -39,7 +61,19 @@ module.exports = function (fastify, opts, next) {
                 properties: {
                     username: { type: 'string' },
                     pass: { type: 'string' },
-                    email: { type: 'string' }
+                    email: { type: 'string' },
+                    first_name: { type: 'string' },
+                    last_name: { type: 'string' },
+                    beg_access_date: { type: 'string' },
+                    end_access_date: { type: 'string' },
+                    govt_user: { type: 'boolean', default: false },
+                    organization_name: { type: 'string' },
+                    project_name: { type: 'string' },
+                    project_manager: { type: 'string' },
+                    user_type: { type: 'string' },
+                    user_group: { type: 'string' },
+                    notes: { type: 'string' },
+                    is_admin: { type: 'boolean', default: false }
                 },
                 required: ['username', 'pass', 'email']
             }
@@ -57,7 +91,11 @@ module.exports = function (fastify, opts, next) {
                     });
                 } else {
                     try {
-                        client.query(usersql(request.body), function onResult(err, result) {
+                        const queryParameters = usersql(request.body);
+                        console.log(queryParameters);
+
+                        client.query(queryParameters.query, queryParameters.values, function onResult(err, result) {
+                            // client.query(usersql(request.body), function onResult(err, result) {
                             release();
 
                             if (err) {

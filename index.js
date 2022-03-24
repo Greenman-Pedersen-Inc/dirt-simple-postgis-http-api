@@ -11,7 +11,7 @@ const fastify = require('fastify')({
  * @param {*} reply
  * @param {*} done
  */
-function logRequest(request, reply, done) {
+function logRequest(user_name, request_time, end_point, user_query, execution_time, error) {
     // console.log(request.headers)
     const queryInfo = {
         bounds: request.query.bounds,
@@ -24,7 +24,7 @@ function logRequest(request, reply, done) {
         //console.log(query, url, user, time);
         var queryString = `
             INSERT INTO admin.traffic(
-                user_name, request_time, end_point, user_query)
+                user_name, request_time, end_point, user_query, execution_time, error)
                 VALUES ('${user}', ${time}, '${url}', '${JSON.stringify(query).replace(/'/g, "''")}');
         `;
 
@@ -85,9 +85,10 @@ function logRequest(request, reply, done) {
 function verifyToken(request, reply, done) {
     // console.log(request.headers)
     const sql = (headers) => {
-        var currentTime = new Date().getTime();
+        const currentTime = new Date().getTime();
+        const query = `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.requesttoken}' and expiration >= ${currentTime}`;
 
-        return `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.requesttoken}' and expiration >= ${currentTime}`;
+        return query;
     };
 
     /**
@@ -173,12 +174,38 @@ fastify.register(require('fastify-swagger'), {
 
 // static documentation path
 fastify.register(require('fastify-static'), {
-    root: path.join(__dirname, 'documentation')
+    // root: path.join(__dirname, 'documentation')
+    // root: path.join(__dirname, "public"),
+    root: [path.join(__dirname, 'documentation'), path.join(__dirname, 'tiles')],
+    // Do not append a trailing slash to prefixes
+    prefixAvoidTrailingSlash: true
 });
 
 // routes
 fastify.register(require('fastify-autoload'), {
     dir: path.join(__dirname, 'routes')
+});
+
+fastify.route({
+    method: 'GET',
+    url: '/tiles/:layer/:z/:x/:y',
+    schema: {
+        hide: true
+    },
+    handler: function (request, reply) {
+        const directoryPath = path.join(request.params.layer, request.params.z, request.params.x);
+        const fileName = `${request.params.y}.mvt`;
+        const fullPath = path.join(directoryPath, fileName);
+
+        console.log(fastify);
+
+        try {
+            reply.header('Content-Type', 'application/x-protobuf');
+            reply.sendFile(fullPath, '', { rootPathOffset: 1 });
+        } catch (error) {
+            console.log(error);
+        }
+    }
 });
 
 // Launch server

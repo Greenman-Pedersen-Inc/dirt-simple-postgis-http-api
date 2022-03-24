@@ -165,6 +165,10 @@ module.exports = function (fastify, opts, next) {
                 if (err) {
                     release();
 
+
+                    fastify.logRequest(request.query);
+
+                    
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',

@@ -1,38 +1,23 @@
-// get_users: gets a list of all Safety Voyager users 
+// get_roles: gets a list of roles that can be applied to a user.
 
 // route register
 const getQuery = () => {
-    const sql = `SELECT user_name, 
-    first_name,
-    last_name,
-    to_char(beg_access_date, 'YYYY-MM-DD') beg_access_date, 
-    to_char(end_access_date, 'YYYY-MM-DD') end_access_date,
-    organization_name, 
-    project_name, 
-    project_manager, 
-    user_type, 
-    user_group, 
-    notes,
-    CASE WHEN is_admin = true THEN 'Yes'
-    ELSE 'No'
-    END is_admin,
-    to_char(update_date, 'YYYY-MM-DD') update_date,
-    to_char(email_date, 'YYYY-MM-DD') email_date
-	FROM admin.user_info;`;
+    const sql = `SELECT *
+	FROM admin.roles;`;
     return sql;
 }
 
 const schema = {
-    description: "gets a list of all Safety Voyager users .",
+    description: "gets a list of roles that can be applied to a user.",
     tags: ['admin'],
-    summary: "gets a list of all Safety Voyager users ."
+    summary: "gets a list of roles that can be applied to a user."
 }
 
 // create route
 module.exports = function(fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/get-users',
+        url: '/get-roles',
         schema: schema,
         handler: function(request, reply) {
             function onConnect(err, client, release) {

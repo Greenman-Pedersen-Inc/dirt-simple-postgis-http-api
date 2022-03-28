@@ -19,8 +19,6 @@ const usersql = (requestBody) => {
         index++;
     }
 
-    // return `INSERT INTO admin.user_info(user_name, password, email)
-    // VALUES ('${requestBody.username}', '${securePassword}', '${requestBody.email}');`;
     const sql = `INSERT INTO admin.user_info(${attributes.join(',')})
 	VALUES (${paramValues.join(',')});`;
 
@@ -87,15 +85,14 @@ module.exports = function (fastify, opts, next) {
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
-                        message: 'unable to connect to database server: ' + err
+                        message: 'unable to connect to database server: ' + err,
+                        success: false
                     });
                 } else {
                     try {
                         const queryParameters = usersql(request.body);
-                        console.log(queryParameters);
 
                         client.query(queryParameters.query, queryParameters.values, function onResult(err, result) {
-                            // client.query(usersql(request.body), function onResult(err, result) {
                             release();
 
                             if (err) {
@@ -105,7 +102,7 @@ module.exports = function (fastify, opts, next) {
                                     message: 'unable to perform database operation: ' + err
                                 });
                             } else {
-                                reply.send(result.rows);
+                                reply.send({success: true});
                             }
                         });
                     } catch (error) {
@@ -114,7 +111,8 @@ module.exports = function (fastify, opts, next) {
                         reply.send({
                             statusCode: 500,
                             error: 'issue with query',
-                            message: request
+                            message: request,
+                            success: false
                         });
                     }
                 }

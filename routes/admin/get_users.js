@@ -16,6 +16,9 @@ const getQuery = () => {
     CASE WHEN is_admin = true THEN 'Yes'
     ELSE 'No'
     END is_admin,
+    CASE WHEN has_access = true THEN 'Yes'
+    ELSE 'No'
+    END has_access,
     to_char(update_date, 'YYYY-MM-DD') update_date,
     to_char(email_date, 'YYYY-MM-DD') email_date
 	FROM admin.user_info;`;

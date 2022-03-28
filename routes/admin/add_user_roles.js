@@ -54,8 +54,10 @@ module.exports = function(fastify, opts, next) {
                 });
 
                 Promise.all(promises).then((returnData) => {
+                    release();
                     reply.send( {success: true} );
                 }).catch(error => {
+                    release();
                     return reply.send({
                         "statusCode": 500,
                         "error": err,

@@ -195,6 +195,7 @@ module.exports = function (fastify, opts, next) {
     method: 'GET',
     url: '/general/search',
     schema: schema,
+    preHandler: fastify.auth([fastify.verifyToken]),
     handler: function (request, reply) {
       fastify.pg.connect(onConnect)
 

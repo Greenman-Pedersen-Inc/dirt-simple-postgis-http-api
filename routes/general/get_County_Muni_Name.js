@@ -39,6 +39,7 @@ const schema = {
     fastify.route({
       method: 'GET',
       url: '/general/county-muni-code',
+      preHandler: fastify.auth([fastify.verifyToken]),
       schema: schema,
       handler: function (request, reply) {
         fastify.pg.connect(onConnect)

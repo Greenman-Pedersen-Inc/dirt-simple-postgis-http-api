@@ -92,7 +92,6 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            const timer = timerthing()
 
             fastify.pg.connect(onConnect);
 

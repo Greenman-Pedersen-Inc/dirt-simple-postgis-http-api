@@ -89,11 +89,7 @@ function verifyToken(request, reply, done) {
         const currentTime = new Date().getTime();
         const query = `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.token}' and expiration >= ${currentTime}`;
 
-<<<<<<< HEAD
-        return `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.token}' and expiration >= ${currentTime}`;
-=======
         return query;
->>>>>>> 758337e8d3750a564ff5387da614958139d5ef4e
     };
 
     /**
@@ -177,28 +173,6 @@ fastify.register(require('fastify-swagger'), {
     swagger: config.swagger
 });
 
-<<<<<<< HEAD
-// // static documentation path
-// fastify.register(fastifyStatic, {
-//     root: path.join(__dirname, 'documentation')
-// });
-
-// fastify.register(fastifyStatic, {
-//     root: path.join(__dirname, 'tiles'),
-//     prefix: '/tiles/'
-// });
-
-fastify.register(fastifyStatic, {
-    root: path.join(__dirname, 'documentation')
-  })
-  
-  // second plugin
-//   fastify.register(fastifyStatic, {
-//     root: path.join(__dirname, 'tiles'),
-//     prefix: '/tiles/',
-//     decorateReply: false // the reply decorator has been added by the first plugin registration
-//   })
-=======
 // static documentation path
 fastify.register(require('fastify-static'), {
     // root: path.join(__dirname, 'documentation')
@@ -207,7 +181,6 @@ fastify.register(require('fastify-static'), {
     // Do not append a trailing slash to prefixes
     prefixAvoidTrailingSlash: true
 });
->>>>>>> 758337e8d3750a564ff5387da614958139d5ef4e
 
 // routes
 fastify.register(require('fastify-autoload'), {

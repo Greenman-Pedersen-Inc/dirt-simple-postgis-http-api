@@ -161,6 +161,7 @@ module.exports = function (fastify, opts, next) {
   fastify.route({
     method: 'GET',
     url: '/general/search-count',
+    preHandler: fastify.auth([fastify.verifyToken]),
     schema: schema,
     handler: function (request, reply) {
       fastify.pg.connect(onConnect)

@@ -33,6 +33,7 @@ module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/general/crash-record',
+        preHandler: fastify.auth([fastify.verifyToken]),
         schema: schema,
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)

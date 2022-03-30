@@ -3,6 +3,7 @@ const config = require('./config');
 const fastify = require('fastify')({
     connectionTimeout: 5000
 });
+const fastifyStatic = require('fastify-static');
 
 /**
  * Log requests made to the server in an administrative database for further analysis.
@@ -171,10 +172,26 @@ fastify.register(require('fastify-swagger'), {
     swagger: config.swagger
 });
 
-// static documentation path
-fastify.register(require('fastify-static'), {
+// // static documentation path
+// fastify.register(fastifyStatic, {
+//     root: path.join(__dirname, 'documentation')
+// });
+
+// fastify.register(fastifyStatic, {
+//     root: path.join(__dirname, 'tiles'),
+//     prefix: '/tiles/'
+// });
+
+fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'documentation')
-});
+  })
+  
+  // second plugin
+//   fastify.register(fastifyStatic, {
+//     root: path.join(__dirname, 'tiles'),
+//     prefix: '/tiles/',
+//     decorateReply: false // the reply decorator has been added by the first plugin registration
+//   })
 
 // routes
 fastify.register(require('fastify-autoload'), {

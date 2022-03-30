@@ -92,6 +92,8 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            const timer = timerthing()
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
@@ -104,21 +106,22 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 } else {
-                    try {
-                        if (request.query.selected_filters == undefined) {
-                            release();
+                    if (request.query.selected_filters == undefined) {
+                        release();
 
-                            reply.send({
-                                statusCode: 500,
-                                error: 'Internal Server Error',
-                                message: 'crash filter not submitted'
-                            });
-                        } else {
+                        reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'crash filter not submitted'
+                        });
+                    } else {
+                        try {
                             client.query(sql(request.params, request.query), function onResult(err, result) {
                                 release();
 
                                 if (err) {
                                     reply.send(err);
+                                    //here
                                 } else {
                                     if (result) {
                                         if (result.rows && result.rows.length > 0) {
@@ -130,12 +133,14 @@ module.exports = function (fastify, opts, next) {
                                                 }
 
                                                 reply.header('Content-Type', 'application/x-protobuf').send(mvt);
+                                                // here
                                             } else {
                                                 reply.send({
                                                     statusCode: 500,
                                                     error: 'no mvt returned',
                                                     message: request
                                                 });
+                                                // here
                                             }
                                         } else {
                                             reply.send({
@@ -143,6 +148,8 @@ module.exports = function (fastify, opts, next) {
                                                 error: 'no rows returned',
                                                 message: request
                                             });
+
+                                            // here
                                         }
                                     } else {
                                         reply.send({
@@ -150,18 +157,23 @@ module.exports = function (fastify, opts, next) {
                                             error: 'no data returned',
                                             message: request
                                         });
+
+                                        // here
+                                        fastify.logRequest()
                                     }
                                 }
                             });
-                        }
-                    } catch (error) {
-                        release();
+                        } catch (error) {
+                            release();
 
-                        reply.send({
-                            statusCode: 500,
-                            error: error,
-                            message: request
-                        });
+                            reply.send({
+                                statusCode: 500,
+                                error: error,
+                                message: request
+                            });
+
+                            // here
+                        }
                     }
                 }
             }

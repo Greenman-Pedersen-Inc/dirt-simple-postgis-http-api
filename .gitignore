@@ -5,4 +5,8 @@ TODO.md
 .vscode
 helper_functions/report_maker/output
 helper_functions/report_maker/fonts
+<<<<<<< HEAD
 routes/dirt/tiles
+=======
+*.zip
+>>>>>>> 758337e8d3750a564ff5387da614958139d5ef4e

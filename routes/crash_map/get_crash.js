@@ -5,7 +5,7 @@ const { transcribeKeysArray } = require('../../helper_functions/code_translation
 // route query
 // *---------------*
 const sql = (body) => {
-    const crashValues = `'${JSON.parse(body.crash_array).join('\',\'')}'`
+    const crashValues = `'${JSON.parse(body.crash_array).join("','")}'`;
     const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
     const sql = `
             select 
@@ -42,72 +42,82 @@ const sql = (body) => {
 
     // console.log(sql);
     return sql;
-}
+};
 
 // *---------------*
 // route schema
 // *---------------*
 const schema = {
-    description: "Gets all cases within a crash cluster.",
+    description: 'Gets all cases within a crash cluster.',
     tags: ['crash-map'],
-    summary: "Gets all crashes enumerated within a crash cluster.",
+    summary: 'Gets all crashes enumerated within a crash cluster.',
     body: {
         type: 'object',
         properties: {
-            crash_array: { type: 'string' },
+            crash_array: { type: 'string' }
         },
         required: ['crash_array']
     }
-}
+};
 
 // *---------------*
 // create route
 // *---------------*
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'POST',
         url: '/crash',
         schema: schema,
-        handler: function(request, reply) {
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
             function onConnect(err, client, release) {
                 if (err) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "unable to connect to database server"
+                    release();
+
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
+                } else if (request.body.crash_array == undefined) {
+                    release();
+
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need a crash_array value'
                     });
                 } else {
-                    if (request.body.crash_array == undefined) {
-                        return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "need a crash_array value"
-                        });
-                    } else {
-                        client.query(
-                            sql(request.body),
-                            function onResult(err, result) {
-                                release();
+                    try {
+                        client.query(sql(request.body), function onResult(err, result) {
+                            release();
 
-                                if (err) {
-                                    reply.send(err)
-                                } else if (result && result.rows) {
-                                    // const transcribedObject = transcribeKeysArray(result.rows);
+                            if (err) {
+                                reply.send(err);
+                            } else if (result && result.rows) {
+                                // const transcribedObject = transcribeKeysArray(result.rows);
 
-                                    reply.send(result.rows);
-                                } else {
-                                    reply.code(204);
-                                }
+                                reply.send(result.rows);
+                            } else {
+                                reply.code(204);
                             }
-                        )
+                        });
+                    } catch (error) {
+                        release();
+
+                        reply.send({
+                            statusCode: 500,
+                            error: error,
+                            message: request
+                        });
                     }
                 }
             }
 
             fastify.pg.connect(onConnect);
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

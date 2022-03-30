@@ -6,21 +6,23 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 // route query
 // *---------------*
 const sql = (query) => {
-        const accidentsTableName = 'ard_accidents_geom_partition';
-        let whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
-        
-        if (query.selectedfilters) {
-            const parsed_filter = JSON.parse(query.selectedfilters);
-            const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
-            whereClause = filter.whereClause;
-        }
+    const accidentsTableName = 'ard_accidents_geom_partition';
+    let whereClause = `${query.filter ? ` ${query.filter}` : ''}`;
 
-        const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
-        const sql = `
+    if (query.selectedfilters) {
+        const parsed_filter = JSON.parse(query.selectedfilters);
+        const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+        whereClause = filter.whereClause;
+    }
+
+    const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
+    const sql = `
             with crash_data as (
                 SELECT *
                 FROM ard_accidents_geom_partition
-                WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${query.z}, ${query.x}, ${query.y}), 4326)) -- z,x,y
+                WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${query.z}, ${query.x}, ${
+        query.y
+    }), 4326)) -- z,x,y
                 -- Optional filter for the query input (selectedFilters)
                 ${whereClause ? ` AND ${whereClause}` : ''}
             ), crash_count as (
@@ -75,17 +77,17 @@ const sql = (query) => {
             using (crashid)
         `;
 
-        // console.log(sql);
-        return sql;
-}
+    // console.log(sql);
+    return sql;
+};
 
 // *---------------*
 // route schema
 // *---------------*
 const schema = {
-    description: "Gets all cases within a crash cluster.",
+    description: 'Gets all cases within a crash cluster.',
     tags: ['crash-map'],
-    summary: "Gets all crashes enumerated within a crash cluster.",
+    summary: 'Gets all crashes enumerated within a crash cluster.',
     querystring: {
         z: {
             type: 'integer',
@@ -109,89 +111,102 @@ const schema = {
         },
         selectedfilters: {
             type: 'string',
-            description: 'currently selected filters being used by the map',
+            description: 'currently selected filters being used by the map'
         }
     }
-}
+};
 
 // *---------------*
 // create route
 // *---------------*
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/crash/kmeans_cluster',
         schema: schema,
-        handler: function(request, reply) {
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
             function onConnect(err, client, release) {
                 if (err) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "unable to connect to database server"
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
+                } else if (request.query.z == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need a z value'
+                    });
+                } else if (request.query.x == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need a x value'
+                    });
+                } else if (request.query.y == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need a y value'
+                    });
+                } else if (request.query.numclusters == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need a number of clusters value'
+                    });
+                } else if (request.query.clusternumber == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need the cluter identifier'
+                    });
+                } else if (request.query.selectedfilters == undefined) {
+                    release();
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need the pertinent filters to apply'
                     });
                 } else {
-                    if (request.query.z == undefined) {
-                        return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "need a z value"
-                        });
-                    } else if (request.query.x == undefined) {
-                        return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "need a x value"
-                        });
-                    } else if (request.query.y == undefined) {
-                        return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "need a y value"
-                        });
-                    } else if (request.query.numclusters == undefined) {
-                        return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "need a number of clusters value"
-                        });
-                    } else if (request.query.clusternumber == undefined) {
-                        return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "need the cluter identifier"
-                        });
-                    } else if (request.query.selectedfilters == undefined) {
-                        return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "need the pertinent filters to apply"
-                        });
-                    } else {
-                        client.query(
-                            sql(request.query),
-                            function onResult(err, result) {
-                                release();
+                    try {
+                        client.query(sql(request.query), function onResult(err, result) {
+                            release();
 
-                                if (err){
-                                    reply.send(err)
-                                } else if (result && result.rows) {
-                                    const transcribedObject = transcribeKeysArray(result.rows);
+                            if (err) {
+                                reply.send(err);
+                            } else if (result && result.rows) {
+                                const transcribedObject = transcribeKeysArray(result.rows);
 
-                                    reply.send( { crashes: transcribedObject });
-                                } else {
-                                    reply.code(204);
-                                }
+                                reply.send({ crashes: transcribedObject });
+                            } else {
+                                reply.code(204);
                             }
-                        )
+                        });
+                    } catch (error) {
+                        release();
+
+                        reply.send({
+                            statusCode: 500,
+                            error: error,
+                            message: request
+                        });
                     }
                 }
             }
 
             fastify.pg.connect(onConnect);
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

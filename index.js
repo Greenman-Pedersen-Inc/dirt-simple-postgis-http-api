@@ -12,7 +12,7 @@ const fastifyStatic = require('fastify-static');
  * @param {*} reply
  * @param {*} done
  */
-function logRequest(request, reply, done) {
+function logRequest(user_name, request_time, end_point, user_query, execution_time, error) {
     // console.log(request.headers)
     const queryInfo = {
         bounds: request.query.bounds,
@@ -25,7 +25,7 @@ function logRequest(request, reply, done) {
         //console.log(query, url, user, time);
         var queryString = `
             INSERT INTO admin.traffic(
-                user_name, request_time, end_point, user_query)
+                user_name, request_time, end_point, user_query, execution_time, error)
                 VALUES ('${user}', ${time}, '${url}', '${JSON.stringify(query).replace(/'/g, "''")}');
         `;
 
@@ -86,9 +86,14 @@ function logRequest(request, reply, done) {
 function verifyToken(request, reply, done) {
     // console.log(request.headers)
     const sql = (headers) => {
-        var currentTime = new Date().getTime();
+        const currentTime = new Date().getTime();
+        const query = `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.token}' and expiration >= ${currentTime}`;
 
+<<<<<<< HEAD
         return `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.token}' and expiration >= ${currentTime}`;
+=======
+        return query;
+>>>>>>> 758337e8d3750a564ff5387da614958139d5ef4e
     };
 
     /**
@@ -172,6 +177,7 @@ fastify.register(require('fastify-swagger'), {
     swagger: config.swagger
 });
 
+<<<<<<< HEAD
 // // static documentation path
 // fastify.register(fastifyStatic, {
 //     root: path.join(__dirname, 'documentation')
@@ -192,10 +198,42 @@ fastify.register(fastifyStatic, {
 //     prefix: '/tiles/',
 //     decorateReply: false // the reply decorator has been added by the first plugin registration
 //   })
+=======
+// static documentation path
+fastify.register(require('fastify-static'), {
+    // root: path.join(__dirname, 'documentation')
+    // root: path.join(__dirname, "public"),
+    root: [path.join(__dirname, 'documentation'), path.join(__dirname, 'tiles')],
+    // Do not append a trailing slash to prefixes
+    prefixAvoidTrailingSlash: true
+});
+>>>>>>> 758337e8d3750a564ff5387da614958139d5ef4e
 
 // routes
 fastify.register(require('fastify-autoload'), {
     dir: path.join(__dirname, 'routes')
+});
+
+fastify.route({
+    method: 'GET',
+    url: '/tiles/:layer/:z/:x/:y',
+    schema: {
+        hide: true
+    },
+    handler: function (request, reply) {
+        const directoryPath = path.join(request.params.layer, request.params.z, request.params.x);
+        const fileName = `${request.params.y}.mvt`;
+        const fullPath = path.join(directoryPath, fileName);
+
+        console.log(fastify);
+
+        try {
+            reply.header('Content-Type', 'application/x-protobuf');
+            reply.sendFile(fullPath, '', { rootPathOffset: 1 });
+        } catch (error) {
+            console.log(error);
+        }
+    }
 });
 
 // Launch server

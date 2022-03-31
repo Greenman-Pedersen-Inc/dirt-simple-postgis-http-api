@@ -101,11 +101,7 @@ const schema = {
     querystring: {
         filter: {
             type: 'string',
-            description: 'Optional filter parameters for a SQL WHERE statement.'
-        },
-        sri: {
-            type: 'string',
-            description: 'Optional filter parameters for a SQL WHERE statement.'
+            description: 'Required filter parameters for a SQL WHERE statement.'
         }
     }
 };
@@ -128,21 +124,15 @@ module.exports = function (fastify, opts, next) {
                         error: err,
                         message: 'unable to connect to database server'
                     });
-                } else if (queryArgs.crashFilter == undefined) {
+                } else if (queryArgs.filter == undefined) {
                     release();
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'crash filter not submitted'
                     });
-                } else if (queryArgs.sri == undefined) {
-                    release();
-                    reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'target sri is not defined.'
-                    });
-                } else {
+                } 
+                else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             release();

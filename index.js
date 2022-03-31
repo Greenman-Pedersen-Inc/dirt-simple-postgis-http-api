@@ -3,6 +3,7 @@ const config = require('./config');
 const fastify = require('fastify')({
     connectionTimeout: 5000
 });
+const fastifyStatic = require('fastify-static');
 
 /**
  * Log requests made to the server in an administrative database for further analysis.

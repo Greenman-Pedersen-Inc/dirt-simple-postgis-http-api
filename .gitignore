@@ -7,3 +7,4 @@ helper_functions/report_maker/output
 helper_functions/report_maker/fonts
 routes/dirt/tiles
 *.zip
+routes/crash_map/post_github_issue.js

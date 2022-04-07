@@ -41,7 +41,7 @@ module.exports = function (fastify, opts, next) {
                 }
                 else if (queryArgs.userName === undefined || queryArgs.userName === '') {
                     release();
-                    reply.send({
+                    return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need user name'

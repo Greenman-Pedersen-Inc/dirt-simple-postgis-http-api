@@ -57,8 +57,8 @@ function createQueryDateRange(tableName, input) {
 }
 
 function createQueryMilepost(mp, from, tableName, milepostColumn = "milepost") {
-    if (from === "start") return `${tableName}.${milepostColumn} >= ${mp}`;
-    else if (from === "end") return `${tableName}.${milepostColumn} < ${mp}`;
+    if (from === "start") return `TRUNC(${tableName}.${milepostColumn}, 1) >= ${mp}`;
+    else if (from === "end") return `TRUNC(${tableName}.${milepostColumn}, 1) <= ${mp}`;
 }
 
 // input format 24 hr clock: 0745;1320

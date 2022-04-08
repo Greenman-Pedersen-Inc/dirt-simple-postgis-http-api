@@ -13,7 +13,6 @@ const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_he
 
 // basePath to store CSV
 const basePath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/output/';
-// const basePath = 'C:/Users/stryk/Documents/Sue/dirt-simple-postgis-http-api/helper_functions/report_maker/output/';
 // *---------------*
 // route query
 // *---------------*
@@ -27,12 +26,12 @@ const sql = (queryArgs) => {
     const query = `
         SELECT * FROM public.ard_accidents_geom_partition 
         ${fromClause ? ` ${fromClause}` : ''}
-        WHERE ${whereClause ? ` AND ${whereClause}` : ''}
-        ${queryArgs.boundingBoxMinX ? `geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)` : ''} 
+        WHERE ${whereClause ? `${whereClause}` : ''}
+        ${queryArgs.boundingBoxMinX ? ` AND geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)` : ''} 
         LIMIT 50000;
     `;
 
-    //console.log(query)
+    console.log(query)
     return query;
 };
 

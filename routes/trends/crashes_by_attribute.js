@@ -118,6 +118,7 @@ module.exports = function(fastify, opts, next) {
                 }
 
                 Promise.all(promises).then((reportDataArray) => {
+                    release();
                     for (let i = 0; i < reportDataArray.length; i++) {
                         var data = reportDataArray[i].rows;
                         var category = Object.keys(reportQueries)[i];
@@ -126,8 +127,9 @@ module.exports = function(fastify, opts, next) {
 
                     reply.send({ GraphData: returnData });
                 }).catch((error) => {
-                    //console.log("report error");
-                    //console.log(error);
+                    release();
+                    console.log("report error");
+                    console.log(error);
                 });
 
             }

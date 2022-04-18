@@ -126,16 +126,32 @@ function createQueryPedCyclist(codeObject, tableName) {
 }
 
 function makeFromClause(tableNameArray, accidentsTableName) {
-    var fromClause = "";
+    var fromClauses = [];
     tableNameArray.forEach(tableName => {
-        fromClause += `INNER JOIN ${tableName} on ${accidentsTableName}.crashid = ${tableName}.crashid `;
+        fromClauses.push(`INNER JOIN ${tableName} on ${accidentsTableName}.crashid = ${tableName}.crashid`);
+        if (tableName.includes('vehicles')) {
+            fromClauses.push(`ard_vehicles_partition.acc_mun_cty_co = ${accidentsTableName}.mun_cty_co`);
+        }
+        else if (tableName.includes('pedestrians')) {
+            fromClauses.push(`ard_pedestrians_partition.acc_mun_cty_co = ${accidentsTableName}.mun_cty_co`);
+        }
     });
-    return fromClause;
+    return fromClauses.join(' AND ');
 }
 
-function makeWhereClause(whereClauses) {
+function makeWhereClause(whereClauses, tableNameArray, accidentsTableName) {
     if (whereClauses.length <= 0) return "1=1";
-    else return whereClauses.join(" AND ");
+    else {
+        var additionalClauses = [];
+        whereClauses.forEach(clause => {
+            if (clause.includes('year')) {
+                if (tableNameArray.some(function(v){ return v.indexOf("vehicles")>=0 })) additionalClauses.push(clause.replace(`${accidentsTableName}.year`, 'ard_vehicles_partition.acc_year'));
+                else if (tableNameArray.some(function(v){ return v.indexOf("pedestrians")>=0 })) additionalClauses.push(clause.replace(`${accidentsTableName}.year`, 'ard_pedestrians_partition.acc_year'));
+            }
+        });
+        whereClauses.push(...additionalClauses);
+    }
+    return whereClauses.join(" AND ");
 }
 
 // Splits a code string by "," to return an array of codes

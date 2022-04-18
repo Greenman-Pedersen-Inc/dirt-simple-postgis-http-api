@@ -89,6 +89,7 @@ module.exports = function (fastify, opts, next) {
 
             function onConnect(err, client, release) {
                 if (err) {
+                    release();
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
@@ -96,6 +97,7 @@ module.exports = function (fastify, opts, next) {
                     });
                 } else if (queryArgs.caseNumber === undefined) {
                     if (queryArgs.crashid === undefined) {
+                        release();
                         return reply.send({
                             statusCode: 500,
                             error: 'Internal Server Error',
@@ -108,65 +110,66 @@ module.exports = function (fastify, opts, next) {
                         queryArgs.municipality === undefined ||
                         queryArgs.year === undefined
                     ) {
+                        release();
                         return reply.send({
                             statusCode: 500,
                             error: 'Internal Server Error',
                             message: 'need county, muni, or year values'
                         });
                     }
-                } else {
-                    try {
-                        let promises = [];
-                        let crashData;
-                        const queries = getQueries(queryArgs);
+                }
 
-                        for (var key in queries) {
-                            const promise = new Promise((resolve, reject) => {
-                                try {
-                                    const res = client.query(queries[key]);
-                                    return resolve(res);
-                                } catch (err) {
-                                    // console.log(err.stack);
-                                    return reject(error);
-                                }
-                            });
+                try {
+                    let promises = [];
+                    let crashData;
+                    const queries = getQueries(queryArgs);
 
-                            promises.push(promise);
-                        }
-
-                        Promise.all(promises)
-                            .then((returnData) => {
-                                //console.log(returnData);
-
-                                for (let i = 0; i < returnData.length; i++) {
-                                    let table = Object.keys(queries)[i];
-                                    let data = returnData[i].rows;
-                                    if (table === 'accidents') {
-                                        crashData = transcribeKeys(data[0]);
-                                        // crashData = data[0];
-                                    } else {
-                                        crashData[table] = transcribeKeysArray(data);
-                                    }
-                                }
-
-                                reply.send(crashData);
-                            })
-                            .catch((error) => {
-                                return reply.send({
-                                    statusCode: 500,
-                                    error: error,
-                                    message: 'issue with crash id queries'
-                                });
-                            });
-                    } catch (error) {
-                        release();
-
-                        reply.send({
-                            statusCode: 500,
-                            error: error,
-                            message: request
+                    for (var key in queries) {
+                        const promise = new Promise((resolve, reject) => {
+                            try {
+                                const res = client.query(queries[key]);
+                                return resolve(res);
+                            } catch (err) {
+                                // console.log(err.stack);
+                                return reject(error);
+                            }
                         });
+
+                        promises.push(promise);
                     }
+
+                    Promise.all(promises)
+                        .then((returnData) => {
+
+                            for (let i = 0; i < returnData.length; i++) {
+                                let table = Object.keys(queries)[i];
+                                let data = returnData[i].rows;
+                                if (table === 'accidents') {
+                                    crashData = transcribeKeys(data[0]);
+                                    // crashData = data[0];
+                                } else {
+                                    crashData[table] = transcribeKeysArray(data);
+                                }
+                            }
+                            release();
+                            return reply.send(crashData);
+                        })
+                        .catch((error) => {
+                            release();
+                            return reply.send({
+                                statusCode: 500,
+                                error: error,
+                                message: 'issue with crash id queries'
+                            });
+                        });
+                } catch (error) {
+                    release();
+
+                    return reply.send({
+                        statusCode: 500,
+                        error: error,
+                        message: request
+                    });
                 }
             }
 

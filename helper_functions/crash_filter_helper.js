@@ -2,8 +2,6 @@
 const { resolveFieldAlias } = require('./code_translations/translator_helper');
 const { makeFromClause, makeWhereClause } = require('./code_translations/query_maker');
 
-
-
 function makeCrashFilterQuery(crashFilter, accidentTableName) {
     let filterJson;
     if (typeof crashFilter === 'string') {
@@ -37,7 +35,7 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
 
     return {
         fromClause: makeFromClause(usedTables, accidentTableName),
-        whereClause: makeWhereClause(whereClauses)
+        whereClause: makeWhereClause(whereClauses, usedTables, accidentTableName)
     }
 }
 

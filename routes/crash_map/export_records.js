@@ -31,7 +31,7 @@ const sql = (queryArgs) => {
         LIMIT 50000;
     `;
 
-    console.log(query)
+    //console.log(query)
     return query;
 };
 

@@ -49,7 +49,7 @@ const schema = {
             description: 'crash type code based on the NJTR-1 form',
             default: '01'
         },
-        personType: {
+        attribute: {
             type: 'string',
             description: 'occupant or pedestrian',
             default: 'occupant'
@@ -89,7 +89,7 @@ module.exports = function (fastify, opts, next) {
                     });
                 }
 
-                const table = `trends.crash_${queryArgs.personType}_physcl_cndtn_code_02`;
+                const table = `trends.crash_${queryArgs.attribute}_physcl_cndtn_code_02`;
                 var reportQueries = trendsHelper.getTrendsQueryObject(queryArgs, table);
                 var returnData = {};
 
@@ -98,13 +98,13 @@ module.exports = function (fastify, opts, next) {
                     if (reportQueries.hasOwnProperty(key)) {
                         const promise = new Promise((resolve, reject) => {
                             try {
-                                console.log(reportQueries[key].query)
+                                // console.log(reportQueries[key].query)
                                 const res = client.query(reportQueries[key].query);
                                 return resolve(res);
                             }
                             catch(err) {
-                                console.log(err.stack);
-                                console.log(reportQueries[key].query);
+                                // console.log(err.stack);
+                                // console.log(reportQueries[key].query);
                                 return reject(error);
                             }  
                         });
@@ -113,6 +113,7 @@ module.exports = function (fastify, opts, next) {
                 }
 
                 Promise.all(promises).then((reportDataArray) => {
+                    release();
                     for (let i = 0; i < reportDataArray.length; i++) {
                         var data = reportDataArray[i].rows;
                         var category = Object.keys(reportQueries)[i];
@@ -121,8 +122,9 @@ module.exports = function (fastify, opts, next) {
 
                     reply.send({ GraphData: returnData });
                 }).catch((error) => {
-                    console.log("report error");
-                    console.log(error);
+                    release();
+                    // console.log("report error");
+                    // console.log(error);
                 });
 
             }

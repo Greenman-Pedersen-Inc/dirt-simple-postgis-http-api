@@ -12,47 +12,47 @@ const schema = {
         user: {
             type: 'string',
             description: 'The user name.',
-            default: ''
+            example: ''
         },
         startYear: {
             type: 'string',
             description: 'The start year for crashes.',
-            default: '2015'
+            example: '2015'
         },
         endYear: {
             type: 'string',
             description: 'The end year for crashes.',
-            default: '2020'
+            example: '2020'
         },
         jurisdictionLevel: {
             type: 'string',
             description: 'state, mpo, county, municipality',
-            default: 'municipality'
+            example: 'municipality'
         },
         jurisdictionValue: {
             type: 'string',
             description: 'nj for state, njtpa for mpo, 2 digit for county, 4 digit for muni',
-            default: '1330'
+            example: '1330'
         },
         startTime: {
             type: 'string',
             description: '24 hr time; 0700 = 7 am',
-            default: '0700'
+            example: '0700'
         },
         endTime: {
             type: 'string',
             description: '24 hr time; 1300 = 1pm',
-            default: '2100'
+            example: '2100'
         },
         crashType: {
             type: 'string',
             description: 'crash type code based on the NJTR-1 form',
-            default: '01'
+            example: '01'
         },
-        personType: {
+        attribute: {
             type: 'string',
             description: 'occupant or pedestrian',
-            default: 'occupant'
+            example: 'occupant'
         }
     }
 }
@@ -89,7 +89,7 @@ module.exports = function (fastify, opts, next) {
                     });
                 }
 
-                const table = `trends.crash_${queryArgs.personType}_physcl_cndtn_code_01`;
+                const table = `trends.crash_${queryArgs.attribute}_physcl_cndtn_code_01`;
                 var reportQueries = trendsHelper.getTrendsQueryObject(queryArgs, table);
                 var returnData = {};
 
@@ -98,13 +98,13 @@ module.exports = function (fastify, opts, next) {
                     if (reportQueries.hasOwnProperty(key)) {
                         const promise = new Promise((resolve, reject) => {
                             try {
-                                console.log(reportQueries[key].query)
+                                // console.log(reportQueries[key].query)
                                 const res = client.query(reportQueries[key].query);
                                 return resolve(res);
                             }
                             catch(err) {
-                                console.log(err.stack);
-                                console.log(reportQueries[key].query);
+                                // console.log(err.stack);
+                                // console.log(reportQueries[key].query);
                                 return reject(error);
                             }  
                         });
@@ -113,6 +113,7 @@ module.exports = function (fastify, opts, next) {
                 }
 
                 Promise.all(promises).then((reportDataArray) => {
+                    release();
                     for (let i = 0; i < reportDataArray.length; i++) {
                         var data = reportDataArray[i].rows;
                         var category = Object.keys(reportQueries)[i];
@@ -121,8 +122,9 @@ module.exports = function (fastify, opts, next) {
 
                     reply.send({ GraphData: returnData });
                 }).catch((error) => {
-                    console.log("report error");
-                    console.log(error);
+                    release();
+                    // console.log("report error");
+                    // console.log(error);
                 });
 
             }

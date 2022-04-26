@@ -1,12 +1,51 @@
-const { table } = require("./code_translations/accidents");
+const schema = "emphasis_areas_2021";
 
-function getTableNames(category, subcategory, whereClause) {
-    const schema = "emphasis_explorer";
+function makeWhereClause(queryParamObject, isRollingAvg = false) {
+    var whereClauses = [];
+    var clauseValues = [];
+    var valueCounter = 1;
+    const rollingAvgOffset = 4; // number of years to subtract from the startYear
+
+    if (queryParamObject.hasOwnProperty('startYear') && queryParamObject.hasOwnProperty('startYear') ) {
+        whereClauses.push(`year BETWEEN $${valueCounter} AND $${valueCounter + 1}`);
+        if (isRollingAvg) {
+            clauseValues.push(parseInt(queryParamObject['startYear']) - rollingAvgOffset);
+        } 
+        else {
+            clauseValues.push(queryParamObject['startYear']);
+        }
+        clauseValues.push(queryParamObject['endYear']);
+        valueCounter += 2;
+    }
+    if (queryParamObject.hasOwnProperty('sri')) {
+        whereClauses.push(`calc_sri = $${valueCounter}`);
+        clauseValues.push(queryParamObject['sri']);
+    }
+    else if (queryParamObject.hasOwnProperty('mun_cty_co')) {
+        whereClauses.push(`mun_cty_co = $${valueCounter}`);
+        clauseValues.push(queryParamObject['mun_cty_co']);
+        if (queryParamObject.hasOwnProperty('mun_mu')) {
+            whereClauses.push(`mun_mu = $${valueCounter + 1}`);
+            clauseValues.push(queryParamObject['mun_mu']);
+        }
+    }
+
+    return {
+        whereClauses: whereClauses,
+        values: clauseValues
+    }
+}
+
+function getTableQuery(category, subcategory = null, whereClause, whereClauseRollingAvg) {
     const tables = {
         lane_departure: {
             annual_bodies: {
                 table: 'lane_departure_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
+            },
+            annual_bodies_rolling_average: {
+                table: 'lane_departure_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
             },
             crash_type: {
                 table: "lane_departure_crashes",
@@ -46,6 +85,10 @@ function getTableNames(category, subcategory, whereClause) {
                 table: 'ped_bike_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
             },
+            annual_bodies_rolling_average: {
+                table: 'ped_bike_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            },
             crash_type: {
                 table: "ped_bike_crashes",
                 query: function () { return getCrashTypeQuery(schema, this.table, whereClause); }
@@ -81,62 +124,66 @@ function getTableNames(category, subcategory, whereClause) {
         },
         intersections: {
             annual_bodies: {
-                table: 'intersections_crashes',
+                table: 'intersection_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
             },
+            annual_bodies_rolling_average: {
+                table: 'intersection_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            },
             crash_type: {
-                table: "intersections_crashes",
+                table: "intersection_crashes",
                 query: function () { return getCrashTypeQuery(schema, this.table, whereClause); }
             },
             county: {
-                table: "intersections_crashes",
+                table: "intersection_crashes",
                 query: function () { return getCountyQuery(schema, this.table, whereClause); }
             },
             age: {
-                table: "intersections_persons",
+                table: "intersection_persons",
                 query: function () { return getAgeQuery(schema, this.table, whereClause); }
             },
             aggressive: {
-                table: "intersections_crashes_aggressive",
+                table: "intersection_crashes_aggressive",
                 query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
             },
             drowsy_distracted: {
-                table: "intersections_crashes_drowsy_distracted",
+                table: "intersection_crashes_drowsy_distracted",
                 query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
             },
             unbelted: {
-                table: "intersections_crashes_unbelted",
+                table: "intersection_crashes_unbelted",
                 query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
             },
             impaired: {
-                table: "intersections_crashes_impaired",
+                table: "intersection_crashes_impaired",
                 query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
             },
             unlicensed: {
-                table: "intersections_crashes_unlicensed",
+                table: "intersection_crashes_unlicensed",
                 query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
             }
         },
         driver_behavior: {
             subcategory: {
                 aggressive: {
-                    title: "db_aggressive_crashes",
+                    table: "db_aggressive_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 },
                 drowsy_distracted: {
-                    title: "db_drowsy_distracted_crashes",
+                    table: "db_drowsy_distracted_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 },
                 unbelted: {
-                    title: "db_unbelted_crashes",
+                    table: "db_unbelted_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 },
                 impaired: {
-                    title: "db_impaired_crashes",
+                    table: "db_impaired_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 },
                 unlicensed: {
-                    title: "db_unlicensed_crashes",
+                    table: "db_unlicensed_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 },
                 heavy_vehicle: {
@@ -148,22 +195,41 @@ function getTableNames(category, subcategory, whereClause) {
         road_users: {
             subcategory: {
                 mature: {
-                    title: "ru_mature_driver_crashes",
+                    table: "ru_mature_driver_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 },
                 motorcyclist: {
-                    title: "ru_motorcyclist_crashes",
+                    table: "ru_motorcyclist_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 },
                 younger: {
-                    title: "ru_younger_driver_crashes",
+                    table: "ru_younger_driver_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 },
                 work_zone: {
-                    title: "ru_work_zone_crashes",
+                    table: "ru_work_zone_crashes",
                     query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
                 }               
             }
+        }
+    }
+
+    if (subcategory !== null) {
+        for (const [table, categories] of Object.entries(tables)) {
+            if (table == category) {
+                if (categories.hasOwnProperty('subcategory')) {
+                    for (const [aCategory, categoryValues] of Object.entries(categories['subcategory'])) {
+                        if (aCategory == subcategory) {
+                            return { [subcategory]: categoryValues};
+                        }
+                    }
+                }                
+            }
+        }
+    }
+    else {
+        for (const [table, categories] of Object.entries(tables)) {
+            if (table == category) return categories;
         }
     }
 }
@@ -228,7 +294,7 @@ function getAgeQuery(schemaName, tableName, whereClause) {
             WHEN age > 65 THEN '> 65'
             ELSE 'N/A'
         END AS age_bucket
-        ${schemaName}.${tableName} WHERE ${whereClause}
+        FROM ${schemaName}.${tableName} WHERE ${whereClause}
         GROUP BY severity_rating, age, sex
     ) personsData
     WHERE sex IS NOT NULL 
@@ -255,4 +321,46 @@ function getBehaviorQuery(schemaName, tableName, whereClause) {
     GROUP BY YEAR ORDER BY YEAR;`
   
     return sql;
+}
+
+// <----- 5 Year Rolling Avg Helper ----->
+
+/**
+ * Calculates the 5 year rolling average for Fatal, SI, and Total Persons count
+ * @date 2022-04-26
+ * @param {object} annualData - Fatal, SI, and Total persons data from startYear - 4
+ * @param {string} startYear
+ * @param {string} endYear
+ * @returns {object} Calculated 5 year rolling avarage Fatal, SI, and Total persons counts from startYear to endYear
+ */
+function calculateRollingAverage(annualData, startYear) {
+    const windowSize = 5;
+    var rollingAvgData = [];
+    const startYearIdx = annualData.findIndex(yr => yr['year'] === startYear);
+    for (let yearIdx = startYearIdx; yearIdx < annualData.length; yearIdx++) {
+        var fatalSum = 0; 
+        var siSum = 0; 
+        var totalSum = 0;
+        for (let windowIdx = 0; windowIdx < windowSize; windowIdx++) {
+            const targetYear = annualData[yearIdx - windowIdx];
+            fatalSum += parseInt(targetYear.fatal);
+            siSum += parseInt(targetYear.serious_injury);
+            totalSum += parseInt(targetYear.total);
+        }
+        rollingAvgData.push({
+            'year': annualData[yearIdx].year,
+            'fatal': fatalSum / windowSize,
+            'serious_injury': siSum / windowSize,
+            'total': totalSum / windowSize
+        });
+    }
+
+    return rollingAvgData;
+}
+
+
+module.exports = {
+    makeWhereClause: makeWhereClause,
+    getTableQuery: getTableQuery,
+    calculateRollingAverage: calculateRollingAverage
 }

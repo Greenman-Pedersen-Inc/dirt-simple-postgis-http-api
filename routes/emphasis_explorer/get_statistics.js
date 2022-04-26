@@ -1,0 +1,187 @@
+// get_statistics: gets stats based on category and subcategory
+const {makeWhereClause, getTableQuery, calculateRollingAverage} = require('../../helper_functions/emphasis_explorer_helper');
+
+// *---------------*
+// route query
+// *---------------*
+const getQueries = (queryArgs) => {
+    let filterJson = JSON.parse(JSON.stringify(queryArgs));
+
+    const clauses = makeWhereClause(filterJson);
+    const clausesRollingAvg = makeWhereClause(filterJson, true);
+    const queries = getTableQuery(filterJson.category, 
+        filterJson.hasOwnProperty('subcategory') ? filterJson['subcategory'] : null, 
+        clauses.whereClauses.join(' AND '), clausesRollingAvg.whereClauses.join(' AND '));
+
+    return {
+        values: clauses.values,
+        values_rolling_avg: clausesRollingAvg.values,
+        queries: queries
+    }
+}
+
+// *---------------*
+// route schema
+// *---------------*
+const schema = {
+    description: 'gets stats based on category and subcategory.',
+    tags: ['emphasis-explorer'],
+    summary: 'gets stats based on category and subcategory.',
+    querystring: {
+        user: {
+            type: 'string',
+            description: 'The user name.',
+            example: 'testuser'
+        },
+        category: {
+            type: 'string',
+            description: 'Emphasis Area category',
+            example: 'lane_departure, ped_cyclist, intersections, driver_behavior, road_users'
+        },
+        subcategory: {
+            type: 'string',
+            description: 'Emphasis Area subcategory',
+            example: 'aggressive, drowsy_distracted, impaired, unlicensed, unbelted, heavy_vehicle, mature, younger, motorcyclist, work_zone'
+        },
+        startYear: {
+            type: 'string',
+            description: 'The start year.',
+            example: '2016'
+        },
+        endYear: {
+            type: 'string',
+            description: 'The end year.',
+            example: '2020'
+        },
+        sri: {
+            type: 'string',
+            description: 'SRI code.',
+        },
+        mun_cty_co: {
+            type: 'string',
+            description: 'County Code.',
+            example: '02'
+        },
+        mun_mu: {
+            type: 'string',
+            description: 'Municipality code.',
+            example: '13'
+        }
+    }
+}
+
+// *---------------*
+// create route
+// *---------------*
+module.exports = function (fastify, opts, next) {
+    fastify.route({
+        method: 'GET',
+        url: '/emphasis-explorer/get-statistics',
+        schema: schema,
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect)
+
+            function onConnect(err, client, release) {
+                if (err) return reply.send({
+                    "statusCode": 500,
+                    "error": "Internal Server Error",
+                    "message": "unable to connect to database server"
+                });
+
+                var queryArgs = request.query;
+                if (queryArgs.startYear == undefined) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "need start year"
+                    });
+                } else if (queryArgs.endYear == undefined) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "need end year"
+                    });
+                } else if (queryArgs.category == undefined) {
+                    return reply.send({
+                        "statusCode": 500,
+                        "error": "Internal Server Error",
+                        "message": "need category"
+                    });
+                }
+
+                let filterJson = JSON.parse(JSON.stringify(queryArgs));
+                const queriesObject = getQueries(filterJson);
+
+                try {
+                    let crashData = {};
+                    let promises = [];  // store all promises to be queried on
+                    for (const [category, values] of Object.entries(queriesObject.queries)) {
+                        const promise = new Promise((resolve, reject) => {
+                            try {
+                                const queryString = values.query();
+                                if (category === 'annual_bodies_rolling_average') {
+                                    const res = client.query(queryString, queriesObject.values_rolling_avg);
+                                    return resolve(res);
+                                }
+                                else {
+                                    const res = client.query(queryString, queriesObject.values);
+                                    return resolve(res);
+                                }
+                            } catch (err) {
+                                return reject(error);
+                            }
+                        });
+
+                        promises.push(promise);
+                    }
+
+                    Promise.all(promises)
+                    .then((returnData) => {
+                        for (let i = 0; i < returnData.length; i++) {
+                            let table = Object.keys(queriesObject.queries)[i];
+                            // console.log(table);
+                            let data = returnData[i].rows;
+                            if (table === 'annual_bodies_rolling_average') {
+                                const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
+                                crashData[table] = rollingAvgData;
+                            }
+                            else {
+                                crashData[table] = data;
+                            }
+                        }
+                        release();
+                        return reply.send({[filterJson.category]: crashData});
+                    })
+                    .catch((error) => {
+                        release();
+                        return reply.send({
+                            statusCode: 500,
+                            error: error,
+                            message: 'issue with crash id queries'
+                        });
+                    });
+
+                } catch (error) {
+                    release();
+
+                    return reply.send({
+                        statusCode: 500,
+                        error: error,
+                        message: request
+                    });
+                }
+
+                // client.query(
+                //     sql(queryArgs),
+                //     function onResult(err, result) {
+                //         release()
+                //         reply.send(err || {TimeData: result.rows})
+                //     }
+                // );
+            }
+        }
+    })
+    next()
+}
+
+module.exports.autoPrefix = '/v1'

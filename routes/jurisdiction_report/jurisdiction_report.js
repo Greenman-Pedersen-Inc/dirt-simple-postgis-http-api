@@ -13,17 +13,17 @@ const schema = {
         startYear: {
             type: 'integer',
             description: 'unique start year',
-            default: '2015'
+            example: '2015'
         },
         endYear: {
             type: 'integer',
             description: 'unique end year',
-            default: '2019'
+            example: '2019'
         },
         jurisdictionCode: {
             type: 'string',
             description: 'county code and muni code together',
-            default: "1102"
+            example: "1102"
         }
     }
 }
@@ -108,15 +108,17 @@ module.exports = function(fastify, opts, next) {
                                 [tableTitle]: data
                             });
                         }
+                        release();
 
                         // create report pdf
                         const fileInfo = juriHelper.makeJurisdictionReport(queryArgs, reportData);
                         fileInfo.then((createdFile) => {
-                            //console.log(createdFile)
+                            console.log(createdFile)
                             reply.send({ url: createdFile.fileName });
                         }).catch((error) => {
-                            //console.log("report error");
-                            //console.log(error);
+                            release();
+                            console.log("report error");
+                            console.log(error);
                         })
                     });
                 }

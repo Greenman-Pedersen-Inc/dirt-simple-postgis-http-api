@@ -17,7 +17,9 @@ function makeJurisdictionReport(queryArgs, reportData) {
     getReportTable(doc, reportData['drivers'], 'DRIVER TABLES', doc.lastAutoTable.finalY + 10);
     getReportTable(doc, reportData['vehicles'], 'VEHICLE TABLES', doc.lastAutoTable.finalY + 10);
     getReportTable(doc, reportData['crashes'], 'CRASH TABLES', doc.lastAutoTable.finalY + 10);
-    if ('police' in reportData) {
+
+    // if ewing township, generate additional tables
+    if (queryArgs.jurisdictionCode == '1102') {
         getReportTable(
             doc,
             reportData['police'],

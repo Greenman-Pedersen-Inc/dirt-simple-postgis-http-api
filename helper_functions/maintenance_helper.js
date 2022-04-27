@@ -102,8 +102,8 @@ function generatePDF(queryStrings, data) {
 //  PDF Helpers
 // *---------------*
 function generateHeader(doc, queryStrings) {
-    var njdotLogo = fs.readFileSync(basePath + 'images/njdotSealSmall.png', 'base64');
-    var fhwaLogo = fs.readFileSync(basePath + 'images/fhwaSealSmall.png', 'base64');
+    var njdotLogo = fs.readFileSync(basePath + 'report_maker\\images\\njdotSealSmall.png', 'base64');
+    var fhwaLogo = fs.readFileSync(basePath + 'report_maker\\images\\fhwaSealSmall.png', 'base64');
 
     doc.addImage(njdotLogo, 'PNG', 10, 20, 50, 50, undefined, 'FAST') // FAST to compress image
         .addImage(fhwaLogo, 'PNG', 70, 20, 50, 50, undefined, 'FAST')

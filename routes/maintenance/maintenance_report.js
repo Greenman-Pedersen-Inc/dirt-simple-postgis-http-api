@@ -133,25 +133,26 @@ module.exports = function (fastify, opts, next) {
                             ////console.log(data[0]);
                             const fileInfo = maintenanceHelper.fileExport(queryStrings, data);
 
-                            // fileInfo.then((createdFile) => {
-                            //     //console.log(createdFile)
-                            //     reply.send({ url: createdFile.fileName });
-
-                            // }).catch((error) => {
-                            //     //console.log(error);
-                            // })
-
                             fileInfo
                                 .then((createdFile) => {
-                                    const stream = fs.createReadStream(createdFile.savePath, 'binary');
-
-                                    reply.header('Content-Type', 'application/pdf');
-                                    reply.send(stream).type('application/pdf').code(200);
+                                    //console.log(createdFile)
+                                    reply.send({ url: createdFile.fileName });
                                 })
                                 .catch((error) => {
-                                    console.log('report error');
-                                    console.log(error);
+                                    //console.log(error);
                                 });
+
+                            // fileInfo
+                            //     .then((createdFile) => {
+                            //         const stream = fs.createReadStream(createdFile.savePath, 'binary');
+
+                            //         reply.header('Content-Type', 'application/pdf');
+                            //         reply.send(stream).type('application/pdf').code(200);
+                            //     })
+                            //     .catch((error) => {
+                            //         console.log('report error');
+                            //         console.log(error);
+                            //     });
                         } else {
                             reply.code(204).send();
                         }

@@ -106,6 +106,7 @@ module.exports = function(fastify, opts, next) {
                 promises.push(promise);
 
                 Promise.all(promises).then((reportDataArray) => {
+                    release();
                     const hmvmtsValues = reportDataArray[reportDataArray.length - 1].rows;
                     //console.log(hmvmtsValues);
                     for (let i = 0; i < reportDataArray.length - 1; i++) {
@@ -130,8 +131,9 @@ module.exports = function(fastify, opts, next) {
 
                     reply.send({ GraphData: returnData });
                 }).catch((error) => {
-                    //console.log("report error");
-                    //console.log(error);
+                    release();
+                    console.log("report error");
+                    console.log(error);
                 });
 
             }

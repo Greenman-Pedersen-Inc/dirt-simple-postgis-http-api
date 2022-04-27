@@ -120,7 +120,6 @@ module.exports = function (fastify, opts, next) {
                                     const fileInfo = juriHelper.makeJurisdictionReport(queryArgs, reportData);
                                     fileInfo
                                         .then((createdFile) => {
-                                            const fs = require('fs');
                                             const stream = fs.createReadStream(createdFile.savePath, 'binary');
 
                                             reply.header('Content-Type', 'application/pdf');

@@ -23,11 +23,7 @@ const schema = {
         jurisdictionCode: {
             type: 'string',
             description: 'county code and muni code together',
-<<<<<<< HEAD
             example: "1102"
-=======
-            default: '1102'
->>>>>>> e900de2fdfb89f0d2df9944e5a06abb32e5bb609
         }
     }
 };
@@ -139,23 +135,7 @@ module.exports = function (fastify, opts, next) {
                             console.log(error);
                             release();
                         }
-<<<<<<< HEAD
-                        release();
-
-                        // create report pdf
-                        const fileInfo = juriHelper.makeJurisdictionReport(queryArgs, reportData);
-                        fileInfo.then((createdFile) => {
-                            console.log(createdFile)
-                            reply.send({ url: createdFile.fileName });
-                        }).catch((error) => {
-                            release();
-                            console.log("report error");
-                            console.log(error);
-                        })
-                    });
-=======
                     }
->>>>>>> e900de2fdfb89f0d2df9944e5a06abb32e5bb609
                 }
             }
         }

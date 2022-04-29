@@ -1,4 +1,5 @@
 // readMaintenanceData: queries accident data between a time frame for NJDOT Maintenance for insurance claims
+const fs = require('fs');
 
 const maintenanceHelper = require('../../helper_functions/maintenance_helper');
 const codeTranslator = require('../../helper_functions/code_translator');
@@ -135,24 +136,15 @@ module.exports = function (fastify, opts, next) {
 
                             fileInfo
                                 .then((createdFile) => {
-                                    //console.log(createdFile)
-                                    reply.send({ url: createdFile.fileName });
+                                    const stream = fs.createReadStream(createdFile.savePath, 'binary');
+
+                                    reply.header('Content-Type', `application/${queryString.fileFormat}`);
+                                    reply.send(stream).type(`application/${queryString.fileFormat}`).code(200);
                                 })
                                 .catch((error) => {
-                                    //console.log(error);
+                                    console.log('report error');
+                                    console.log(error);
                                 });
-
-                            // fileInfo
-                            //     .then((createdFile) => {
-                            //         const stream = fs.createReadStream(createdFile.savePath, 'binary');
-
-                            //         reply.header('Content-Type', 'application/pdf');
-                            //         reply.send(stream).type('application/pdf').code(200);
-                            //     })
-                            //     .catch((error) => {
-                            //         console.log('report error');
-                            //         console.log(error);
-                            //     });
                         } else {
                             reply.code(204).send();
                         }

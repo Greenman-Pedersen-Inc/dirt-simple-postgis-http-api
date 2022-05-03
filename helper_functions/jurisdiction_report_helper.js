@@ -1,37 +1,62 @@
+const path = require('path');
+
 const { jsPDF } = require('jspdf'); // will automatically load the node version
 const { autoTable } = require('jspdf-autotable'); // will automatically load the node version
 const reportHelper = require('./report_maker/report_layout');
 const codeTranslator = require('./code_translator');
+const { save } = require('pdfkit');
 require('./report_maker/fonts/SegoeUI/segoeui-normal'); // SegoiUI normal
 require('./report_maker/fonts/SegoeUI/seguisb-normal'); // SegoiUI semi bold
+
+// const base_path = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/';
+const base_path = `${__dirname}\\`;
+const output_folder = path.join(base_path, '..\\output', 'jurisdiction');
+
 // *---------------*
 //  Jurisdiction Report Helper Functions
 // *---------------*
 function makeJurisdictionReport(queryArgs, reportData) {
-    const juriName = getJurisdictionName(queryArgs.jurisdictionCode);
-    const filterObject = getFilterObject(queryArgs);
-    const doc = reportHelper.generateReportPdf('letter-portrait', filterObject, juriName + ' - Comparision Summary');
-    getLegend(doc, juriName, 39);
-    const tablesStart = 62;
-    getReportTable(doc, reportData['pedestrians'], 'PEDESTRIAN & PEDACYCLIST TABLES', tablesStart);
-    getReportTable(doc, reportData['drivers'], 'DRIVER TABLES', doc.lastAutoTable.finalY + 10);
-    getReportTable(doc, reportData['vehicles'], 'VEHICLE TABLES', doc.lastAutoTable.finalY + 10);
-    getReportTable(doc, reportData['crashes'], 'CRASH TABLES', doc.lastAutoTable.finalY + 10);
+    return new Promise((resolve, reject) => {
+        try {
+            const juriName = getJurisdictionName(queryArgs.jurisdictionCode);
+            const filterObject = getFilterObject(queryArgs);
+            const fileName = `${juriName} - Comparision Summary.pdf`;
+            const savePath = path.join(output_folder, fileName);
+            const fileInfo = {
+                savePath: savePath,
+                fileName: fileName
+            };
 
-    // if ewing township, generate additional tables
-    if (queryArgs.jurisdictionCode == '1102') {
-        getReportTable(
-            doc,
-            reportData['police'],
-            'CRASH COUNTS BY EWING MUNICIPALITY POLICE',
-            doc.lastAutoTable.finalY + 10,
-            'police',
-            2
-        );
-        getReportTable(doc, reportData['police2'], null, doc.lastAutoTable.finalY + 10, 'police', 3, queryArgs);
-    }
-    reportHelper.createFooter(doc, juriName + ' - Comparision Summary');
-    return reportHelper.saveReportPdf(doc, 'jurisdictionReport');
+            const doc = reportHelper.generateReportPdf('letter-portrait', filterObject, fileName);
+            getLegend(doc, juriName, 39);
+            const tablesStart = 62;
+
+            getReportTable(doc, reportData['pedestrians'], 'PEDESTRIAN & PEDACYCLIST TABLES', tablesStart);
+            getReportTable(doc, reportData['drivers'], 'DRIVER TABLES', doc.lastAutoTable.finalY + 10);
+            getReportTable(doc, reportData['vehicles'], 'VEHICLE TABLES', doc.lastAutoTable.finalY + 10);
+            getReportTable(doc, reportData['crashes'], 'CRASH TABLES', doc.lastAutoTable.finalY + 10);
+
+            // if ewing township, generate additional tables
+            if (queryArgs.jurisdictionCode == '1102') {
+                getReportTable(
+                    doc,
+                    reportData['police'],
+                    'CRASH COUNTS BY EWING MUNICIPALITY POLICE',
+                    doc.lastAutoTable.finalY + 10,
+                    'police',
+                    2
+                );
+                getReportTable(doc, reportData['police2'], null, doc.lastAutoTable.finalY + 10, 'police', 3, queryArgs);
+            }
+            reportHelper.createFooter(doc, juriName + ' - Comparision Summary');
+
+            // return reportHelper.saveReportPdf(doc, 'jurisdictionReport');
+            doc.save(savePath);
+            return resolve(fileInfo);
+        } catch (error) {
+            return reject(error);
+        }
+    });
 }
 
 function getReportQueries(queryArgs) {

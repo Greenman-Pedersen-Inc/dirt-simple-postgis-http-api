@@ -179,14 +179,6 @@ function generateTable(doc, data) {
     }
 }
 
-if (!fs.existsSync(output_folder)) {
-    try {
-        fs.mkdirSync(output_folder, { recursive: true });
-    } catch (error) {
-        console.log(error);
-    }
-}
-
 // *---------------*
 // Module Exports
 // *---------------*

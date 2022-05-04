@@ -10,18 +10,19 @@ const sql = (queryArgs) => {
 
     var sql = `
     SELECT 
-    SUBSTRING ( acc_time, 1, 2 ) crash_hr,
-    COUNT(ard_accidents_sunglare.crashid), 
-    SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal,
-    SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated,
-    SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) mod_inj,
-    SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) comp_pain,
-    SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) prop_dmg
+    SUBSTRING ( acc_time, 1, 2 )::INT crash_hr,
+    COUNT(ard_accidents_sunglare.crashid)::INT, 
+    SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END)::INT fatal,
+    SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END)::INT incapacitated,
+    SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END)::INT mod_inj,
+    SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END)::INT comp_pain,
+    SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END)::INT prop_dmg
 
     FROM
 
     sunglare.ard_accidents_sunglare
     WHERE year BETWEEN ${queryArgs.startYear} AND ${queryArgs.endYear} 
+    AND crash_hr IS NOT NULL
     ${locationClause !== '' ? ` AND ${locationClause}` : ''}
     ${filterClause !== '' ? ` AND ${filterClause}` : ''}     
     GROUP BY crash_hr

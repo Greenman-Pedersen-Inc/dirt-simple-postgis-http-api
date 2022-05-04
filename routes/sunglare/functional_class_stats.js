@@ -27,12 +27,12 @@ const sql = (queryArgs) => {
         WHEN functional_class = 6 THEN 'Minor Collector'
         WHEN functional_class = 7 THEN 'Local'
         END fc,
-        COUNT(sunglare.ard_accidents_sunglare.crashid),
-        SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal,
-        SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated,
-        SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) mod_inj,
-        SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) comp_pain,
-        SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) prop_dmg
+        COUNT(sunglare.ard_accidents_sunglare.crashid)::INT,
+        SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END)::INT fatal,
+        SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END)::INT incapacitated,
+        SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END)::INT mod_inj,
+        SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END)::INT comp_pain,
+        SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END)::INT prop_dmg
 
         FROM
 

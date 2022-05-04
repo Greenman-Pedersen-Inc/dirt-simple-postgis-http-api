@@ -127,11 +127,16 @@ module.exports = function(fastify, opts, next) {
                             }
                         });
                     }
-
+                    release();
                     reply.send({ GraphData: returnData });
                 }).catch((error) => {
-                    //console.log("report error");
-                    //console.log(error);
+                    release();
+
+                    reply.send({
+                        statusCode: 500,
+                        error: error,
+                        message: request
+                    });
                 });
 
             }

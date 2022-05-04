@@ -39,13 +39,13 @@ function makeWhereClause(queryParamObject, isRollingAvg = false) {
 function getTableQuery(category, subcategory = null, whereClause, whereClauseRollingAvg) {
     const tables = {
         lane_departure: {
-            annual_bodies: {
-                table: 'lane_departure_crashes',
-                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
-            },
             annual_bodies_rolling_average: {
                 table: 'lane_departure_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            },
+            annual_bodies: {
+                table: 'lane_departure_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
             },
             crash_type: {
                 table: "lane_departure_crashes",
@@ -81,13 +81,13 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
             }
         },
         ped_cyclists: {
-            annual_bodies: {
-                table: 'ped_bike_crashes',
-                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
-            },
             annual_bodies_rolling_average: {
                 table: 'ped_bike_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            },
+            annual_bodies: {
+                table: 'ped_bike_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
             },
             crash_type: {
                 table: "ped_bike_crashes",
@@ -122,14 +122,14 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
                 query: function () { return getBehaviorQuery(schema, this.table, whereClause); }
             }
         },
-        intersections: {
-            annual_bodies: {
-                table: 'intersection_crashes',
-                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
-            },
+        intersection: {
             annual_bodies_rolling_average: {
                 table: 'intersection_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            },
+            annual_bodies: {
+                table: 'intersection_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
             },
             crash_type: {
                 table: "intersection_crashes",
@@ -220,7 +220,13 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
                 if (categories.hasOwnProperty('subcategory')) {
                     for (const [aCategory, categoryValues] of Object.entries(categories['subcategory'])) {
                         if (aCategory == subcategory) {
-                            return { [subcategory]: categoryValues};
+                            return { 
+                                [subcategory]: categoryValues,
+                                // annual_bodies_rolling_average: {
+                                //     table: categoryValues['table'],
+                                //     query: function () { return getAnnualBodiesQuery(schema, categoryValues['table'], whereClauseRollingAvg); }
+                                // }
+                            };
                         }
                     }
                 }                
@@ -236,14 +242,14 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
 
 function getAnnualBodiesQuery(schemaName, tableName, whereClause) {
     const sql = `
-    SELECT YEAR, SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0)) serious_injury,
-    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0)) fatal,
+    SELECT YEAR "Year", SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0))::INT "Serious_Injury",
+    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0))::INT "Fatal",
     SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(occupant_phys_cond_incapacitated,0) + 
         COALESCE(occupant_phys_cond_moderate_injury,0) + COALESCE(occupant_phys_cond_complaint_pain,0) + 
         COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + 
         COALESCE(pedestrian_phys_cond_moderate_injury,0) + COALESCE(pedestrian_phys_cond_complaint_pain,0) +
         COALESCE(cyclist_killed,0) + COALESCE(cyclist_incapacitated,0) + COALESCE(cyclist_complaint_of_pain,0) + COALESCE(cyclist_moderate_pain,0)
-        ) total
+        )::INT "Total"
     FROM 
     ${schemaName}.${tableName} WHERE ${whereClause}
     GROUP BY YEAR ORDER BY YEAR;`;
@@ -253,8 +259,8 @@ function getAnnualBodiesQuery(schemaName, tableName, whereClause) {
 
 function getCrashTypeQuery(schemaName, tableName, whereClause) {
     const sql = `
-    SELECT crash_type, SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0)) serious_injury,
-    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0)) fatal
+    SELECT crash_type, SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0))::INT "Serious_Injury",
+    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0))::INT "Fatal"
     FROM 
     ${schemaName}.${tableName} WHERE ${whereClause}
     GROUP BY crash_type ORDER BY crash_type;`;
@@ -264,18 +270,20 @@ function getCrashTypeQuery(schemaName, tableName, whereClause) {
 
 function getCountyQuery(schemaName, tableName, whereClause) {
     const sql = `
-    SELECT mun_cty_co, SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0)) serious_injury,
-    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0)) fatal
+    SELECT county_name "County_Label", SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0))::INT "Serious_Injury",
+    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0))::INT "Fatal"
     FROM 
-    ${schemaName}.${tableName} WHERE ${whereClause}
-    GROUP BY mun_cty_co ORDER BY mun_cty_co;`;
+    ${schemaName}.${tableName} 
+    LEFT JOIN public.ard_county ON ${schemaName}.${tableName}.mun_cty_co = public.ard_county.county_code
+    WHERE ${whereClause}
+    GROUP BY county_name ORDER BY county_name;`;
   
     return sql;
 }
 
 function getAgeQuery(schemaName, tableName, whereClause) {
     const sql = `
-    SELECT severity_rating, sex, age_bucket, SUM(personsCount) FROM
+    SELECT severity_rating "Severity_Rating", sex "Sex", age_bucket "AgeBucket", NULLIF(SUM(personsCount), 0)::INT "Persons_Count" FROM
     (
         SELECT severity_rating, age, sex, COUNT(crashid) personsCount,
         CASE
@@ -308,14 +316,14 @@ function getAgeQuery(schemaName, tableName, whereClause) {
 
 function getBehaviorQuery(schemaName, tableName, whereClause) {
     const sql = `
-    SELECT YEAR, SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0)) serious_injury,
-    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0)) fatal,
+    SELECT YEAR "Year", SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0))::INT "Serious_Injury",
+    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0))::INT "Fatal",
     SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(occupant_phys_cond_incapacitated,0) + 
         COALESCE(occupant_phys_cond_moderate_injury,0) + COALESCE(occupant_phys_cond_complaint_pain,0) + 
         COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + 
         COALESCE(pedestrian_phys_cond_moderate_injury,0) + COALESCE(pedestrian_phys_cond_complaint_pain,0) +
         COALESCE(cyclist_killed,0) + COALESCE(cyclist_incapacitated,0) + COALESCE(cyclist_complaint_of_pain,0) + COALESCE(cyclist_moderate_pain,0)
-        ) total
+        )::INT "Total"
     FROM 
     ${schemaName}.${tableName} WHERE ${whereClause}
     GROUP BY YEAR ORDER BY YEAR;`
@@ -336,22 +344,22 @@ function getBehaviorQuery(schemaName, tableName, whereClause) {
 function calculateRollingAverage(annualData, startYear) {
     const windowSize = 5;
     var rollingAvgData = [];
-    const startYearIdx = annualData.findIndex(yr => yr['year'] === startYear);
+    const startYearIdx = annualData.findIndex(yr => yr['Year'] === startYear);
     for (let yearIdx = startYearIdx; yearIdx < annualData.length; yearIdx++) {
         var fatalSum = 0; 
         var siSum = 0; 
         var totalSum = 0;
         for (let windowIdx = 0; windowIdx < windowSize; windowIdx++) {
             const targetYear = annualData[yearIdx - windowIdx];
-            fatalSum += parseInt(targetYear.fatal);
-            siSum += parseInt(targetYear.serious_injury);
-            totalSum += parseInt(targetYear.total);
+            fatalSum += parseInt(targetYear['Fatal']);
+            siSum += parseInt(targetYear['Serious_Injury']);
+            totalSum += parseInt(targetYear['Total']);
         }
         rollingAvgData.push({
-            'year': annualData[yearIdx].year,
-            'fatal': fatalSum / windowSize,
-            'serious_injury': siSum / windowSize,
-            'total': totalSum / windowSize
+            'Year': annualData[yearIdx]['Year'],
+            'Fatal': fatalSum / windowSize,
+            'Serious_Injury': siSum / windowSize,
+            'Total': totalSum / windowSize
         });
     }
 

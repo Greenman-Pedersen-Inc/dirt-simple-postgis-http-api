@@ -36,7 +36,7 @@ const schema = {
         category: {
             type: 'string',
             description: 'Emphasis Area category',
-            example: 'lane_departure, ped_cyclist, intersections, driver_behavior, road_users'
+            example: 'lane_departure, ped_cyclist, intersection, driver_behavior, road_users'
         },
         subcategory: {
             type: 'string',
@@ -81,7 +81,7 @@ module.exports = function (fastify, opts, next) {
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)
 
-            function onConnect(err, client, release) {
+            async function onConnect(err, client, release) {
                 if (err) return reply.send({
                     "statusCode": 500,
                     "error": "Internal Server Error",
@@ -115,10 +115,18 @@ module.exports = function (fastify, opts, next) {
                 try {
                     let crashData = {};
                     let promises = [];  // store all promises to be queried on
+                    if (queriesObject.queries === undefined) {
+                        reply.send({
+                            statusCode: 500,
+                            error: "Invalid category or subcategory",
+                            message: 'Please check category or subcategory input and try again.'
+                        });
+                    }
                     for (const [category, values] of Object.entries(queriesObject.queries)) {
                         const promise = new Promise((resolve, reject) => {
                             try {
                                 const queryString = values.query();
+                                // console.log(queryString)
                                 if (category === 'annual_bodies_rolling_average') {
                                     const res = client.query(queryString, queriesObject.values_rolling_avg);
                                     return resolve(res);
@@ -135,26 +143,32 @@ module.exports = function (fastify, opts, next) {
                         promises.push(promise);
                     }
 
-                    Promise.all(promises)
+                    await Promise.all(promises)
                     .then((returnData) => {
+                        release();
+
                         for (let i = 0; i < returnData.length; i++) {
                             let table = Object.keys(queriesObject.queries)[i];
                             // console.log(table);
                             let data = returnData[i].rows;
-                            if (table === 'annual_bodies_rolling_average') {
-                                const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
-                                crashData[table] = rollingAvgData;
-                            }
-                            else {
-                                crashData[table] = data;
+                            
+                            //crashData[table] = data;
+                            if (data && data.length > 0) {
+                                if (table && table === 'annual_bodies_rolling_average') {
+                                    const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
+                                    crashData[table] = rollingAvgData;
+                                }
+                                else {
+                                    crashData[table] = data;
+                                }
                             }
                         }
-                        release();
-                        return reply.send({[filterJson.category]: crashData});
+                        console.log({[filterJson.category]: crashData})
+                        reply.send({[filterJson.category]: crashData});
                     })
                     .catch((error) => {
                         release();
-                        return reply.send({
+                        reply.send({
                             statusCode: 500,
                             error: error,
                             message: 'issue with crash id queries'
@@ -163,8 +177,8 @@ module.exports = function (fastify, opts, next) {
 
                 } catch (error) {
                     release();
-
-                    return reply.send({
+                    console.log(error)
+                    reply.send({
                         statusCode: 500,
                         error: error,
                         message: request

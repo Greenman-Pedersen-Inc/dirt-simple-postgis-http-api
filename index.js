@@ -151,7 +151,6 @@ fastify.register(require('fastify-auth'));
 // postgres connection
 fastify.register(require('fastify-postgres'), {
     connectionString: config.db,
-    query_timeout: 150000 // miliseconds
 });
 
 // compression - add x-protobuf

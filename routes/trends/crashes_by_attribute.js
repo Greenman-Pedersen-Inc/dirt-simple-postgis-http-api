@@ -128,8 +128,11 @@ module.exports = function(fastify, opts, next) {
                     reply.send({ GraphData: returnData });
                 }).catch((error) => {
                     release();
-                    console.log("report error");
-                    console.log(error);
+                    reply.send({
+                        statusCode: 500,
+                        error: error,
+                        message: request
+                    });
                 });
 
             }

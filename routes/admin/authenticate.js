@@ -89,6 +89,8 @@ module.exports = function (fastify, opts, next) {
                                             description: 'user/password authentication unsuccesful!',
                                             tokenError: -1000
                                         };
+
+                                        reply.send(result.rows);
                                     } else {
                                         reply.send(err || result.rows);
                                     }

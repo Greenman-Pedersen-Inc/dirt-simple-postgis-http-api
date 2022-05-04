@@ -32,6 +32,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/static_mvt/:table/:z/:x/:y',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             const filePath = path.join(
                 __dirname,

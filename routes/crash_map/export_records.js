@@ -12,7 +12,9 @@ const { transcribeKeysArray } = require('../../helper_functions/code_translation
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 // basePath to store CSV
-const basePath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/output/';
+// const basePath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/output/';
+const basePath = `${__dirname}\\`;
+
 // *---------------*
 // route query
 // *---------------*
@@ -27,7 +29,11 @@ const sql = (queryArgs) => {
         SELECT * FROM public.ard_accidents_geom_partition 
         ${fromClause ? ` ${fromClause}` : ''}
         WHERE ${whereClause ? `${whereClause}` : ''}
-        ${queryArgs.boundingBoxMinX ? ` AND geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)` : ''} 
+        ${
+            queryArgs.boundingBoxMinX
+                ? ` AND geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)`
+                : ''
+        } 
         LIMIT 50000;
     `;
 

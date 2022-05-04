@@ -15,27 +15,29 @@ const sql = (params, query) => {
       ${query.filter || bounds ? 'WHERE' : ''}
         ${query.filter ? `${query.filter}` : ''}
         ${query.filter && bounds ? 'AND' : ''}
-        ${bounds && bounds.length === 4 ?
-            `${query.geom_column} &&
+        ${
+            bounds && bounds.length === 4
+                ? `${query.geom_column} &&
           ST_Transform(
             ST_MakeEnvelope(${bounds.join()}, 4326),
             srid
           )
           `
-            : ''
+                : ''
         }
-        ${bounds && bounds.length === 3 ?
-            `${query.geom_column} &&
+        ${
+            bounds && bounds.length === 3
+                ? `${query.geom_column} &&
           ST_Transform(
             ST_TileEnvelope(${bounds.join()}),
             srid
           )
           `
-            : ''
+                : ''
         }
     ) as subq
-  `
-}
+  `;
+};
 
 // route schema
 const schema = {
@@ -56,7 +58,8 @@ const schema = {
         },
         columns: {
             type: 'string',
-            description: 'Columns to return as GeoJSON properites. The default is no columns. <br/><em>Note: the geometry column should not be listed here, and columns must be explicitly named.</em>'
+            description:
+                'Columns to return as GeoJSON properites. The default is no columns. <br/><em>Note: the geometry column should not be listed here, and columns must be explicitly named.</em>'
         },
         filter: {
             type: 'string',
@@ -65,7 +68,8 @@ const schema = {
         bounds: {
             type: 'string',
             pattern: '^-?[0-9]{0,20}.?[0-9]{1,20}?(,-?[0-9]{0,20}.?[0-9]{1,20}?){2,3}$',
-            description: 'Optionally limit output to features that intersect bounding box. Can be expressed as a bounding box (sw.lng, sw.lat, ne.lng, ne.lat) or a Z/X/Y tile (0,0,0).'
+            description:
+                'Optionally limit output to features that intersect bounding box. Can be expressed as a bounding box (sw.lng, sw.lat, ne.lng, ne.lat) or a Z/X/Y tile (0,0,0).'
         },
         precision: {
             type: 'integer',
@@ -73,7 +77,7 @@ const schema = {
             default: 9
         }
     }
-}
+};
 
 // create route
 module.exports = function (fastify, opts, next) {
@@ -81,38 +85,37 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/geojson_join_year/:table',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                })
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
-                client.query(
-                    sql(request.params, request.query),
-                    function onResult(err, result) {
-                        release()
-                        if (err) {
-                            reply.send(err)
-                        } else {
-                            if (!result.rows[0].geojson) {
-                                reply.code(204)
-                            }
-                            const json = {
-                                type: 'FeatureCollection',
-                                features: result.rows.map(el => JSON.parse(el.geojson))
-                            }
-                            reply.send(json)
+                client.query(sql(request.params, request.query), function onResult(err, result) {
+                    release();
+                    if (err) {
+                        reply.send(err);
+                    } else {
+                        if (!result.rows[0].geojson) {
+                            reply.code(204);
                         }
+                        const json = {
+                            type: 'FeatureCollection',
+                            features: result.rows.map((el) => JSON.parse(el.geojson))
+                        };
+                        reply.send(json);
                     }
-                )
+                });
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

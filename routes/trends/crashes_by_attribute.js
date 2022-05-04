@@ -55,43 +55,45 @@ const schema = {
             default: 'cellphones'
         }
     }
-}
+};
 
 // *---------------*
 // create route
 // *---------------*
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/trends/crashes-by-attribute',
         schema: schema,
-        handler: function(request, reply) {
-            fastify.pg.connect(onConnect)
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start year'
                     });
                 } else if (queryArgs.endYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start year'
                     });
                 } else if (queryArgs.attribute == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need attribute"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need attribute'
                     });
                 }
 
@@ -135,10 +137,17 @@ module.exports = function(fastify, opts, next) {
                     });
                 });
 
+                        reply.send({ GraphData: returnData });
+                    })
+                    .catch((error) => {
+                        release();
+                        console.log('report error');
+                        console.log(error);
+                    });
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

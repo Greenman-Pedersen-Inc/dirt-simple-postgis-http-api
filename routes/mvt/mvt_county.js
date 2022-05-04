@@ -92,7 +92,6 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
@@ -158,7 +157,7 @@ module.exports = function (fastify, opts, next) {
                                         });
 
                                         // here
-                                        fastify.logRequest()
+                                        fastify.logRequest();
                                     }
                                 }
                             });

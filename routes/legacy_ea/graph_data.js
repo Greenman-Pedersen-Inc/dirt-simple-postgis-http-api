@@ -28,7 +28,7 @@ const schema = {
             type: 'string',
             description: 'state, mpo, county, municipality',
             default: 'state'
-                //default: 'municipality'
+            //default: 'municipality'
         },
         jurisdictionValue: {
             type: 'string',
@@ -38,37 +38,39 @@ const schema = {
             //default: '1330'
         }
     }
-}
+};
 
 // *---------------*
 // create route
 // *---------------*
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/legacy-ea/graph-data',
         schema: schema,
-        handler: function(request, reply) {
-            fastify.pg.connect(onConnect)
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start year'
                     });
                 } else if (queryArgs.endYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need end year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need end year'
                     });
                 }
 
@@ -105,44 +107,48 @@ module.exports = function(fastify, opts, next) {
                 });
                 promises.push(promise);
 
-                Promise.all(promises).then((reportDataArray) => {
-                    const hmvmtsValues = reportDataArray[reportDataArray.length - 1].rows;
-                    //console.log(hmvmtsValues);
-                    for (let i = 0; i < reportDataArray.length - 1; i++) {
-                        var data = reportDataArray[i].rows;
-                        data = eaHelper.cleanData(data, queryArgs.startYear, queryArgs.endYear); // fill in years that have no data
+                Promise.all(promises)
+                    .then((reportDataArray) => {
+                        release();
+                        const hmvmtsValues = reportDataArray[reportDataArray.length - 1].rows;
+                        //console.log(hmvmtsValues);
+                        for (let i = 0; i < reportDataArray.length - 1; i++) {
+                            var data = reportDataArray[i].rows;
+                            data = eaHelper.cleanData(data, queryArgs.startYear, queryArgs.endYear); // fill in years that have no data
 
-                        var category = Object.keys(reportQueries)[i];
-                        returnData[category] = [];
+                            var category = Object.keys(reportQueries)[i];
+                            returnData[category] = [];
 
-                        data.forEach((row, rowIndex) => {
-                            if (row['year'] >= queryArgs.startYear && row['year'] <= queryArgs.endYear) {
-                                var rowObj = {};
-                                rowObj['Year'] = parseInt(row.year);
-                                rowObj['Raw'] = { 'Incapacitated': parseInt(row['total_incapacitated']), 'Killed': parseInt(row['total_killed']) }
-                                rowObj['Average'] = eaHelper.calculateAverageData(data, rowIndex);
-                                const hmvmtValue = hmvmtsValues.find(e => e.year === row['year']);
-                                rowObj['HMVMT'] = eaHelper.calculateHmvmtData(rowObj['Average'], hmvmtValue['hmvmts']);
-                                returnData[category].push(rowObj);
-                            }
-                        });
-                    }
-                    release();
-                    reply.send({ GraphData: returnData });
-                }).catch((error) => {
-                    release();
+                            data.forEach((row, rowIndex) => {
+                                if (row['year'] >= queryArgs.startYear && row['year'] <= queryArgs.endYear) {
+                                    var rowObj = {};
+                                    rowObj['Year'] = parseInt(row.year);
+                                    rowObj['Raw'] = {
+                                        "Incapacitated": parseInt(row['total_incapacitated']),
+                                        "Killed": parseInt(row['total_killed'])
+                                    };
+                                    rowObj['Average'] = eaHelper.calculateAverageData(data, rowIndex);
+                                    const hmvmtValue = hmvmtsValues.find((e) => e.year === row['year']);
+                                    rowObj['HMVMT'] = eaHelper.calculateHmvmtData(
+                                        rowObj['Average'],
+                                        hmvmtValue['hmvmts']
+                                    );
+                                    returnData[category].push(rowObj);
+                                }
+                            });
+                        }
 
-                    reply.send({
-                        statusCode: 500,
-                        error: error,
-                        message: request
+                        reply.send({ GraphData: returnData });
+                    })
+                    .catch((error) => {
+                        release();
+                        console.log('report error');
+                        console.log(error);
                     });
-                });
-
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

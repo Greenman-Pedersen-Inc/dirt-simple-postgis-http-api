@@ -46,7 +46,7 @@ const sql = (queryArgs) => {
     ) data
 
     WHERE speed_range IS NOT NULL AND fc IS NOT NULL;`;
-    console.log(sql);
+    // console.log(sql);
     return sql;
 };
 

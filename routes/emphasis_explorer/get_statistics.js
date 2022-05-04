@@ -1,5 +1,5 @@
 // get_statistics: gets stats based on category and subcategory
-const {makeWhereClause, getTableQuery, calculateRollingAverage} = require('../../helper_functions/emphasis_explorer_helper');
+const { makeWhereClause, getTableQuery, calculateRollingAverage } = require('../../helper_functions/emphasis_explorer_helper');
 
 // *---------------*
 // route query
@@ -9,8 +9,8 @@ const getQueries = (queryArgs) => {
 
     const clauses = makeWhereClause(filterJson);
     const clausesRollingAvg = makeWhereClause(filterJson, true);
-    const queries = getTableQuery(filterJson.category, 
-        filterJson.hasOwnProperty('subcategory') ? filterJson['subcategory'] : null, 
+    const queries = getTableQuery(filterJson.category,
+        filterJson.hasOwnProperty('subcategory') ? filterJson['subcategory'] : null,
         clauses.whereClauses.join(' AND '), clausesRollingAvg.whereClauses.join(' AND '));
 
     return {
@@ -144,38 +144,38 @@ module.exports = function (fastify, opts, next) {
                     }
 
                     await Promise.all(promises)
-                    .then((returnData) => {
-                        release();
+                        .then((returnData) => {
+                            release();
 
-                        for (let i = 0; i < returnData.length; i++) {
-                            let table = Object.keys(queriesObject.queries)[i];
-                            // console.log(table);
-                            let data = returnData[i].rows;
-                            
-                            //crashData[table] = data;
-                            if (data && data.length > 0) {
-                                if (table && table === 'annual_bodies_rolling_average') {
-                                    const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
-                                    crashData[table] = rollingAvgData;
+                            for (let i = 0; i < returnData.length; i++) {
+                                let table = Object.keys(queriesObject.queries)[i];
+                                // console.log(table);
+                                let data = returnData[i].rows;
+
+                                //crashData[table] = data;
+                                if (data && data.length > 0) {
+                                    if (table && table === 'annual_bodies_rolling_average') {
+                                        const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
+                                        crashData[table] = rollingAvgData;
+                                    }
+                                    else {
+                                        crashData[table] = data;
+                                    }
                                 }
-                                else {
-                                    crashData[table] = data;
-                                }
+                                console.log({ [filterJson.category]: crashData })
+                                reply.send({ [filterJson.category]: crashData });
                             }
-                        }
-                        console.log({[filterJson.category]: crashData})
-                        reply.send({[filterJson.category]: crashData});
-                    })
-                    .catch((error) => {
-                        release();
-                        reply.send({
-                            statusCode: 500,
-                            error: error,
-                            message: 'issue with crash id queries'
-                        });
-                    });
-
-                } catch (error) {
+                        })
+                        .catch((error) => {
+                            release();
+                            reply.send({
+                                statusCode: 500,
+                                error: error,
+                                message: 'issue with crash id queries'
+                            });
+                        })
+                }
+                catch (error) {
                     release();
                     console.log(error)
                     reply.send({

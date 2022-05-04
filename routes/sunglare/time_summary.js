@@ -5,10 +5,10 @@ const sunglareHelper = require('../../helper_functions/sunglare_helper');
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-        var locationClause = sunglareHelper.createLocationClause(queryArgs);
-        var filterClause = sunglareHelper.createFilterClause(queryArgs);
+    var locationClause = sunglareHelper.createLocationClause(queryArgs);
+    var filterClause = sunglareHelper.createFilterClause(queryArgs);
 
-        var sql = `
+    var sql = `
     SELECT 
     SUBSTRING ( acc_time, 1, 2 ) crash_hr,
     COUNT(ard_accidents_sunglare.crashid), 
@@ -22,13 +22,13 @@ const sql = (queryArgs) => {
 
     sunglare.ard_accidents_sunglare
     WHERE year BETWEEN ${queryArgs.startYear} AND ${queryArgs.endYear} 
-    ${locationClause !== "" ? ` AND ${locationClause}` : '' }
-    ${filterClause  !== "" ? ` AND ${filterClause}` : '' }     
+    ${locationClause !== '' ? ` AND ${locationClause}` : ''}
+    ${filterClause !== '' ? ` AND ${filterClause}` : ''}     
     GROUP BY crash_hr
     ORDER BY crash_hr;`;
     //console.log(sql);
     return sql;
-  }
+};
 
 // *---------------*
 // route schema
@@ -60,11 +60,11 @@ const schema = {
         },
         travelDirectionCodes: {
             type: 'string',
-            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.',
+            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.'
         },
         timeOfDayCodes: {
             type: 'string',
-            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.',
+            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.'
         },
         signalizedIntersectionCodes: {
             type: 'string',
@@ -72,18 +72,18 @@ const schema = {
         },
         sri: {
             type: 'string',
-            description: 'SRI code.',
+            description: 'SRI code.'
         },
         countyCode: {
             type: 'string',
-            description: 'County Code.',
+            description: 'County Code.'
         },
         muniCode: {
             type: 'string',
             description: 'Municipality code.'
         }
     }
-}
+};
 
 // *---------------*
 // create route
@@ -93,42 +93,41 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/sunglare/time-summary',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need startyear"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need startyear'
                     });
                 } else if (queryArgs.endYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start year'
                     });
                 }
 
-                client.query(
-                    sql(queryArgs),
-                    function onResult(err, result) {
-                        release()
-                        reply.send(err || {TimeData: result.rows})
-                    }
-                );
+                client.query(sql(queryArgs), function onResult(err, result) {
+                    release();
+                    reply.send(err || { TimeData: result.rows });
+                });
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

@@ -13,9 +13,13 @@ const sql = (queryArgs) => {
     COUNT(crashid) total_crashes
     FROM public.ard_accidents_geom_partition 
 
-    ${queryArgs.sri ? `LEFT JOIN public.ard_accidents_geom_partition 
+    ${
+        queryArgs.sri
+            ? `LEFT JOIN public.ard_accidents_geom_partition 
     ON public.ard_pedestrians_partition.crashid = public.ard_accidents_geom_partition.crashid
-    ` : ''}   
+    `
+            : ''
+    }   
 	WHERE (cyclist_involved > 0 OR ped_involved > 0)
     AND (TO_TIMESTAMP(acc_time, 'HH24MI')::TIME) BETWEEN '00:00'::TIME AND '11:59'::TIME
     AND year BETWEEN ${queryArgs.startYear} AND ${queryArgs.endYear}
@@ -31,15 +35,17 @@ const sql = (queryArgs) => {
     ORDER BY time
     `;
     return sql;
-  }
+};
 
 // *---------------*
 // route schema
 // *---------------*
 const schema = {
-    description: "Gets summation of crashes between 12AM and 11:59AM groupbed by Alcohol Inv/Hit Run and Compl.Pain/Total Crashes.",
+    description:
+        'Gets summation of crashes between 12AM and 11:59AM groupbed by Alcohol Inv/Hit Run and Compl.Pain/Total Crashes.',
     tags: ['ped-dashboard'],
-    summary: "Gets summation of crashes between 12AM and 11:59AM groupbed by Alcohol Inv/Hit Run and Compl.Pain/Total Crashes.",
+    summary:
+        'Gets summation of crashes between 12AM and 11:59AM groupbed by Alcohol Inv/Hit Run and Compl.Pain/Total Crashes.',
     querystring: {
         startYear: {
             type: 'string',
@@ -77,7 +83,7 @@ const schema = {
             example: '7.2'
         }
     }
-}
+};
 
 // *---------------*
 // create route
@@ -87,36 +93,35 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/ped-dashboard/day-time-breakdown',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
                 var queryArgs = request.query;
                 if (queryArgs.userName == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need user name"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need user name'
                     });
                 }
 
-                client.query(
-                    sql(queryArgs),
-                    function onResult(err, result) {
-                        release();
-                        reply.send(err || result.rows)
-                    }
-                )
+                client.query(sql(queryArgs), function onResult(err, result) {
+                    release();
+                    reply.send(err || result.rows);
+                });
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

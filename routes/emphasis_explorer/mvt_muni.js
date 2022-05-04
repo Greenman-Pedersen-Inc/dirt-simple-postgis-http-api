@@ -2,10 +2,7 @@
 // geom_column: wkb_geometry
 // filter: (year >= 2017 AND year <= 2021)  GROUP BY muni_data.mun, muni_data.mun_mu, muni_data.county, muni_data.mun_cty_co, crash_data.wkb_geometry
 const sql = (params, query) => {
-
-
-
-  let queryText = `
+    let queryText = `
    WITH mvtgeom as (
     SELECT 
         ST_AsMVTGeom (
@@ -25,97 +22,95 @@ const sql = (params, query) => {
     -- Optional Filter
   ${query.filter ? ` AND ${query.filter}` : ''}
 )
-SELECT ST_AsMVT(mvtgeom.*, 'ard_accidents_geom_partition', 4096, 'geom' ${query.id_column ? `, '${query.id_column}'` : ''}) AS mvt from mvtgeom;
-`
+SELECT ST_AsMVT(mvtgeom.*, 'ard_accidents_geom_partition', 4096, 'geom' ${
+        query.id_column ? `, '${query.id_column}'` : ''
+    }) AS mvt from mvtgeom;
+`;
 
-console.log(queryText);
+    console.log(queryText);
 
-return queryText;
-}
+    return queryText;
+};
 
 // route schema
 const schema = {
-  description:
-    'Return table as Mapbox Vector Tile (MVT) for Muni level',
-  tags: ['emphasis-explorer'],
-  summary: 'return Muni MVT',
-  params: {
-    table: {
-      type: 'string',
-      description: 'The name of the table or view.'
+    description: 'Return table as Mapbox Vector Tile (MVT) for Muni level',
+    tags: ['emphasis-explorer'],
+    summary: 'return Muni MVT',
+    params: {
+        table: {
+            type: 'string',
+            description: 'The name of the table or view.'
+        },
+        z: {
+            type: 'integer',
+            description: 'Z value of ZXY tile.'
+        },
+        x: {
+            type: 'integer',
+            description: 'X value of ZXY tile.'
+        },
+        y: {
+            type: 'integer',
+            description: 'Y value of ZXY tile.'
+        }
     },
-    z: {
-      type: 'integer',
-      description: 'Z value of ZXY tile.'
-    },
-    x: {
-      type: 'integer',
-      description: 'X value of ZXY tile.'
-    },
-    y: {
-      type: 'integer',
-      description: 'Y value of ZXY tile.'
+    querystring: {
+        geom_column: {
+            type: 'string',
+            description: 'Optional geometry column of the table. The default is geom.',
+            default: 'geom'
+        },
+        columns: {
+            type: 'string',
+            description: 'Optional columns to return with MVT. The default is no columns.'
+        },
+        id_column: {
+            type: 'string',
+            description:
+                'Optional id column name to be used with Mapbox GL Feature State. This column must be an integer a string cast as an integer.'
+        },
+        filter: {
+            type: 'string',
+            description: 'Optional filter parameters for a SQL WHERE statement.'
+        }
     }
-  },
-  querystring: {
-    geom_column: {
-      type: 'string',
-      description: 'Optional geometry column of the table. The default is geom.',
-      default: 'geom'
-    },
-    columns: {
-      type: 'string',
-      description:
-        'Optional columns to return with MVT. The default is no columns.'
-    },
-    id_column: {
-      type: 'string',
-      description:
-        'Optional id column name to be used with Mapbox GL Feature State. This column must be an integer a string cast as an integer.'
-    },
-    filter: {
-      type: 'string',
-      description: 'Optional filter parameters for a SQL WHERE statement.'
-    }
-  }
-}
+};
 
 // create route
-module.exports = function(fastify, opts, next) {
-  fastify.route({
-    method: 'GET',
-    url: '/emphasis-explorer/mvt-muni/:table/:z/:x/:y',
-    schema: schema,
-    handler: function(request, reply) {
-      fastify.pg.connect(onConnect)
+module.exports = function (fastify, opts, next) {
+    fastify.route({
+        method: 'GET',
+        url: '/emphasis-explorer/mvt-muni/:table/:z/:x/:y',
+        schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect);
 
-      function onConnect(err, client, release) {
-        if (err)
-          return reply.send({
-            statusCode: 500,
-            error: 'Internal Server Error',
-            message: 'unable to connect to database server'
-          })
+            function onConnect(err, client, release) {
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
-        client.query(sql(request.params, request.query), function onResult(
-          err,
-          result
-        ) {
-          release()
-          if (err) {
-            reply.send(err)
-          } else {
-            const mvt = result.rows[0].mvt
-            if (mvt.length === 0) {
-              reply.code(204)
+                client.query(sql(request.params, request.query), function onResult(err, result) {
+                    release();
+                    if (err) {
+                        reply.send(err);
+                    } else {
+                        const mvt = result.rows[0].mvt;
+                        if (mvt.length === 0) {
+                            reply.code(204);
+                        }
+                        reply.header('Content-Type', 'application/x-protobuf').send(mvt);
+                    }
+                });
             }
-            reply.header('Content-Type', 'application/x-protobuf').send(mvt)
-          }
-        })
-      }
-    }
-  })
-  next()
-}
+        }
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

@@ -14,9 +14,9 @@ const sql = (queryArgs) => {
         SELECT calc_sri, 
         ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,
         CONCAT(CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(calc_milepost * 10) / 10, 1) + .09) AS mp_range,
-        SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal,
-        SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated,
-        SUBSTRING ( acc_time, 1, 2 ) crash_hr
+        SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END)::INT fatal,
+        SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END)::INT incapacitated,
+        SUBSTRING ( acc_time, 1, 2 )::INT crash_hr
         
         FROM 
         sunglare.ard_accidents_sunglare

@@ -1,9 +1,5 @@
 // get_statistics: gets stats based on category and subcategory
-const {
-    makeWhereClause,
-    getTableQuery,
-    calculateRollingAverage
-} = require('../../helper_functions/emphasis_explorer_helper');
+const { makeWhereClause, getTableQuery, calculateRollingAverage } = require('../../helper_functions/emphasis_explorer_helper');
 
 // *---------------*
 // route query
@@ -13,12 +9,9 @@ const getQueries = (queryArgs) => {
 
     const clauses = makeWhereClause(filterJson);
     const clausesRollingAvg = makeWhereClause(filterJson, true);
-    const queries = getTableQuery(
-        filterJson.category,
+    const queries = getTableQuery(filterJson.category,
         filterJson.hasOwnProperty('subcategory') ? filterJson['subcategory'] : null,
-        clauses.whereClauses.join(' AND '),
-        clausesRollingAvg.whereClauses.join(' AND ')
-    );
+        clauses.whereClauses.join(' AND '), clausesRollingAvg.whereClauses.join(' AND '));
 
     return {
         values: clauses.values,
@@ -166,13 +159,14 @@ module.exports = function (fastify, opts, next) {
                                     if (table && table === 'annual_bodies_rolling_average') {
                                         const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
                                         crashData[table] = rollingAvgData;
-                                    } else {
+                                    }
+                                    else {
                                         crashData[table] = data;
                                     }
                                 }
+                                console.log({ [filterJson.category]: crashData })
+                                reply.send({ [filterJson.category]: crashData });
                             }
-                            console.log({ [filterJson.category]: crashData });
-                            reply.send({ [filterJson.category]: crashData });
                         })
                         .catch((error) => {
                             release();
@@ -181,8 +175,9 @@ module.exports = function (fastify, opts, next) {
                                 error: error,
                                 message: 'issue with crash id queries'
                             });
-                        });
-                } catch (error) {
+                        })
+                }
+                catch (error) {
                     release();
                     console.log(error);
                     reply.send({

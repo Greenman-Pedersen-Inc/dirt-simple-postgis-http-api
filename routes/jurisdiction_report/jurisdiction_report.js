@@ -36,6 +36,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/jurisidiction/report',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
 

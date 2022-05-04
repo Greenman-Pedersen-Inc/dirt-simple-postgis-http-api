@@ -1,5 +1,9 @@
 // get_statistics: gets stats based on category and subcategory
-const {makeWhereClause, getTableQuery, calculateRollingAverage} = require('../../helper_functions/emphasis_explorer_helper');
+const {
+    makeWhereClause,
+    getTableQuery,
+    calculateRollingAverage
+} = require('../../helper_functions/emphasis_explorer_helper');
 
 // *---------------*
 // route query
@@ -9,16 +13,19 @@ const getQueries = (queryArgs) => {
 
     const clauses = makeWhereClause(filterJson);
     const clausesRollingAvg = makeWhereClause(filterJson, true);
-    const queries = getTableQuery(filterJson.category, 
-        filterJson.hasOwnProperty('subcategory') ? filterJson['subcategory'] : null, 
-        clauses.whereClauses.join(' AND '), clausesRollingAvg.whereClauses.join(' AND '));
+    const queries = getTableQuery(
+        filterJson.category,
+        filterJson.hasOwnProperty('subcategory') ? filterJson['subcategory'] : null,
+        clauses.whereClauses.join(' AND '),
+        clausesRollingAvg.whereClauses.join(' AND ')
+    );
 
     return {
         values: clauses.values,
         values_rolling_avg: clausesRollingAvg.values,
         queries: queries
-    }
-}
+    };
+};
 
 // *---------------*
 // route schema
@@ -41,7 +48,8 @@ const schema = {
         subcategory: {
             type: 'string',
             description: 'Emphasis Area subcategory',
-            example: 'aggressive, drowsy_distracted, impaired, unlicensed, unbelted, heavy_vehicle, mature, younger, motorcyclist, work_zone'
+            example:
+                'aggressive, drowsy_distracted, impaired, unlicensed, unbelted, heavy_vehicle, mature, younger, motorcyclist, work_zone'
         },
         startYear: {
             type: 'string',
@@ -55,7 +63,7 @@ const schema = {
         },
         sri: {
             type: 'string',
-            description: 'SRI code.',
+            description: 'SRI code.'
         },
         mun_cty_co: {
             type: 'string',
@@ -68,7 +76,7 @@ const schema = {
             example: '13'
         }
     }
-}
+};
 
 // *---------------*
 // create route
@@ -78,34 +86,36 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/emphasis-explorer/get-statistics',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            fastify.pg.connect(onConnect);
 
             async function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start year'
                     });
                 } else if (queryArgs.endYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need end year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need end year'
                     });
                 } else if (queryArgs.category == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need category"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need category'
                     });
                 }
 
@@ -114,11 +124,11 @@ module.exports = function (fastify, opts, next) {
 
                 try {
                     let crashData = {};
-                    let promises = [];  // store all promises to be queried on
+                    let promises = []; // store all promises to be queried on
                     if (queriesObject.queries === undefined) {
                         reply.send({
                             statusCode: 500,
-                            error: "Invalid category or subcategory",
+                            error: 'Invalid category or subcategory',
                             message: 'Please check category or subcategory input and try again.'
                         });
                     }
@@ -130,8 +140,7 @@ module.exports = function (fastify, opts, next) {
                                 if (category === 'annual_bodies_rolling_average') {
                                     const res = client.query(queryString, queriesObject.values_rolling_avg);
                                     return resolve(res);
-                                }
-                                else {
+                                } else {
                                     const res = client.query(queryString, queriesObject.values);
                                     return resolve(res);
                                 }
@@ -144,40 +153,38 @@ module.exports = function (fastify, opts, next) {
                     }
 
                     await Promise.all(promises)
-                    .then((returnData) => {
-                        release();
+                        .then((returnData) => {
+                            release();
 
-                        for (let i = 0; i < returnData.length; i++) {
-                            let table = Object.keys(queriesObject.queries)[i];
-                            // console.log(table);
-                            let data = returnData[i].rows;
-                            
-                            //crashData[table] = data;
-                            if (data && data.length > 0) {
-                                if (table && table === 'annual_bodies_rolling_average') {
-                                    const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
-                                    crashData[table] = rollingAvgData;
-                                }
-                                else {
-                                    crashData[table] = data;
+                            for (let i = 0; i < returnData.length; i++) {
+                                let table = Object.keys(queriesObject.queries)[i];
+                                // console.log(table);
+                                let data = returnData[i].rows;
+
+                                //crashData[table] = data;
+                                if (data && data.length > 0) {
+                                    if (table && table === 'annual_bodies_rolling_average') {
+                                        const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
+                                        crashData[table] = rollingAvgData;
+                                    } else {
+                                        crashData[table] = data;
+                                    }
                                 }
                             }
-                        }
-                        console.log({[filterJson.category]: crashData})
-                        reply.send({[filterJson.category]: crashData});
-                    })
-                    .catch((error) => {
-                        release();
-                        reply.send({
-                            statusCode: 500,
-                            error: error,
-                            message: 'issue with crash id queries'
+                            console.log({ [filterJson.category]: crashData });
+                            reply.send({ [filterJson.category]: crashData });
+                        })
+                        .catch((error) => {
+                            release();
+                            reply.send({
+                                statusCode: 500,
+                                error: error,
+                                message: 'issue with crash id queries'
+                            });
                         });
-                    });
-
                 } catch (error) {
                     release();
-                    console.log(error)
+                    console.log(error);
                     reply.send({
                         statusCode: 500,
                         error: error,
@@ -194,8 +201,8 @@ module.exports = function (fastify, opts, next) {
                 // );
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

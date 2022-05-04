@@ -4,14 +4,44 @@
 // route query
 // *---------------*
 const getQuery = (queryArgs) => {
-    const params = ['user_name', 'x_min', 'x_max', 'y_min', 'y_max', 'filters', 'filters_description', 'filters_title', 'results_text', 'min_mp', 'max_mp', 'zoom_level', 'rotation', 'pitch', 'quick_filter_menu'];
+    const params = [
+        'user_name',
+        'x_min',
+        'x_max',
+        'y_min',
+        'y_max',
+        'filters',
+        'filters_description',
+        'filters_title',
+        'results_text',
+        'min_mp',
+        'max_mp',
+        'zoom_level',
+        'rotation',
+        'pitch',
+        'quick_filter_menu'
+    ];
     var valuesParams = [];
     for (let index = 0; index < params.length; index++) {
         valuesParams.push('$' + (index + 1));
     }
-    const values = [ queryArgs.userName, queryArgs.boundingBoxMinX, queryArgs.boundingBoxMaxX, queryArgs.boundingBoxMinY, queryArgs.boundingBoxMaxY, queryArgs.filters, 
-    queryArgs.filtersDescription, decodeURI(queryArgs.filtersTitle), queryArgs.resultsText, queryArgs.minMp, queryArgs.maxMp, 
-    queryArgs.zoomLevel, queryArgs.rotation, queryArgs.pitch, queryArgs.isQuickFilter ];
+    const values = [
+        queryArgs.userName,
+        queryArgs.boundingBoxMinX,
+        queryArgs.boundingBoxMaxX,
+        queryArgs.boundingBoxMinY,
+        queryArgs.boundingBoxMaxY,
+        queryArgs.filters,
+        queryArgs.filtersDescription,
+        decodeURI(queryArgs.filtersTitle),
+        queryArgs.resultsText,
+        queryArgs.minMp,
+        queryArgs.maxMp,
+        queryArgs.zoomLevel,
+        queryArgs.rotation,
+        queryArgs.pitch,
+        queryArgs.isQuickFilter
+    ];
 
     var sql = `
     INSERT INTO usermanagement.user_queries_new 
@@ -26,7 +56,7 @@ const getQuery = (queryArgs) => {
         query: sql,
         values: values
     };
-  }
+};
 
 // *---------------*
 // route schema
@@ -58,7 +88,7 @@ const schema = {
         },
         pitch: {
             type: 'string',
-            description: 'Map pitch when user saves query.',
+            description: 'Map pitch when user saves query.'
         },
         zoomLevel: {
             type: 'string',
@@ -78,23 +108,23 @@ const schema = {
         },
         boundingBoxMinX: {
             type: 'string',
-            description: 'top left corner x position',
+            description: 'top left corner x position'
         },
         boundingBoxMinY: {
             type: 'string',
-            description: 'bottom right y value',
+            description: 'bottom right y value'
         },
         boundingBoxMaxX: {
             type: 'string',
-            description: 'bottom right x value',
+            description: 'bottom right x value'
         },
         boundingBoxMaxY: {
             type: 'string',
-            description: 'top left y value',
+            description: 'top left y value'
         },
         isQuickFilter: {
             type: 'boolean',
-            description: 'is the query from the quick filter?',
+            description: 'is the query from the quick filter?'
         }
     }
 };
@@ -127,22 +157,18 @@ module.exports = function (fastify, opts, next) {
                     });
                 } else {
                     try {
-
                         const queryParams = getQuery(queryArgs);
-                        client.query(
-                            queryParams.query, queryParams.values,
-                            function onResult(err, result) {
-                                release();
-                                var result = {};
-                                if (err) result = {success: false, error: err}
-                                else result = {success: true}
-                                reply.send(err || result)
+                        client.query(queryParams.query, queryParams.values, function onResult(err, result) {
+                            release();
+                            var result = {};
+                            if (err) result = { success: false, error: err };
+                            else result = { success: true };
+                            reply.send(err || result);
 
+                            // client.query(sql(queryArgs), function onResult(err, result) {
+                            //     release();
 
-                        // client.query(sql(queryArgs), function onResult(err, result) {
-                        //     release();
-
-                        //     reply.send(err || result.rows);
+                            //     reply.send(err || result.rows);
                         });
                     } catch (error) {
                         release();

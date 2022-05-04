@@ -37,15 +37,15 @@ const schema = {
         crashAttributes: {
             type: 'string',
             description: 'Comma seperated list of Crash Attribute codes based on the NJTR-1 form.',
-            default: "surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code"
+            default: 'surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code'
         },
         travelDirectionCodes: {
             type: 'string',
-            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.',
+            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.'
         },
         timeOfDayCodes: {
             type: 'string',
-            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.',
+            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.'
         },
         signalizedIntersectionCodes: {
             type: 'string',
@@ -58,25 +58,26 @@ const schema = {
         },
         countyCode: {
             type: 'string',
-            description: 'County Code.',
+            description: 'County Code.'
         },
         muniCode: {
             type: 'string',
             description: 'Municipality code.'
         }
     }
-}
+};
 
 // *---------------*
 // create route
 // *---------------*
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/sunglare/report',
         schema: schema,
-        handler: function(request, reply) {
-            fastify.pg.connect(onConnect)
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
                 if (err) {
@@ -87,15 +88,15 @@ module.exports = function(fastify, opts, next) {
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start or end year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start or end year'
                     });
                 } else if (queryArgs.endYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start or end year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start or end year'
                     });
                 } else {
                     var reportQueries = reportHelper.getReportQueries(queryArgs);
@@ -139,27 +140,34 @@ module.exports = function(fastify, opts, next) {
                             } else {
                                 var data = reportDataArray[i].rows;
                                 var category = Object.keys(reportQueries)[i];
-                                reportQueries[category]["data"] = data;
+                                reportQueries[category]['data'] = data;
                             }
                         }
 
                         // create report pdf
-                        const fileInfo = reportHelper.makePredictiveReport(queryArgs, reportQueries, "Top SRI & Mileposts by Sun Glare", "sunglare_report");
-                        fileInfo.then((createdFile) => {
-                            //console.log(createdFile)
-                            reply.send({ url: createdFile.fileName });
-                        }).catch((error) => {
-                            //console.log("report error");
-                            //console.log(error);
-                            reply.send(error);
-                        })
-                        release()
+                        const fileInfo = reportHelper.makePredictiveReport(
+                            queryArgs,
+                            reportQueries,
+                            'Top SRI & Mileposts by Sun Glare',
+                            'sunglare_report'
+                        );
+                        fileInfo
+                            .then((createdFile) => {
+                                //console.log(createdFile)
+                                reply.send({ url: createdFile.fileName });
+                            })
+                            .catch((error) => {
+                                //console.log("report error");
+                                //console.log(error);
+                                reply.send(error);
+                            });
+                        release();
                     });
                 }
             }
         }
-    })
+    });
     next();
-}
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

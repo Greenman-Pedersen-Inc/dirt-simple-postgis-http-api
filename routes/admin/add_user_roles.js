@@ -1,6 +1,5 @@
 // add_user_roles: adds rows in the admin.user_roles table. Each row corresponds to one role for a user.
 
-
 // route register
 const getQuery = (userName, roleId) => {
     const sql = `INSERT INTO admin.user_roles(user_name, role_id, role_name)
@@ -9,11 +8,11 @@ const getQuery = (userName, roleId) => {
     return {
         query: sql,
         values: [userName, roleId]
-    }
-}
+    };
+};
 
 // create route
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'POST',
         url: '/add-user-roles',
@@ -25,22 +24,24 @@ module.exports = function(fastify, opts, next) {
                 type: 'object',
                 properties: {
                     username: { type: 'string' },
-                    roles: {type: 'string'}     // string of comma seperated values: "1,2,4"
+                    roles: { type: 'string' } // string of comma seperated values: "1,2,4"
                 },
                 required: ['username', 'roles']
             }
         },
-        handler: function(request, reply) {
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server: " + err
-                })
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server: ' + err
+                    });
 
                 var promises = [];
                 const roleList = request.body.roles.split(',');
-                roleList.forEach(role => {
+                roleList.forEach((role) => {
                     const queryParameters = getQuery(request.body.username, role);
                     const promise = new Promise((resolve, reject) => {
                         try {
@@ -53,18 +54,20 @@ module.exports = function(fastify, opts, next) {
                     promises.push(promise);
                 });
 
-                Promise.all(promises).then((returnData) => {
-                    release();
-                    reply.send( {success: true} );
-                }).catch(error => {
-                    release();
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": err,
-                        "message": 'issue with adding roles for user' + request.body.username,
-                        success: false
+                Promise.all(promises)
+                    .then((returnData) => {
+                        release();
+                        reply.send({ success: true });
+                    })
+                    .catch((error) => {
+                        release();
+                        return reply.send({
+                            statusCode: 500,
+                            error: err,
+                            message: 'issue with adding roles for user' + request.body.username,
+                            success: false
+                        });
                     });
-                });
             }
 
             fastify.pg.connect(onConnect);
@@ -72,6 +75,6 @@ module.exports = function(fastify, opts, next) {
     });
 
     next();
-}
+};
 
-module.exports.autoPrefix = '/admin'
+module.exports.autoPrefix = '/admin';

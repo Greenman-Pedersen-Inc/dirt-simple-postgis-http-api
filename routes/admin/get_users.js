@@ -1,4 +1,4 @@
-// get_users: gets a list of all Safety Voyager users 
+// get_users: gets a list of all Safety Voyager users
 
 // route register
 const getQuery = () => {
@@ -23,44 +23,44 @@ const getQuery = () => {
     to_char(email_date, 'YYYY-MM-DD') email_date
 	FROM admin.user_info;`;
     return sql;
-}
+};
 
 const schema = {
-    description: "gets a list of all Safety Voyager users .",
+    description: 'gets a list of all Safety Voyager users .',
     tags: ['admin'],
-    summary: "gets a list of all Safety Voyager users ."
-}
+    summary: 'gets a list of all Safety Voyager users .'
+};
 
 // create route
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
         url: '/get-users',
         schema: schema,
-        handler: function(request, reply) {
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server: " + err
-                })
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server: ' + err
+                    });
 
                 const query = getQuery();
-                
-                client.query(
-                    query,
-                    function onResult(err, result) {
-                        release();
 
-                        if (err) return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "unable to perform database operation: " + err,
-                        })
+                client.query(query, function onResult(err, result) {
+                    release();
 
-                        reply.send(result.rows);
-                    }
-                )
+                    if (err)
+                        return reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'unable to perform database operation: ' + err
+                        });
+
+                    reply.send(result.rows);
+                });
             }
 
             fastify.pg.connect(onConnect);
@@ -68,6 +68,6 @@ module.exports = function(fastify, opts, next) {
     });
 
     next();
-}
+};
 
-module.exports.autoPrefix = '/admin'
+module.exports.autoPrefix = '/admin';

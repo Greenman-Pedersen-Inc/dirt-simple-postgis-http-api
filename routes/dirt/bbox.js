@@ -1,5 +1,3 @@
-
-
 // route query
 /**
  * generates the sql statment to make calculate the bounding box
@@ -9,7 +7,7 @@
  * @return {*} parsed query for submission to server
  */
 const sql = (params, query) => {
-  return `
+    return `
   SELECT 
     ST_Extent(ST_Transform(${query.geom_column}, ${query.srid})) as bbox
 
@@ -17,66 +15,65 @@ const sql = (params, query) => {
     ${params.table}
 
   -- Optional where filter
-  ${query.filter ? `WHERE ${query.filter}` : '' }
-  `
-}
+  ${query.filter ? `WHERE ${query.filter}` : ''}
+  `;
+};
 
 // route schema
 const schema = {
-  description: 'Gets the bounding box of a feature(s).',
-  tags: ['api'],
-  summary: 'minimum bounding rectangle',
-  params: {
-    table: {
-      type: 'string',
-      description: 'The name of the table or view to query.'
-    }
-  },
-  querystring: {
-    geom_column: {
-      type: 'string',
-      description: 'The geometry column of the table.',
-      default: 'geom'
+    description: 'Gets the bounding box of a feature(s).',
+    tags: ['api'],
+    summary: 'minimum bounding rectangle',
+    params: {
+        table: {
+            type: 'string',
+            description: 'The name of the table or view to query.'
+        }
     },
-    srid: {
-      type: 'integer',
-      description: 'The SRID for the returned centroid. The default is <em>4326</em> WGS84 Lat/Lng.',
-      default: 4326
-    },
-    filter: {
-      type: 'string',
-      description: 'Optional filter parameters for a SQL WHERE statement.'
+    querystring: {
+        geom_column: {
+            type: 'string',
+            description: 'The geometry column of the table.',
+            default: 'geom'
+        },
+        srid: {
+            type: 'integer',
+            description: 'The SRID for the returned centroid. The default is <em>4326</em> WGS84 Lat/Lng.',
+            default: 4326
+        },
+        filter: {
+            type: 'string',
+            description: 'Optional filter parameters for a SQL WHERE statement.'
+        }
     }
-  }
-}
+};
 
 // create route
 module.exports = function (fastify, opts, next) {
-  fastify.route({
-    method: 'GET',
-    url: '/bbox/:table',
-    schema: schema,
-    handler: function (request, reply) {
-      fastify.pg.connect(onConnect)
+    fastify.route({
+        method: 'GET',
+        url: '/bbox/:table',
+        schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect);
 
-      function onConnect(err, client, release) {
-        if (err) return reply.send({
-          "statusCode": 500,
-          "error": "Internal Server Error",
-          "message": "unable to connect to database server"
-        })
+            function onConnect(err, client, release) {
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
-        client.query(
-          sql(request.params, request.query),
-          function onResult(err, result) {
-            release()
-            reply.send(err || result.rows)
-          }
-        )
-      }
-    }
-  })
-  next()
-}
+                client.query(sql(request.params, request.query), function onResult(err, result) {
+                    release();
+                    reply.send(err || result.rows);
+                });
+            }
+        }
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

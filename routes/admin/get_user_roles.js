@@ -7,19 +7,19 @@ const getQuery = (userName) => {
     ON admin.user_roles.role_id = admin.roles.role_id
     WHERE user_name = $1`;
     return sql;
-}
+};
 
 const schema = {
-    description: "gets a list of roles for a specific user.",
+    description: 'gets a list of roles for a specific user.',
     tags: ['admin'],
-    summary: "gets a list of roles for a specific user.",
+    summary: 'gets a list of roles for a specific user.',
     querystring: {
         userName: {
             type: 'string',
             description: 'User email to log into SV'
         }
     }
-}
+};
 
 // create route
 module.exports = function (fastify, opts, next) {
@@ -27,6 +27,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/get-user-roles',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             const queryArgs = request.query;
 
@@ -34,12 +35,11 @@ module.exports = function (fastify, opts, next) {
                 if (err) {
                     release();
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "unable to connect to database server: " + err
-                    })
-                }
-                else if (queryArgs.userName === undefined || queryArgs.userName === '') {
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server: ' + err
+                    });
+                } else if (queryArgs.userName === undefined || queryArgs.userName === '') {
                     release();
                     return reply.send({
                         statusCode: 500,
@@ -50,21 +50,18 @@ module.exports = function (fastify, opts, next) {
 
                 const query = getQuery(queryArgs.userName);
 
-                client.query(
-                    query, [queryArgs.userName],
-                    function onResult(err, result) {
-                        release();
+                client.query(query, [queryArgs.userName], function onResult(err, result) {
+                    release();
 
-                        if (err) {
-                            return reply.send({
-                                "statusCode": 500,
-                                "error": "Internal Server Error",
-                                "message": "unable to perform database operation: " + err,
-                            })
-                        }
-                        reply.send(result.rows);
+                    if (err) {
+                        return reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'unable to perform database operation: ' + err
+                        });
                     }
-                );
+                    reply.send(result.rows);
+                });
             }
 
             fastify.pg.connect(onConnect);
@@ -72,6 +69,6 @@ module.exports = function (fastify, opts, next) {
     });
 
     next();
-}
+};
 
-module.exports.autoPrefix = '/admin'
+module.exports.autoPrefix = '/admin';

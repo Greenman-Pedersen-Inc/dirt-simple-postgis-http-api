@@ -1,8 +1,8 @@
 // route query
 const sql = (params, query) => {
-  const [x, y, srid] = params.point.match(/^((-?\d+\.?\d+)(,-?\d+\.?\d+)(,[0-9]{4}))/)[0].split(',')
+    const [x, y, srid] = params.point.match(/^((-?\d+\.?\d+)(,-?\d+\.?\d+)(,[0-9]{4}))/)[0].split(',');
 
-  return `
+    return `
   SELECT 
     ST_X(
       ST_Transform(
@@ -22,57 +22,56 @@ const sql = (params, query) => {
         ${query.srid}
       )
     ) as y
-  `
-}
+  `;
+};
 
 // route schema
 const schema = {
-  description: 'Transform a point to a different coordinate system.',
-  tags: ['api'],
-  summary: 'transform point to new SRID',
-  params: {
-    point: {
-      type: 'string',
-      pattern: '^((-?\\d+\\.?\\d+)(,-?\\d+\\.?\\d+)(,[0-9]{4}))',
-      description: 'A point expressed as <em>X,Y,SRID</em>. Note for Lng/Lat coordinates, Lng is X and Lat is Y.'
+    description: 'Transform a point to a different coordinate system.',
+    tags: ['api'],
+    summary: 'transform point to new SRID',
+    params: {
+        point: {
+            type: 'string',
+            pattern: '^((-?\\d+\\.?\\d+)(,-?\\d+\\.?\\d+)(,[0-9]{4}))',
+            description: 'A point expressed as <em>X,Y,SRID</em>. Note for Lng/Lat coordinates, Lng is X and Lat is Y.'
+        }
+    },
+    querystring: {
+        srid: {
+            type: 'integer',
+            description: 'The SRID of the coordinate system to return the point in.',
+            default: 4326
+        }
     }
-  },
-  querystring: {
-    srid: {
-      type: 'integer',
-      description: 'The SRID of the coordinate system to return the point in.',
-      default: 4326
-    }
-  }
-}
+};
 
 // create route
 module.exports = function (fastify, opts, next) {
-  fastify.route({
-    method: 'GET',
-    url: '/transform_point/:point',
-    schema: schema,
-    handler: function (request, reply) {
-      fastify.pg.connect(onConnect)
+    fastify.route({
+        method: 'GET',
+        url: '/transform_point/:point',
+        schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect);
 
-      function onConnect(err, client, release) {
-        if (err) return reply.send({
-          "statusCode": 500,
-          "error": "Internal Server Error",
-          "message": "unable to connect to database server"
-        })
+            function onConnect(err, client, release) {
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
-        client.query(
-          sql(request.params, request.query),
-          function onResult(err, result) {
-            release()
-            reply.send(err || result.rows)
-          }
-        )
-      }
-    }
-  })
-  next()
-}
+                client.query(sql(request.params, request.query), function onResult(err, result) {
+                    release();
+                    reply.send(err || result.rows);
+                });
+            }
+        }
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

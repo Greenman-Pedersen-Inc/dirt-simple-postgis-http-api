@@ -5,10 +5,10 @@ const sunglareHelper = require('../../helper_functions/sunglare_helper');
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-        var locationClause = sunglareHelper.createLocationClause(queryArgs);
-        var filterClause = sunglareHelper.createFilterClause(queryArgs);
+    var locationClause = sunglareHelper.createLocationClause(queryArgs);
+    var filterClause = sunglareHelper.createFilterClause(queryArgs);
 
-        var sql = `
+    var sql = `
     SELECT DISTINCT UPPER(public.srilookupname.name) "sri_name", accidents.* FROM
     (
         SELECT calc_sri, 
@@ -20,9 +20,11 @@ const sql = (queryArgs) => {
         
         FROM 
         sunglare.ard_accidents_sunglare
-        WHERE year BETWEEN ${queryArgs.startYear} AND ${queryArgs.endYear}  AND calc_milepost IS NOT NULL AND acc_time IS NOT NULL
-        ${locationClause !== "" ? ` AND ${locationClause}` : '' }
-        ${filterClause  !== "" ? ` AND ${filterClause}` : '' }    
+        WHERE year BETWEEN ${queryArgs.startYear} AND ${
+        queryArgs.endYear
+    }  AND calc_milepost IS NOT NULL AND acc_time IS NOT NULL
+        ${locationClause !== '' ? ` AND ${locationClause}` : ''}
+        ${filterClause !== '' ? ` AND ${filterClause}` : ''}    
         GROUP BY calc_sri, calc_milepost, crash_hr
     ) accidents
     LEFT JOIN public.srilookupname ON public.srilookupname.stndrd_rt_id = accidents.calc_sri
@@ -30,7 +32,7 @@ const sql = (queryArgs) => {
     ORDER BY fatal DESC, incapacitated DESC LIMIT 25;`;
     //console.log(sql);
     return sql;
-  }
+};
 
 // *---------------*
 // route schema
@@ -62,11 +64,11 @@ const schema = {
         },
         travelDirectionCodes: {
             type: 'string',
-            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.',
+            description: 'Comma seperated list of Travel Direction codes based on the NJTR-1 form.'
         },
         timeOfDayCodes: {
             type: 'string',
-            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.',
+            description: 'Comma seperated list of Time of Day codes based on the NJTR-1 form.'
         },
         signalizedIntersectionCodes: {
             type: 'string',
@@ -74,18 +76,18 @@ const schema = {
         },
         sri: {
             type: 'string',
-            description: 'SRI code.',
+            description: 'SRI code.'
         },
         countyCode: {
             type: 'string',
-            description: 'County Code.',
+            description: 'County Code.'
         },
         muniCode: {
             type: 'string',
             description: 'Municipality code.'
         }
     }
-}
+};
 
 // *---------------*
 // create route
@@ -95,42 +97,41 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/sunglare/top-fatal',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need startyear"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need startyear'
                     });
                 } else if (queryArgs.endYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start year'
                     });
                 }
 
-                client.query(
-                    sql(queryArgs),
-                    function onResult(err, result) {
-                        release()
-                        reply.send(err || {FatalSriData: result.rows})
-                    }
-                );
+                client.query(sql(queryArgs), function onResult(err, result) {
+                    release();
+                    reply.send(err || { FatalSriData: result.rows });
+                });
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

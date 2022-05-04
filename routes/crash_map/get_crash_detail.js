@@ -140,7 +140,6 @@ module.exports = function (fastify, opts, next) {
 
                     Promise.all(promises)
                         .then((returnData) => {
-
                             for (let i = 0; i < returnData.length; i++) {
                                 let table = Object.keys(queries)[i];
                                 let data = returnData[i].rows;

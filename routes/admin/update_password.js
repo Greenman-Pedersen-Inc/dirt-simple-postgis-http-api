@@ -3,12 +3,12 @@
 const crypto = require('crypto');
 
 const usersql = (requestBody) => {
-    var securePassword = saltHashPassword(requestBody.pass)
+    var securePassword = saltHashPassword(requestBody.pass);
 
     const sql = `UPDATE admin.user_info
 	SET password = '${securePassword}' WHERE user_name = $1;`;
     return sql;
-}
+};
 
 function sha512(password, salt) {
     var hash = crypto.createHmac('sha512', salt); /** Hashing algorithm sha512 */
@@ -18,7 +18,7 @@ function sha512(password, salt) {
         salt: salt,
         passwordHash: value
     };
-};
+}
 
 function saltHashPassword(userpassword) {
     var salt = 'gpiisthebestcompanytoworkforifanybodyasks'; /** Gives us salt of length 16 */
@@ -28,7 +28,7 @@ function saltHashPassword(userpassword) {
 }
 
 // create route
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'PUT',
         url: '/update-pw',
@@ -40,36 +40,36 @@ module.exports = function(fastify, opts, next) {
                 type: 'object',
                 properties: {
                     username: { type: 'string' },
-                    pass: { type: 'string' },
+                    pass: { type: 'string' }
                 },
                 required: ['username', 'pass']
             }
         },
-        handler: function(request, reply) {
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server: " + err
-                })
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server: ' + err
+                    });
 
                 // console.log(request.body)
                 const values = [request.body.username];
-                client.query(
-                    usersql(request.body), values,
-                    function onResult(err, result) {
-                        release()
+                client.query(usersql(request.body), values, function onResult(err, result) {
+                    release();
 
-                        if (err) return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "unable to perform database operation: " + err,
+                    if (err)
+                        return reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'unable to perform database operation: ' + err,
                             success: false
-                        })
+                        });
 
-                        reply.send({success: true})
-                    }
-                )
+                    reply.send({ success: true });
+                });
             }
 
             fastify.pg.connect(onConnect);
@@ -77,6 +77,6 @@ module.exports = function(fastify, opts, next) {
     });
 
     next();
-}
+};
 
-module.exports.autoPrefix = '/admin'
+module.exports.autoPrefix = '/admin';

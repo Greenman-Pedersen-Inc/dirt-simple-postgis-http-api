@@ -27,7 +27,11 @@ const sql = (queryArgs) => {
         SELECT * FROM public.ard_accidents_geom_partition 
         ${fromClause ? ` ${fromClause}` : ''}
         WHERE ${whereClause ? `${whereClause}` : ''}
-        ${queryArgs.boundingBoxMinX ? ` AND geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)` : ''} 
+        ${
+            queryArgs.boundingBoxMinX
+                ? ` AND geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)`
+                : ''
+        } 
         LIMIT 50000;
     `;
 

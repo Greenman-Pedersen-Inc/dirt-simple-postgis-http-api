@@ -1,6 +1,6 @@
 // route query
 const sql = (params) => {
-  return `
+    return `
   SELECT 
     attname as field_name,
     typname as field_type
@@ -14,49 +14,48 @@ const sql = (params) => {
     relnamespace = pg_namespace.oid AND
     attnum >= 1 AND
     relname = '${params.table}'
-  `
-}
+  `;
+};
 
 // route schema
 const schema = {
-  description: 'Returns a list of columns in the specified table.',
-  tags: ['meta'],
-  summary: 'list table columns',
-  params: {
-    table: {
-      type: 'string',
-      description: 'The name of the table or view to query.'
+    description: 'Returns a list of columns in the specified table.',
+    tags: ['meta'],
+    summary: 'list table columns',
+    params: {
+        table: {
+            type: 'string',
+            description: 'The name of the table or view to query.'
+        }
     }
-  }
-}
+};
 
 // create route
 module.exports = function (fastify, opts, next) {
-  fastify.route({
-    method: 'GET',
-    url: '/list_columns/:table',
-    schema: schema,
-    handler: function (request, reply) {
-      fastify.pg.connect(onConnect)
+    fastify.route({
+        method: 'GET',
+        url: '/list_columns/:table',
+        schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
+            fastify.pg.connect(onConnect);
 
-      function onConnect(err, client, release) {
-        if (err) return reply.send({
-          "statusCode": 500,
-          "error": "Internal Server Error",
-          "message": "unable to connect to database server"
-        })
+            function onConnect(err, client, release) {
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
-        client.query(
-          sql(request.params),
-          function onResult(err, result) {
-            release()
-            reply.send(err || result.rows)
-          }
-        )
-      }
-    }
-  })
-  next()
-}
+                client.query(sql(request.params), function onResult(err, result) {
+                    release();
+                    reply.send(err || result.rows);
+                });
+            }
+        }
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

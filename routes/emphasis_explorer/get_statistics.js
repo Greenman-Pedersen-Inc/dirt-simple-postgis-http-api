@@ -17,8 +17,8 @@ const getQueries = (queryArgs) => {
         values: clauses.values,
         values_rolling_avg: clausesRollingAvg.values,
         queries: queries
-    }
-}
+    };
+};
 
 // *---------------*
 // route schema
@@ -41,7 +41,8 @@ const schema = {
         subcategory: {
             type: 'string',
             description: 'Emphasis Area subcategory',
-            example: 'aggressive, drowsy_distracted, impaired, unlicensed, unbelted, heavy_vehicle, mature, younger, motorcyclist, work_zone'
+            example:
+                'aggressive, drowsy_distracted, impaired, unlicensed, unbelted, heavy_vehicle, mature, younger, motorcyclist, work_zone'
         },
         startYear: {
             type: 'string',
@@ -55,7 +56,7 @@ const schema = {
         },
         sri: {
             type: 'string',
-            description: 'SRI code.',
+            description: 'SRI code.'
         },
         mun_cty_co: {
             type: 'string',
@@ -68,7 +69,7 @@ const schema = {
             example: '13'
         }
     }
-}
+};
 
 // *---------------*
 // create route
@@ -78,8 +79,9 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/emphasis-explorer/get-statistics',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
                 if (err) return reply.send({
@@ -91,21 +93,21 @@ module.exports = function (fastify, opts, next) {
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start year'
                     });
                 } else if (queryArgs.endYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need end year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need end year'
                     });
                 } else if (queryArgs.category == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need category"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need category'
                     });
                 }
 
@@ -114,11 +116,11 @@ module.exports = function (fastify, opts, next) {
 
                 try {
                     let crashData = {};
-                    let promises = [];  // store all promises to be queried on
+                    let promises = []; // store all promises to be queried on
                     if (queriesObject.queries === undefined) {
                         reply.send({
                             statusCode: 500,
-                            error: "Invalid category or subcategory",
+                            error: 'Invalid category or subcategory',
                             message: 'Please check category or subcategory input and try again.'
                         });
                     }
@@ -130,8 +132,7 @@ module.exports = function (fastify, opts, next) {
                                 if (category === 'annual_bodies_rolling_average') {
                                     const res = client.query(queryString, queriesObject.values_rolling_avg);
                                     return resolve(res);
-                                }
-                                else {
+                                } else {
                                     const res = client.query(queryString, queriesObject.values);
                                     return resolve(res);
                                 }
@@ -177,7 +178,7 @@ module.exports = function (fastify, opts, next) {
                 }
                 catch (error) {
                     release();
-                    console.log(error)
+                    console.log(error);
                     reply.send({
                         statusCode: 500,
                         error: error,
@@ -194,8 +195,8 @@ module.exports = function (fastify, opts, next) {
                 // );
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

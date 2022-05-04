@@ -81,7 +81,7 @@ module.exports = function (fastify, opts, next) {
         handler: function (request, reply) {
             fastify.pg.connect(onConnect)
 
-            async function onConnect(err, client, release) {
+            function onConnect(err, client, release) {
                 if (err) return reply.send({
                     "statusCode": 500,
                     "error": "Internal Server Error",
@@ -143,7 +143,7 @@ module.exports = function (fastify, opts, next) {
                         promises.push(promise);
                     }
 
-                    await Promise.all(promises)
+                    Promise.all(promises)
                         .then((returnData) => {
                             release();
 

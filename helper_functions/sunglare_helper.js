@@ -98,10 +98,10 @@ function formatCodes(codeString) {
 //"07,08,15,16,18"
 function formatTimeCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = splitCodes(codeString);
-    if (splitCodes.length > 0) {
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
         var formattedCodes = [];
-        splitCodes.forEach(splitCode => {
+        codes.forEach(splitCode => {
             var timeRangeQuery = `TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '${splitCode}:00'::TIME AND '${splitCode}:59'::TIME`;
             formattedCodes.push(timeRangeQuery);
         });
@@ -114,12 +114,12 @@ function formatTimeCodes(codeString) {
 // OUTPUT: (trf_ctrl_adult_crossing_guard > 0) OR (trf_ctrl_channelization_painted > 0) OR ...
 function formatTrafficSignalCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = splitCodes(codeString);
+    var codes = splitCodes(codeString);
     if (codeString !== undefined && codeString !== null) {
-        var splitCodes = codeString.split(',');
-        if (splitCodes.length > 0) {
+        var codes = codeString.split(',');
+        if (codes.length > 0) {
             var formattedCodes = [];
-            splitCodes.forEach(splitCode => {
+            codes.forEach(splitCode => {
                 var timeRangeQuery = `(${splitCode} > 0)`;
                 formattedCodes.push(timeRangeQuery);
             });

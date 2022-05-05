@@ -36,7 +36,8 @@ module.exports = function (fastify, opts, next) {
                 } else {
                     const query = getQuery();
                     const requestTracker = new fastify.RequestTracker(
-                        request.params.username,
+                        request.params,
+                        'admin',
                         'get-menu-info',
                         JSON.stringify(request.params)
                     );

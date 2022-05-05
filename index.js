@@ -12,14 +12,14 @@ const fastifyStatic = require('fastify-static');
  * @param {*} reply
  * @param {*} done
  */
-function RequestTracker(user_name, end_point, user_query) {
+function RequestTracker(headers, module, end_point, user_query) {
     const request_time = Date.now();
     this.complete = function () {
         const execution_time = Date.now();
         const queryString = `
-            INSERT INTO admin.traffic(
-                user_name, request_time, execution_time, end_point, user_query)
-                VALUES ('${user_name}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}');
+            INSERT INTO traffic.${module}(
+                user_name, token, request_time, execution_time, end_point, user_query)
+                VALUES ('${headers.username}','${headers.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}');
         `;
         fastify.pg.connect((err, client, release) => {
             onConnect(err, client, release, queryString);
@@ -28,9 +28,9 @@ function RequestTracker(user_name, end_point, user_query) {
     this.error = function (error) {
         const execution_time = Date.now();
         const queryString = `
-            INSERT INTO admin.traffic(
-                user_name, request_time, execution_time, end_point, user_query, error)
-                VALUES ('${user_name}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
+            INSERT INTO traffic.${module}(
+                user_name, token, request_time, execution_time, end_point, user_query, error)
+                VALUES ('${headers.username}','${headers.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
         `;
         fastify.pg.connect((err, client, release) => {
             onConnect(err, client, release, queryString);

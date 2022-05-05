@@ -121,11 +121,18 @@ module.exports = function (fastify, opts, next) {
                     });
                 } else {
                     try {
+                        const requestTracker = new fastify.RequestTracker(
+                            request.headers,
+                            'crash_map',
+                            'mvt_route',
+                            JSON.stringify(Object.assign(request.query, request.params))
+                        );
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             release();
 
                             if (err) {
                                 reply.send(err);
+                                requestTracker.error(err);
                             } else {
                                 if (result) {
                                     if (result.rows && result.rows.length > 0) {
@@ -158,6 +165,8 @@ module.exports = function (fastify, opts, next) {
                                         message: request
                                     });
                                 }
+                                
+                                requestTracker.complete();
                             }
                         });
                     } catch (error) {

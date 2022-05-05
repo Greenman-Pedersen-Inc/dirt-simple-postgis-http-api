@@ -83,13 +83,12 @@ module.exports = function (fastify, opts, next) {
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
 
-            async function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'unable to connect to database server'
-                    });
+            function onConnect(err, client, release) {
+                if (err) return reply.send({
+                    "statusCode": 500,
+                    "error": "Internal Server Error",
+                    "message": "unable to connect to database server"
+                });
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
@@ -145,7 +144,7 @@ module.exports = function (fastify, opts, next) {
                         promises.push(promise);
                     }
 
-                    await Promise.all(promises)
+                    Promise.all(promises)
                         .then((returnData) => {
                             release();
 

@@ -83,7 +83,8 @@ function verifyToken(request, reply, done) {
     // console.log(request.headers)
     const sql = (headers) => {
         const currentTime = new Date().getTime();
-        const query = `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.token}' and expiration >= ${currentTime}`;
+        const token = JSON.parse(headers.credentials).token;
+        const query = `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${token}' and expiration >= ${currentTime}`;
 
         return query;
     };

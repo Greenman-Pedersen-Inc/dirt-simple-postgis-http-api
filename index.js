@@ -4,6 +4,7 @@ const fastify = require('fastify')({
     connectionTimeout: 5000
 });
 const fastifyStatic = require('fastify-static');
+const { maxHeaderSize } = require('http');
 
 /**
  * Log requests made to the server in an administrative database for further analysis.
@@ -82,8 +83,17 @@ function RequestTracker(headers, module, end_point, user_query) {
 function verifyToken(request, reply, done) {
     // console.log(request.headers)
     const sql = (headers) => {
+        let token;
         const currentTime = new Date().getTime();
-        const token = JSON.parse(headers.credentials).token;
+
+        if (headers.token) {
+            token = headers.token;
+        } else if (headers.credentials && typeof headers.credentials === 'object') {
+            token = headers.credentials.token;
+        } else if (typeof headers.credentials === 'string') {
+            token = JSON.parse(headers.credentials).token;
+        }
+
         const query = `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${token}' and expiration >= ${currentTime}`;
 
         return query;

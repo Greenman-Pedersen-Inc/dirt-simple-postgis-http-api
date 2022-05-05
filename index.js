@@ -12,67 +12,63 @@ const fastifyStatic = require('fastify-static');
  * @param {*} reply
  * @param {*} done
  */
-function logRequest(user_name, request_time, end_point, user_query, execution_time, error) {
-    // console.log(request.headers)
-    const queryInfo = {
-        bounds: request.query.bounds,
-        filter: request.query.filter
-    };
-    const endpoint = request.raw.url.split('=')[0];
-    const username = request.headers.username;
-    const currentTime = new Date().getTime();
-    const sql = (query, url, user, time) => {
-        //console.log(query, url, user, time);
-        var queryString = `
+function RequestTracker(user_name, end_point, user_query) {
+    const request_time = Date.now();
+    this.complete = function () {
+        const execution_time = Date.now();
+        const queryString = `
             INSERT INTO admin.traffic(
-                user_name, request_time, end_point, user_query, execution_time, error)
-                VALUES ('${user}', ${time}, '${url}', '${JSON.stringify(query).replace(/'/g, "''")}');
+                user_name, request_time, execution_time, end_point, user_query)
+                VALUES ('${user_name}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}');
         `;
-
-        return queryString;
+        fastify.pg.connect((err, client, release) => {
+            onConnect(err, client, release, queryString);
+        });
+    };
+    this.error = function (error) {
+        const execution_time = Date.now();
+        const queryString = `
+            INSERT INTO admin.traffic(
+                user_name, request_time, execution_time, end_point, user_query, error)
+                VALUES ('${user_name}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
+        `;
+        fastify.pg.connect((err, client, release) => {
+            onConnect(err, client, release, queryString);
+        });
     };
 
-    function onConnect(err, client, release) {
+    function onConnect(err, client, release, queryString) {
         if (err) {
             release();
 
-            return reply.send({
+            return {
                 statusCode: 500,
                 error: 'Internal Server Error',
                 message: 'unable to connect to database server: ' + err
-            });
+            };
         } else {
             try {
-                client.query(sql(queryInfo, endpoint, username, currentTime), function onResult(err, result) {
+                client.query(queryString, function onResult(err, result) {
                     release();
 
                     if (err) {
-                        return reply.send({
+                        return {
                             statusCode: 500,
                             error: 'Internal Server Error: Inner Query Error',
                             message: 'unable to perform database operation: ' + err
-                        });
-                    } else {
-                        done();
+                        };
                     }
                 });
             } catch (error) {
                 release();
 
-                return reply.send({
+                return {
                     statusCode: 500,
                     error: 'Internal Server Error: Outer Query Error',
                     message: 'unable to perform database operation: ' + error
-                });
+                };
             }
         }
-    }
-
-    // this will not log get requests that include the keywork 'lookup'
-    if (endpoint.indexOf('lookup') < 0) {
-        fastify.pg.connect(onConnect);
-    } else {
-        done();
     }
 }
 
@@ -143,14 +139,14 @@ function verifyToken(request, reply, done) {
     fastify.pg.connect(onConnect);
 }
 
-fastify.decorate('logRequest', logRequest);
+fastify.decorate('RequestTracker', RequestTracker);
 fastify.decorate('verifyToken', verifyToken);
 
 fastify.register(require('fastify-auth'));
 
 // postgres connection
 fastify.register(require('fastify-postgres'), {
-    connectionString: config.db,
+    connectionString: config.db
 });
 
 // compression - add x-protobuf

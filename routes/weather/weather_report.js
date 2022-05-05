@@ -1,4 +1,7 @@
 // weather_report: generates the weather report
+const fs = require('fs');
+const path = require('path');
+const outputPath = path.join(__dirname, '../../output', 'weather');
 const reportHelper = require('../../helper_functions/report_maker/predictive_report_layout');
 
 // *---------------*
@@ -98,8 +101,40 @@ module.exports = function (fastify, opts, next) {
                     });
                 } else {
                     var reportQueries = reportHelper.getReportQueries(queryArgs);
-
                     var promises = [];
+
+                    if (!fs.existsSync(outputPath)) {
+                        try {
+                            fs.mkdirSync(outputPath, { recursive: true });
+                        } catch (error) {
+                            console.log(error);
+                        }
+                    }
+
+                    fs.readdir(outputPath, function (err, files) {
+                        //handling error
+                        if (err) {
+                            return console.log('Unable to scan directory: ' + err);
+                        }
+                        //listing all files using forEach
+                        files.forEach(function (file) {
+                            fs.stat(path.join(outputPath, file), function (err, stat) {
+                                let now = new Date().getTime();
+                                let endTime = new Date(stat.ctime).getTime() + 600000;
+
+                                if (err) {
+                                    return console.error(err);
+                                } else {
+                                    if (now > endTime) {
+                                        fs.unlink(path.join(outputPath, file), function (response) {
+                                            console.log(`${file} deleted!`);
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    });
+
                     for (var key in reportQueries) {
                         if (reportQueries.hasOwnProperty(key)) {
                             const promise = new Promise((resolve, reject) => {
@@ -147,16 +182,18 @@ module.exports = function (fastify, opts, next) {
                             queryArgs,
                             reportQueries,
                             'Top SRI & Mileposts by Weather Conditions',
-                            'weather_report'
+                            'weather_report.pdf',
+                            'weather'
                         );
+
                         fileInfo
                             .then((createdFile) => {
-                                //console.log(createdFile)
-                                reply.send({ url: createdFile.fileName });
+                                reply.code(200);
+                                reply.sendFile(createdFile.fileName, outputPath);
                             })
                             .catch((error) => {
-                                //console.log("report error");
-                                //console.log(error);
+                                console.log('report error');
+                                console.log(error);
                             });
                     });
                 }

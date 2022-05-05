@@ -159,7 +159,7 @@ function makeReportQuery(queryStrings, crashAttr) {
         SELECT calc_sri, 
         ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,
         CONCAT(CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(calc_milepost * 10) / 10, 1) + .09) AS mp_range,
-        COUNT(ard_accidents_sunglare.crashid)
+        COUNT(ard_accidents_sunglare.crashid)::INT
         ${defaultQuery}
         FROM 
         sunglare.ard_accidents_sunglare
@@ -538,4 +538,3 @@ module.exports = {
     createFilterClause: createFilterClause,
     makeReportQuery: makeReportQuery
 };
-

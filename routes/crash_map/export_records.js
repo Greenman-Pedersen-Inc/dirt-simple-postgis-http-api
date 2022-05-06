@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-var zipper = require('zip-local');
+const JSZip = require('jszip');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
@@ -11,8 +11,9 @@ const { convertArrayToCSV } = require('convert-array-to-csv');
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
-// basePath to store CSV
-const basePath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/output/';
+// outputPath to store CSV
+// const outputPath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/output/';
+const outputPath = path.join(__dirname, '../../output', 'records');
 // *---------------*
 // route query
 // *---------------*
@@ -88,7 +89,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/crash-map/export-records',
         schema: schema,
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             const queryArgs = request.query;
 
@@ -96,13 +97,15 @@ module.exports = function (fastify, opts, next) {
                 if (err) {
                     release();
 
-                    return reply.send({
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
                 } else if (queryArgs.crashFilter === undefined) {
-                    return reply.send({
+                    release();
+
+                    reply.send({
                         statusCode: 400,
                         error: 'Bad request',
                         message: 'missing crashFilter'
@@ -113,13 +116,42 @@ module.exports = function (fastify, opts, next) {
                             release();
                             let returnRows = [];
                             if (result) {
-                                var csvFileName =
-                                    'Voyager_Crash_Record_Export_' +
-                                    Date.now() +
-                                    '_' +
-                                    Math.floor(1000 + Math.random() * 9000).toString();
-                                console.log(csvFileName);
-                                var filePath = path.join(basePath + csvFileName);
+                                const fileName = `Voyager_Crash_Record_Export_${Date.now()}_${Math.floor(
+                                    1000 + Math.random() * 9000
+                                ).toString()}.csv`;
+                                const csvFileName = fileName + '.csv';
+                                const zipFileName = fileName + '.zip';
+
+                                if (!fs.existsSync(outputPath)) {
+                                    try {
+                                        fs.mkdirSync(outputPath, { recursive: true });
+                                    } catch (error) {
+                                        console.log(error);
+                                    }
+                                }
+                                // remove all reports older than 10 minutes from output directory
+                                fs.readdir(outputPath, function (err, files) {
+                                    //handling error
+                                    if (err) {
+                                        return console.log('Unable to scan directory: ' + err);
+                                    }
+                                    //listing all files using forEach
+                                    files.forEach(function (file) {
+                                        fs.stat(path.join(outputPath, file), function (err, stat) {
+                                            let now = new Date().getTime();
+                                            let endTime = new Date(stat.ctime).getTime() + 600000;
+                                            if (err) {
+                                                return console.error(err);
+                                            } else {
+                                                if (now > endTime) {
+                                                    fs.unlink(path.join(outputPath, file), function (response) {
+                                                        console.log(`${file} deleted!`);
+                                                    });
+                                                }
+                                            }
+                                        });
+                                    });
+                                });
 
                                 if (result.hasOwnProperty('rows')) {
                                     returnRows = transcribeKeysArray(result.rows);
@@ -129,58 +161,36 @@ module.exports = function (fastify, opts, next) {
                                     seperator: ';'
                                 });
 
-                                fs.writeFile(filePath + '.csv', csvFromArrayOfObjects, 'utf8', function (err) {
-                                    if (err) {
-                                        console.log(
-                                            'Some error occured - file either not saved or corrupted file saved.'
-                                        );
-                                        reply.send({
-                                            statusCode: 400,
-                                            error: 'Unable to zip',
-                                            message: err
-                                        });
-                                    } else {
-                                        // zipping a file
-                                        zipper.zip(filePath + '.csv', function (error, zipped) {
-                                            if (!error) {
-                                                zipped.compress(); // compress before exporting
+                                const AdmZip = require('adm-zip');
 
-                                                // or save the zipped file to disk
-                                                zipped.save(filePath + '.zip', function (error) {
-                                                    if (!error) {
-                                                        reply.send({
-                                                            url: csvFileName + '.zip',
-                                                            count: result.rows.length
-                                                        });
-
-                                                        // file removed
-                                                        fs.unlink(filePath + '.csv', (err) => {
-                                                            if (err) {
-                                                                console.error(err);
-                                                                return;
-                                                            }
-                                                        });
-                                                    } else
-                                                        reply.send({
-                                                            statusCode: 400,
-                                                            error: 'Unable to save zipped file to disk',
-                                                            message: error
-                                                        });
-                                                });
-                                            } else
-                                                reply.send({
-                                                    statusCode: 400,
-                                                    error: 'Unable to zip file',
-                                                    message: error
-                                                });
-                                        });
+                                fs.writeFile(
+                                    path.join(outputPath, csvFileName),
+                                    csvFromArrayOfObjects,
+                                    'utf8',
+                                    function (err) {
+                                        if (err) {
+                                            console.log(
+                                                'Some error occured - file either not saved or corrupted file saved.'
+                                            );
+                                            reply.send({
+                                                statusCode: 400,
+                                                error: 'Unable to zip',
+                                                message: err
+                                            });
+                                        } else {
+                                            const zip = new AdmZip();
+                                            const outputFile = path.join(outputPath, zipFileName);
+                                            zip.addLocalFile(path.join(outputPath, csvFileName));
+                                            zip.writeZip(outputFile);
+                                            console.log(`Created ${outputFile} successfully`);
+                                            reply.code(200);
+                                            reply.sendFile(zipFileName, outputPath);
+                                        }
                                     }
-                                });
+                                );
                             } else {
-                                reply.send({
-                                    url: '',
-                                    count: 0
-                                });
+                                reply.code(204);
+                                reply.send(result);
                             }
                         });
                     } catch (error) {
@@ -193,8 +203,6 @@ module.exports = function (fastify, opts, next) {
                         });
                     }
                 }
-
-                // console.log(queryArgs.crashFilter);
             }
 
             fastify.pg.connect(onConnect);

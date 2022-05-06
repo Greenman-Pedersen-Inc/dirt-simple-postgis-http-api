@@ -116,7 +116,7 @@ function verifyToken(request, reply, done) {
         if (err) {
             release();
 
-            return reply.send({
+            reply.send({
                 statusCode: 500,
                 error: 'Internal Server Error',
                 message: 'unable to connect to database server: ' + err
@@ -127,7 +127,7 @@ function verifyToken(request, reply, done) {
                     release();
 
                     if (err) {
-                        return reply.send({
+                        reply.send({
                             statusCode: 500,
                             error: 'Internal Server Error: Inner Query Error',
                             message: 'unable to perform database operation: ' + err
@@ -143,7 +143,7 @@ function verifyToken(request, reply, done) {
             } catch (error) {
                 release();
 
-                return reply.send({
+                reply.send({
                     statusCode: 500,
                     error: 'Internal Server Error: Outer Query Error',
                     message: 'unable to perform database operation: ' + error
@@ -186,12 +186,22 @@ fastify.register(require('fastify-swagger'), {
 });
 
 // static documentation path
-fastify.register(require('fastify-static'), {
-    // root: path.join(__dirname, 'documentation')
-    // root: path.join(__dirname, "public"),
-    root: [path.join(__dirname, 'documentation'), path.join(__dirname, 'tiles')],
-    // Do not append a trailing slash to prefixes
-    prefixAvoidTrailingSlash: true
+fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'output', 'maintenance'),
+    prefix: '/maintenance/', // optional: default '/'
+    decorateReply: true
+});
+
+fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'output', 'jurisdiction'),
+    prefix: '/jurisdiction/', // optional: default '/'
+    decorateReply: false // the reply decorator has been added by the first plugin registration
+});
+
+fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'output', 'weather'),
+    prefix: '/weather/', // optional: default '/'
+    decorateReply: false // the reply decorator has been added by the first plugin registration
 });
 
 // routes

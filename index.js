@@ -13,14 +13,19 @@ const { maxHeaderSize } = require('http');
  * @param {*} reply
  * @param {*} done
  */
-function RequestTracker(headers, module, end_point, user_query) {
+function RequestTracker(credentials, module, end_point, user_query) {
     const request_time = Date.now();
+
+    if (typeof credentials === 'string') {
+        credentials = JSON.parse(credentials);
+    }
+
     this.complete = function () {
         const execution_time = Date.now();
         const queryString = `
             INSERT INTO traffic.${module}(
                 user_name, token, request_time, execution_time, end_point, user_query)
-                VALUES ('${headers.username}','${headers.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}');
+                VALUES ('${credentials.username}','${credentials.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}');
         `;
         fastify.pg.connect((err, client, release) => {
             onConnect(err, client, release, queryString);
@@ -31,7 +36,7 @@ function RequestTracker(headers, module, end_point, user_query) {
         const queryString = `
             INSERT INTO traffic.${module}(
                 user_name, token, request_time, execution_time, end_point, user_query, error)
-                VALUES ('${headers.username}','${headers.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
+                VALUES ('${credentials.username}','${credentials.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
         `;
         fastify.pg.connect((err, client, release) => {
             onConnect(err, client, release, queryString);

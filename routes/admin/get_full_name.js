@@ -1,25 +1,24 @@
-// search_user: gets a list of users based on the inputted username
+// get_full_name: gets the full name of a user based on username
 
 // route register
 const getQuery = (requestBody) => {
-    const sql = `SELECT user_name, first_name, last_name, email, beg_access_date, end_access_date, has_access, govt_user, organization_name, project_name, project_manager, user_type, user_group, update_date, email_date, notes, is_admin
-	FROM admin.user_info
-    WHERE user_name LIKE $1;`;
+    const sql = `SELECT CONCAT(first_name, ' ', last_name) "fullName" FROM admin.user_info
+    WHERE user_name = $1;`;
 
     return {
         query: sql,
-        values: ['%' + requestBody.username + '%']
+        values: [requestBody.User]
     };
 };
 
 const schema = {
-    description: 'gets a list of users based on the inputted username',
+    description: 'gets the full name of a user based on username',
     tags: ['admin'],
-    summary: 'gets a list of users based on the inputted username',
+    summary: 'gets the full name of a user based on username',
     querystring: {
-        username: {
+        User: {
             type: 'string',
-            description: 'text to search on',
+            description: 'username',
             example: 'mcollins'
         }
     }
@@ -29,7 +28,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/search-user',
+        url: '/get-full-name',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
@@ -40,6 +39,13 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server: ' + err
                     });
+                else if (request.query.User === undefined || request.query.User === '' || request.query.User === null) {
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Missing User attribute',
+                        message: 'No username specified'
+                    });
+                }
 
                 const queryParameters = getQuery(request.query);
 
@@ -52,8 +58,9 @@ module.exports = function (fastify, opts, next) {
                             error: 'Internal Server Error',
                             message: 'unable to perform database operation: ' + err
                         });
-
-                    reply.send(result.rows);
+                    if (result.rows.length <= 0) reply.send(null);
+                    else reply.send(result.rows[0]);
+                    
                 });
             }
 

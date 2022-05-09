@@ -117,7 +117,7 @@ module.exports = function (fastify, opts, next) {
                         fs.readdir(outputPath, function (err, files) {
                             //handling error
                             if (err) {
-                                return console.log('Unable to scan directory: ' + err);
+                                console.log('Unable to scan directory: ' + err);
                             }
                             //listing all files using forEach
                             files.forEach(function (file) {

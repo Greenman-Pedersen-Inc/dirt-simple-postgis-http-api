@@ -10,7 +10,7 @@ module.exports = function (fastify, opts, next) {
         },
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            console.log(path.join(__dirname, 'tiles'));
+            // console.log(path.join(__dirname, 'tiles'));
 
             reply.header('Content-Type', 'application/x-protobuf');
             reply.sendFile('test.html', path.join(__dirname, 'tiles')); // serving a file from a different root location

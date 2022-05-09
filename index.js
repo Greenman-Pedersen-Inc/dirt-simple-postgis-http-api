@@ -153,6 +153,8 @@ function verifyToken(request, reply, done) {
     }
 
     fastify.pg.connect(onConnect);
+
+    // done();
 }
 
 fastify.decorate('RequestTracker', RequestTracker);

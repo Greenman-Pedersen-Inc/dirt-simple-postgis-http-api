@@ -114,7 +114,7 @@ module.exports = function (fastify, opts, next) {
                     fs.readdir(outputPath, function (err, files) {
                         //handling error
                         if (err) {
-                            return console.log('Unable to scan directory: ' + err);
+                            console.log('Unable to scan directory: ' + err);
                         }
                         //listing all files using forEach
                         files.forEach(function (file) {
@@ -123,7 +123,7 @@ module.exports = function (fastify, opts, next) {
                                 let endTime = new Date(stat.ctime).getTime() + 600000;
 
                                 if (err) {
-                                    return console.error(err);
+                                    console.error(err);
                                 } else {
                                     if (now > endTime) {
                                         fs.unlink(path.join(outputPath, file), function (response) {

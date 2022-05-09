@@ -27,7 +27,7 @@ SELECT ST_AsMVT(mvtgeom.*, 'ard_accidents_geom_partition', 4096, 'geom' ${
     }) AS mvt from mvtgeom;
 `;
 
-    console.log(queryText);
+    // console.log(queryText);
 
     return queryText;
 };

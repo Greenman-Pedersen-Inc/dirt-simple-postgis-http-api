@@ -163,7 +163,7 @@ module.exports = function (fastify, opts, next) {
                                         crashData[table] = data;
                                     }
                                 }
-                                console.log({ [filterJson.category]: crashData })
+                                // console.log({ [filterJson.category]: crashData })
                                 reply.send({ [filterJson.category]: crashData });
                             }
                         })

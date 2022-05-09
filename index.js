@@ -83,9 +83,9 @@ function RequestTracker(credentials, module, end_point, user_query) {
  *
  * @param {*} request
  * @param {*} reply
- * @param {*} done
+ * @param {*} next
  */
-function verifyToken(request, reply, done) {
+function verifyToken(request, reply, next) {
     // console.log(request.headers)
     const sql = (headers) => {
         let token;
@@ -134,7 +134,7 @@ function verifyToken(request, reply, done) {
                         });
                     } else {
                         if (result.rows.map((row) => row.count).reduce((acc, count) => acc + count, 0) > 0) {
-                            done();
+                            next();
                         } else {
                             reply.send({ description: 'token validation unsuccesful!', tokenError: -999 });
                         }
@@ -203,6 +203,12 @@ fastify.register(fastifyStatic, {
 fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'output', 'weather'),
     prefix: '/weather/', // optional: default '/'
+    decorateReply: false // the reply decorator has been added by the first plugin registration
+});
+
+fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'output', 'record'),
+    prefix: '/record/', // optional: default '/'
     decorateReply: false // the reply decorator has been added by the first plugin registration
 });
 

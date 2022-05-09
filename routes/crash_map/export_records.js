@@ -40,6 +40,22 @@ const sql = (queryArgs) => {
     return query;
 };
 
+function generateCSV(path, data) {
+    return new Promise((resolve, reject) => {
+        try {
+            fs.writeFileSync(path, data, 'utf8', function (error) {
+                if (error) {
+                    return reject(error);
+                }
+            });
+
+            return resolve(fileInfo);
+        } catch (error) {
+            return reject(error);
+        }
+    });
+}
+
 // *---------------*
 // route schema
 // *---------------*
@@ -118,7 +134,7 @@ module.exports = function (fastify, opts, next) {
                             if (result) {
                                 const fileName = `Voyager_Crash_Record_Export_${Date.now()}_${Math.floor(
                                     1000 + Math.random() * 9000
-                                ).toString()}.csv`;
+                                ).toString()}`;
                                 const csvFileName = fileName + '.csv';
                                 const zipFileName = fileName + '.zip';
 
@@ -161,6 +177,8 @@ module.exports = function (fastify, opts, next) {
                                     seperator: ';'
                                 });
 
+
+
                                 const AdmZip = require('adm-zip');
 
                                 fs.writeFile(
@@ -184,6 +202,7 @@ module.exports = function (fastify, opts, next) {
                                             zip.writeZip(outputFile);
                                             console.log(`Created ${outputFile} successfully`);
                                             reply.code(200);
+                                            reply.header("exportCount", result.rows.length.toString());
                                             reply.sendFile(zipFileName, outputPath);
                                         }
                                     }

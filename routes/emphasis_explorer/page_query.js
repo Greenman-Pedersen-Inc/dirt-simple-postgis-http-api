@@ -73,7 +73,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/emphasis-explorer/page-query/:table',
         schema: schema,
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             // console.log(request.raw.url);
 

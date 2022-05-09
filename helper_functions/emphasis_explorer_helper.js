@@ -39,10 +39,10 @@ function makeWhereClause(queryParamObject, isRollingAvg = false) {
 function getTableQuery(category, subcategory = null, whereClause, whereClauseRollingAvg) {
     const tables = {
         lane_departure: {
-            annual_bodies_rolling_average: {
-                table: 'lane_departure_crashes',
-                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
-            },
+            // annual_bodies_rolling_average: {
+            //     table: 'lane_departure_crashes',
+            //     query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            // },
             annual_bodies: {
                 table: 'lane_departure_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
@@ -81,10 +81,10 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
             }
         },
         ped_cyclists: {
-            annual_bodies_rolling_average: {
-                table: 'ped_bike_crashes',
-                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
-            },
+            // annual_bodies_rolling_average: {
+            //     table: 'ped_bike_crashes',
+            //     query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            // },
             annual_bodies: {
                 table: 'ped_bike_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
@@ -123,10 +123,10 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
             }
         },
         intersection: {
-            annual_bodies_rolling_average: {
-                table: 'intersection_crashes',
-                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
-            },
+            // annual_bodies_rolling_average: {
+            //     table: 'intersection_crashes',
+            //     query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            // },
             annual_bodies: {
                 table: 'intersection_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }

@@ -28,11 +28,6 @@ const schema = {
     tags: ['emphasis-explorer'],
     summary: 'gets stats based on category and subcategory.',
     querystring: {
-        user: {
-            type: 'string',
-            description: 'The user name.',
-            example: 'testuser'
-        },
         category: {
             type: 'string',
             description: 'Emphasis Area category',
@@ -79,7 +74,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/emphasis-explorer/get-statistics',
         schema: schema,
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
 
@@ -163,9 +158,10 @@ module.exports = function (fastify, opts, next) {
                                         crashData[table] = data;
                                     }
                                 }
-                                console.log({ [filterJson.category]: crashData })
-                                reply.send({ [filterJson.category]: crashData });
                             }
+
+                            console.log({ [filterJson.category]: crashData })
+                            reply.send({ [filterJson.category]: crashData });
                         })
                         .catch((error) => {
                             release();
@@ -185,14 +181,6 @@ module.exports = function (fastify, opts, next) {
                         message: request
                     });
                 }
-
-                // client.query(
-                //     sql(queryArgs),
-                //     function onResult(err, result) {
-                //         release()
-                //         reply.send(err || {TimeData: result.rows})
-                //     }
-                // );
             }
         }
     });

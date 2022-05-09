@@ -67,7 +67,7 @@ module.exports = function (fastify, opts, next) {
         method: 'POST',
         url: '/emphasis-explorer/post-query/:table',
         schema: schema,
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             // console.log(request.body)
 

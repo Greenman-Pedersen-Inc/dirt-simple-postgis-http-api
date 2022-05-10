@@ -3,10 +3,21 @@
 const crypto = require('crypto');
 
 const usersql = (requestBody) => {
-    var securePassword = saltHashPassword(requestBody.pass);
+    const expiryTime = new Date();
+    const username = requestBody.username;
+    const token = requestBody.token;
+    const securePassword = saltHashPassword(requestBody.password);
 
-    const sql = `UPDATE admin.user_info
-	SET password = '${securePassword}' WHERE user_name = $1;`;
+    const sql = `
+        with valid_update_counter as (
+            SELECT count(*)
+                FROM admin.reset_lease
+                where expiration > ${expiryTime}
+                and token = '${token}'
+                and user_name = '${username}'
+        )
+        UPDATE admin.user_info SET password = '${securePassword}' WHERE user_name = '${username}' AND valid_update_counter > 0;
+        DELETE FROM admin.reset_lease where user_name = '${username}'`;
     return sql;
 };
 
@@ -30,8 +41,8 @@ function saltHashPassword(userpassword) {
 // create route
 module.exports = function (fastify, opts, next) {
     fastify.route({
-        method: 'PUT',
-        url: '/update-pw',
+        method: 'POST',
+        url: '/update-password',
         schema: {
             description: `gets the user's new password, encrypts it, and stores it in the database`,
             tags: ['admin'],
@@ -40,9 +51,10 @@ module.exports = function (fastify, opts, next) {
                 type: 'object',
                 properties: {
                     username: { type: 'string' },
-                    pass: { type: 'string' }
+                    password: { type: 'string' },
+                    token: { type: 'string' }
                 },
-                required: ['username', 'pass']
+                required: ['username', 'password', 'token']
             }
         },
         preHandler: fastify.auth([fastify.verifyToken]),

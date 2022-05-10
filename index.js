@@ -4,6 +4,7 @@ const fastify = require('fastify')({
     connectionTimeout: 5000
 });
 const fastifyStatic = require('fastify-static');
+const { maxHeaderSize } = require('http');
 
 /**
  * Log requests made to the server in an administrative database for further analysis.
@@ -12,67 +13,68 @@ const fastifyStatic = require('fastify-static');
  * @param {*} reply
  * @param {*} done
  */
-function logRequest(user_name, request_time, end_point, user_query, execution_time, error) {
-    // console.log(request.headers)
-    const queryInfo = {
-        bounds: request.query.bounds,
-        filter: request.query.filter
-    };
-    const endpoint = request.raw.url.split('=')[0];
-    const username = request.headers.username;
-    const currentTime = new Date().getTime();
-    const sql = (query, url, user, time) => {
-        //console.log(query, url, user, time);
-        var queryString = `
-            INSERT INTO admin.traffic(
-                user_name, request_time, end_point, user_query, execution_time, error)
-                VALUES ('${user}', ${time}, '${url}', '${JSON.stringify(query).replace(/'/g, "''")}');
+function RequestTracker(credentials, module, end_point, user_query) {
+    const request_time = Date.now();
+
+    if (typeof credentials === 'string') {
+        credentials = JSON.parse(credentials);
+    }
+
+    this.complete = function () {
+        const execution_time = Date.now();
+        const queryString = `
+            INSERT INTO traffic.${module}(
+                user_name, token, request_time, execution_time, end_point, user_query)
+                VALUES ('${credentials.username}','${credentials.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}');
         `;
-
-        return queryString;
+        fastify.pg.connect((err, client, release) => {
+            onConnect(err, client, release, queryString);
+        });
+    };
+    this.error = function (error) {
+        const execution_time = Date.now();
+        const queryString = `
+            INSERT INTO traffic.${module}(
+                user_name, token, request_time, execution_time, end_point, user_query, error)
+                VALUES ('${credentials.username}','${credentials.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
+        `;
+        fastify.pg.connect((err, client, release) => {
+            onConnect(err, client, release, queryString);
+        });
     };
 
-    function onConnect(err, client, release) {
+    function onConnect(err, client, release, queryString) {
         if (err) {
             release();
 
-            return reply.send({
+            return {
                 statusCode: 500,
                 error: 'Internal Server Error',
                 message: 'unable to connect to database server: ' + err
-            });
+            };
         } else {
             try {
-                client.query(sql(queryInfo, endpoint, username, currentTime), function onResult(err, result) {
+                client.query(queryString, function onResult(err, result) {
                     release();
 
                     if (err) {
-                        return reply.send({
+                        return {
                             statusCode: 500,
                             error: 'Internal Server Error: Inner Query Error',
                             message: 'unable to perform database operation: ' + err
-                        });
-                    } else {
-                        done();
+                        };
                     }
                 });
             } catch (error) {
                 release();
 
-                return reply.send({
+                return {
                     statusCode: 500,
                     error: 'Internal Server Error: Outer Query Error',
                     message: 'unable to perform database operation: ' + error
-                });
+                };
             }
         }
-    }
-
-    // this will not log get requests that include the keywork 'lookup'
-    if (endpoint.indexOf('lookup') < 0) {
-        fastify.pg.connect(onConnect);
-    } else {
-        done();
     }
 }
 
@@ -81,13 +83,23 @@ function logRequest(user_name, request_time, end_point, user_query, execution_ti
  *
  * @param {*} request
  * @param {*} reply
- * @param {*} done
+ * @param {*} next
  */
-function verifyToken(request, reply, done) {
+function verifyToken(request, reply, next) {
     // console.log(request.headers)
     const sql = (headers) => {
+        let token;
         const currentTime = new Date().getTime();
-        const query = `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${headers.token}' and expiration >= ${currentTime}`;
+
+        if (headers.token) {
+            token = headers.token;
+        } else if (headers.credentials && typeof headers.credentials === 'object') {
+            token = headers.credentials.token;
+        } else if (typeof headers.credentials === 'string') {
+            token = JSON.parse(headers.credentials).token;
+        }
+
+        const query = `SELECT Cast(COUNT(*) as int) FROM admin.lease where token = '${token}' and expiration >= ${currentTime}`;
 
         return query;
     };
@@ -104,7 +116,7 @@ function verifyToken(request, reply, done) {
         if (err) {
             release();
 
-            return reply.send({
+            reply.send({
                 statusCode: 500,
                 error: 'Internal Server Error',
                 message: 'unable to connect to database server: ' + err
@@ -115,14 +127,14 @@ function verifyToken(request, reply, done) {
                     release();
 
                     if (err) {
-                        return reply.send({
+                        reply.send({
                             statusCode: 500,
                             error: 'Internal Server Error: Inner Query Error',
                             message: 'unable to perform database operation: ' + err
                         });
                     } else {
                         if (result.rows.map((row) => row.count).reduce((acc, count) => acc + count, 0) > 0) {
-                            done();
+                            next();
                         } else {
                             reply.send({ description: 'token validation unsuccesful!', tokenError: -999 });
                         }
@@ -131,7 +143,7 @@ function verifyToken(request, reply, done) {
             } catch (error) {
                 release();
 
-                return reply.send({
+                reply.send({
                     statusCode: 500,
                     error: 'Internal Server Error: Outer Query Error',
                     message: 'unable to perform database operation: ' + error
@@ -141,17 +153,18 @@ function verifyToken(request, reply, done) {
     }
 
     fastify.pg.connect(onConnect);
+
+    // done();
 }
 
-fastify.decorate('logRequest', logRequest);
+fastify.decorate('RequestTracker', RequestTracker);
 fastify.decorate('verifyToken', verifyToken);
 
 fastify.register(require('fastify-auth'));
 
 // postgres connection
 fastify.register(require('fastify-postgres'), {
-    connectionString: config.db,
-    query_timeout: 150000 // miliseconds
+    connectionString: config.db
 });
 
 // compression - add x-protobuf
@@ -175,12 +188,28 @@ fastify.register(require('fastify-swagger'), {
 });
 
 // static documentation path
-fastify.register(require('fastify-static'), {
-    // root: path.join(__dirname, 'documentation')
-    // root: path.join(__dirname, "public"),
-    root: [path.join(__dirname, 'documentation'), path.join(__dirname, 'tiles')],
-    // Do not append a trailing slash to prefixes
-    prefixAvoidTrailingSlash: true
+fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'output', 'maintenance'),
+    prefix: '/maintenance/', // optional: default '/'
+    decorateReply: true
+});
+
+fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'output', 'jurisdiction'),
+    prefix: '/jurisdiction/', // optional: default '/'
+    decorateReply: false // the reply decorator has been added by the first plugin registration
+});
+
+fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'output', 'weather'),
+    prefix: '/weather/', // optional: default '/'
+    decorateReply: false // the reply decorator has been added by the first plugin registration
+});
+
+fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'output', 'record'),
+    prefix: '/record/', // optional: default '/'
+    decorateReply: false // the reply decorator has been added by the first plugin registration
 });
 
 // routes

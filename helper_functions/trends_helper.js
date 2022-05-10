@@ -36,7 +36,6 @@ function getTableNameByAttribute(attribute) {
 // INPUT: "07,08,15,16,18"
 // OUTPUT: [07, 08, ...]
 function splitCodes(codeString) {
-    console.log()
     var splitCodes = [];
     if (codeString !== undefined && codeString !== null) {
         splitCodes = codeString.split(',');
@@ -126,7 +125,7 @@ function createQuery(queryCategory, queryArgs, tableName) {
 // returns object with the format: {State: {query: "...""}, MPO: {query: "..."}, ...}
 function getTrendsQueryObject(queryArgs, tableName) {
     const categories = getQueryCategories(queryArgs.jurisdictionLevel);
-    console.log(categories)
+    // console.log(categories)
     var returnObj = {};
     categories.forEach(category => {
         const sql = createQuery(category, queryArgs, tableName)

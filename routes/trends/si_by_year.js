@@ -55,7 +55,7 @@ const schema = {
             default: 'occupant'
         }
     }
-}
+};
 
 // *---------------*
 // create route
@@ -65,27 +65,29 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/trends/si-by-year',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need startyear"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need startyear'
                     });
                 } else if (queryArgs.endYear == undefined) {
                     return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start year"
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'need start year'
                     });
                 }
 
@@ -101,36 +103,36 @@ module.exports = function (fastify, opts, next) {
                                 // console.log(reportQueries[key].query)
                                 const res = client.query(reportQueries[key].query);
                                 return resolve(res);
-                            }
-                            catch(err) {
+                            } catch (err) {
                                 // console.log(err.stack);
                                 // console.log(reportQueries[key].query);
                                 return reject(error);
-                            }  
+                            }
                         });
                         promises.push(promise);
                     }
                 }
 
-                Promise.all(promises).then((reportDataArray) => {
-                    release();
-                    for (let i = 0; i < reportDataArray.length; i++) {
-                        var data = reportDataArray[i].rows;
-                        var category = Object.keys(reportQueries)[i];
-                        returnData[category] = data;
-                    }
+                Promise.all(promises)
+                    .then((reportDataArray) => {
+                        release();
+                        for (let i = 0; i < reportDataArray.length; i++) {
+                            var data = reportDataArray[i].rows;
+                            var category = Object.keys(reportQueries)[i];
+                            returnData[category] = data;
+                        }
 
-                    reply.send({ GraphData: returnData });
-                }).catch((error) => {
-                    release();
-                    // console.log("report error");
-                    // console.log(error);
-                });
-
+                        reply.send({ GraphData: returnData });
+                    })
+                    .catch((error) => {
+                        release();
+                        // console.log("report error");
+                        // console.log(error);
+                    });
             }
         }
-    })
-    next()
-}
+    });
+    next();
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

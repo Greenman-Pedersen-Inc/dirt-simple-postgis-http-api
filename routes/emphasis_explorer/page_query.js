@@ -1,31 +1,35 @@
 // route query
-const sql = (params, query) => {
-    return `
-  SELECT
-    ${query.columns}
+const sql = (params, query, requestURL) => {
+    // let baseURL = requestURL.split('&limit')[0]
 
-  FROM
-  ${params.table}
+    // console.log(`base`)
 
-  -- Optional Filter
-  ${query.filter ? `WHERE ${query.filter}` : ''}
-
-  -- Optional Group
-  ${query.group ? `GROUP BY ${query.group}` : ''}
-
-  -- Optional sort
-  ${query.sort ? `ORDER BY ${query.sort}` : ''}
-
-  -- Optional limit
-  ${query.limit ? `LIMIT ${query.limit}` : ''}
-
+    let queryText = `
+    select 
+      count(*),
+      (
+        select array_to_json(array_agg(bbq))
+        from (
+          select ${query.columns}
+          from ${params.table}
+          ${query.filter ? `WHERE ${query.filter}` : ''}
+          ${query.group ? `GROUP BY ${query.group}` : ''}
+          ${query.sort ? `ORDER BY ${query.sort}` : ''}
+          ${query.limit ? `LIMIT ${query.limit}` : ''}
+          ${query.offset ? `OFFSET ${query.offset}` : ''}
+        ) bbq
+      ) results
+    from ${params.table}
+    ${query.filter ? `WHERE ${query.filter}` : ''}
   `;
+    // console.log(queryText);
+    return queryText;
 };
 
 // route schema
 const schema = {
     description: 'Query a table or view.',
-    tags: ['api'],
+    tags: ['emphasis-explorer'],
     summary: 'table query',
     params: {
         table: {
@@ -55,6 +59,10 @@ const schema = {
         group: {
             type: 'string',
             description: 'Optional column(s) to group by.'
+        },
+        offset: {
+            type: 'string',
+            description: 'offset the beginning of the query by a set number of rows.'
         }
     }
 };
@@ -63,10 +71,12 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/query/:table',
+        url: '/emphasis-explorer/page-query/:table',
         schema: schema,
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            // console.log(request.raw.url);
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
@@ -77,9 +87,9 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
 
-                client.query(sql(request.params, request.query), function onResult(err, result) {
+                client.query(sql(request.params, request.query, request.raw.url), function onResult(err, result) {
                     release();
-                    reply.send(err || result.rows);
+                    reply.send(err || result.rows[0]);
                 });
             }
         }

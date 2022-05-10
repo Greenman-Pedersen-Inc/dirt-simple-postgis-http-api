@@ -1,32 +1,36 @@
 // route query
 const sql = (params, query) => {
-    return `
-SELECT ST_AsGeoJSON(complete_data.*, '', ${parseInt(query.precision, 10)}) AS geojson
-FROM (
-    SELECT 
-        -- kmean, 
-        count(*) as crash_count,
+    let bounds = query.bounds ? query.bounds.split(',').map(Number) : null;
 
-        -- ST_SetSRID(ST_Extent(geom_center), 4326) as bbox, 
-        ST_SetSRID(ST_Centroid(ST_Extent(geom_center)), 4326) as geom
-    FROM
-    (
-        -- Number indicates how many clusters should be created.
-        SELECT ST_ClusterKMeans(geom, 30) OVER() AS kmean, ST_Centroid(geom) as geom_center
-        FROM ard_accidents_geom_partition
-        WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))
-        -- Optional filter for the query input
-        ${query.filter ? ` AND ${query.filter}` : ''}
-    ) tsub
-    GROUP BY kmean
-) as complete_data
-`;
+    // ST_Transform(${query.geom_column}, 4326) as geom
+    var query = `
+    SELECT
+      ST_AsGeoJSON(crash_data.*, '${query.geom_column}', ${parseInt(query.precision, 10)})::TEXT AS geojson
+    FROM (
+      SELECT
+      ${query.geom_column}
+      ${query.columns ? `, ${query.columns}` : ''}
+      FROM
+        ${params.table}
+        ${query.filter || bounds ? 'WHERE ' : ''}
+        ${query.filter ? `${query.filter} AND ${query.geom_column} IS NOT NULL` : ' ${query.geom_column} IS NOT NULL '}
+        ${
+            query.filter && bounds
+                ? `AND ST_Intersects(${query.geom_column}, ST_MakeEnvelope(${bounds.join()}, 4326))`
+                : ''
+        }
+        ${query.group_by ? ` GROUP BY ${query.group_by}` : ''}
+        ${query.limit ? ` LIMIT ${query.limit}` : ''}
+    ) as crash_data;
+  `;
+    // console.log(query);
+    return query;
 };
 
 // route schema
 const schema = {
-    description: 'Return table as GeoJSON.',
-    tags: ['feature'],
+    description: 'Return crash data as GeoJSON. Table should be a table with crash records and some geometry column.',
+    tags: ['emphasis-explorer'],
     summary: 'return GeoJSON',
     params: {
         table: {
@@ -49,6 +53,10 @@ const schema = {
             type: 'string',
             description: 'Optional filter parameters for a SQL WHERE statement.'
         },
+        group_by: {
+            type: 'string',
+            description: 'Optional filter parameters for a SQL GROUP BY statement.'
+        },
         bounds: {
             type: 'string',
             pattern: '^-?[0-9]{0,20}.?[0-9]{1,20}?(,-?[0-9]{0,20}.?[0-9]{1,20}?){2,3}$',
@@ -57,8 +65,12 @@ const schema = {
         },
         precision: {
             type: 'integer',
-            description: 'The maximum number of decimal places to return. Default is 9.',
-            default: 9
+            description: 'The maximum number of decimal places to return. Default is 6.',
+            default: 6
+        },
+        limit: {
+            type: 'integer',
+            description: 'Number to limit results by'
         }
     }
 };
@@ -67,9 +79,9 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/cluster_geojson/:z/:x/:y',
+        url: '/emphasis-explorer/ea-geojson/:table',
         schema: schema,
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
 
@@ -86,8 +98,13 @@ module.exports = function (fastify, opts, next) {
                     if (err) {
                         reply.send(err);
                     } else {
-                        if (!result.rows[0].geojson) {
+                        // console.log(result.rows[0]);
+                        if (result.rows.length == 0) {
                             reply.code(204);
+                        } else if (!result.rows[0]) {
+                            if (!result.rows[0].geojson) {
+                                reply.code(204);
+                            }
                         }
                         const json = {
                             type: 'FeatureCollection',

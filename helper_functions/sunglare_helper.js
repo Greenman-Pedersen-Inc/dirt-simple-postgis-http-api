@@ -98,10 +98,10 @@ function formatCodes(codeString) {
 //"07,08,15,16,18"
 function formatTimeCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = splitCodes(codeString);
-    if (splitCodes.length > 0) {
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
         var formattedCodes = [];
-        splitCodes.forEach(splitCode => {
+        codes.forEach(splitCode => {
             var timeRangeQuery = `TO_TIMESTAMP(acc_time, 'HH24MI')::TIME BETWEEN '${splitCode}:00'::TIME AND '${splitCode}:59'::TIME`;
             formattedCodes.push(timeRangeQuery);
         });
@@ -114,12 +114,12 @@ function formatTimeCodes(codeString) {
 // OUTPUT: (trf_ctrl_adult_crossing_guard > 0) OR (trf_ctrl_channelization_painted > 0) OR ...
 function formatTrafficSignalCodes(codeString) {
     var returnCodes = "";
-    var splitCodes = splitCodes(codeString);
+    var codes = splitCodes(codeString);
     if (codeString !== undefined && codeString !== null) {
-        var splitCodes = codeString.split(',');
-        if (splitCodes.length > 0) {
+        var codes = codeString.split(',');
+        if (codes.length > 0) {
             var formattedCodes = [];
-            splitCodes.forEach(splitCode => {
+            codes.forEach(splitCode => {
                 var timeRangeQuery = `(${splitCode} > 0)`;
                 formattedCodes.push(timeRangeQuery);
             });
@@ -141,11 +141,11 @@ function makeReportQuery(queryStrings, crashAttr) {
 
     if (crashAttr == "default")
     {
-        defaultQuery = `, SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END) fatal, 
-            SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END) incapacitated, 
-            SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END) mod_inj, 
-            SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END) comp_pain, 
-            SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END) prop_dmg`;
+        defaultQuery = `, SUM(CASE WHEN severity_rating5 = '05' THEN 1 ELSE 0 END)::INT fatal, 
+            SUM(CASE WHEN severity_rating5 = '04' THEN 1 ELSE 0 END)::INT incapacitated, 
+            SUM(CASE WHEN severity_rating5 = '03' THEN 1 ELSE 0 END)::INT mod_inj, 
+            SUM(CASE WHEN severity_rating5 = '02' THEN 1 ELSE 0 END)::INT comp_pain, 
+            SUM(CASE WHEN severity_rating5 = '01' THEN 1 ELSE 0 END)::INT prop_dmg`;
     }
     else
     {
@@ -159,7 +159,7 @@ function makeReportQuery(queryStrings, crashAttr) {
         SELECT calc_sri, 
         ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS milepost,
         CONCAT(CAST (ROUND(FLOOR(calc_milepost * 10) / 10, 1) AS DECIMAL(5,2)), ' - ', ROUND(FLOOR(calc_milepost * 10) / 10, 1) + .09) AS mp_range,
-        COUNT(ard_accidents_sunglare.crashid)
+        COUNT(ard_accidents_sunglare.crashid)::INT
         ${defaultQuery}
         FROM 
         sunglare.ard_accidents_sunglare
@@ -538,4 +538,3 @@ module.exports = {
     createFilterClause: createFilterClause,
     makeReportQuery: makeReportQuery
 };
-

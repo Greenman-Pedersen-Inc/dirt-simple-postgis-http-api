@@ -90,9 +90,9 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/mvt/county/:z/:x/:y',
         schema: schema,
+
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
@@ -115,12 +115,19 @@ module.exports = function (fastify, opts, next) {
                         });
                     } else {
                         try {
+                            const requestTracker = new fastify.RequestTracker(
+                                request.headers,
+                                'crash_map',
+                                'mvt_county',
+                                JSON.stringify(Object.assign(request.query, request.params))
+                            );
+
                             client.query(sql(request.params, request.query), function onResult(err, result) {
                                 release();
 
                                 if (err) {
                                     reply.send(err);
-                                    //here
+                                    requestTracker.error(err);
                                 } else {
                                     if (result) {
                                         if (result.rows && result.rows.length > 0) {
@@ -131,15 +138,14 @@ module.exports = function (fastify, opts, next) {
                                                     reply.code(204);
                                                 }
 
-                                                reply.header('Content-Type', 'application/x-protobuf').send(mvt);
-                                                // here
+                                                reply.header('Content-Type', 'application/x-protobuf');
+                                                reply.send(mvt);
                                             } else {
                                                 reply.send({
                                                     statusCode: 500,
                                                     error: 'no mvt returned',
                                                     message: request
                                                 });
-                                                // here
                                             }
                                         } else {
                                             reply.send({
@@ -147,8 +153,6 @@ module.exports = function (fastify, opts, next) {
                                                 error: 'no rows returned',
                                                 message: request
                                             });
-
-                                            // here
                                         }
                                     } else {
                                         reply.send({
@@ -156,10 +160,8 @@ module.exports = function (fastify, opts, next) {
                                             error: 'no data returned',
                                             message: request
                                         });
-
-                                        // here
-                                        fastify.logRequest()
                                     }
+                                    requestTracker.complete();
                                 }
                             });
                         } catch (error) {
@@ -170,8 +172,6 @@ module.exports = function (fastify, opts, next) {
                                 error: error,
                                 message: request
                             });
-
-                            // here
                         }
                     }
                 }

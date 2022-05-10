@@ -4,44 +4,60 @@
 const getQuery = () => {
     const sql = `SELECT * FROM usermanagement.module;`;
     return sql;
-}
+};
 
 const schema = {
-    description: "gets a list of all menu modules and their meta data.",
+    description: 'gets a list of all menu modules and their meta data.',
     tags: ['admin'],
-    summary: "gets a list of all menu modules and their meta data."
-}
+    summary: 'gets a list of all menu modules and their meta data.',
+    params: {
+        username: {
+            type: 'string',
+            description: 'The name of the user to return modules for.'
+        }
+    }
+};
 
 // create route
-module.exports = function(fastify, opts, next) {
+module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/get-menu-info',
+        url: '/get-menu-info/:username',
         schema: schema,
-        handler: function(request, reply) {
+        preHandler: fastify.auth([fastify.verifyToken]),
+        handler: function (request, reply) {
             function onConnect(err, client, release) {
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server: " + err
-                })
+                if (err) {
+                    reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server: ' + err
+                    });
+                } else {
+                    const query = getQuery();
+                    const requestTracker = new fastify.RequestTracker(
+                        request.headers.credentials,
+                        'admin',
+                        'get-menu-info',
+                        JSON.stringify(request.params)
+                    );
 
-                const query = getQuery();
-                
-                client.query(
-                    query,
-                    function onResult(err, result) {
+                    client.query(query, function onResult(err, result) {
                         release();
 
-                        if (err) return reply.send({
-                            "statusCode": 500,
-                            "error": "Internal Server Error",
-                            "message": "unable to perform database operation: " + err,
-                        })
-
-                        reply.send(result.rows);
-                    }
-                )
+                        if (err) {
+                            reply.send({
+                                statusCode: 500,
+                                error: 'Internal Server Error',
+                                message: 'unable to perform database operation: ' + err
+                            });
+                            requestTracker.error(err);
+                        } else {
+                            reply.send(result.rows);
+                            requestTracker.complete();
+                        }
+                    });
+                }
             }
 
             fastify.pg.connect(onConnect);
@@ -49,6 +65,6 @@ module.exports = function(fastify, opts, next) {
     });
 
     next();
-}
+};
 
-module.exports.autoPrefix = '/admin'
+module.exports.autoPrefix = '/admin';

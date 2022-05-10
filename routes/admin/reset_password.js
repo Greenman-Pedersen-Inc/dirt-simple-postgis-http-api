@@ -1,5 +1,6 @@
 // reset_password: Initiates the password reset process for a specified user.
 var crypto = require('crypto');
+var nodemailer = require('nodemailer');
 
 // route register
 const sql = (requestBody) => {
@@ -13,7 +14,10 @@ const sql = (requestBody) => {
     expiryTime.setHours(expiryTime.getMinutes() + 10);
     expiryTime = expiryTime.getTime();
 
-    const sql = `INSERT INTO admin.reset_lease(user_name, token, expiration) VALUES (${requestBody.username}, ${leaseToken}, ${expiryTime});`;
+    const sql = `
+        INSERT INTO admin.reset_lease(user_name, token, expiration) VALUES ('${requestBody.username}', '${leaseToken}', ${expiryTime});
+        SELECT '${leaseToken}' as token;
+    `;
     return sql;
 };
 
@@ -26,7 +30,7 @@ const schema = {
         properties: {
             username: { type: 'string' }
         },
-        required: ['username', 'pass']
+        required: ['username']
     }
 };
 
@@ -48,14 +52,48 @@ module.exports = function (fastify, opts, next) {
                 client.query(sql(request.body), function onResult(err, result) {
                     release();
 
-                    if (err)
+                    if (err) {
                         return reply.send({
                             statusCode: 500,
                             error: 'Internal Server Error',
                             message: 'unable to perform database operation: ' + err
                         });
+                    } else {
+                        reply.send('Password reset successful!');
 
-                    reply.send(result.rows);
+                        // email - out - priv.myregisteredsite.com;
+
+                        let transporter = nodemailer.createTransport({
+                            host: 'mail.njvoyager.org',
+                            port: 587,
+                            secure: false, // true for 465, false for other ports
+                            auth: {
+                                user: 'admin@njvoyager.org',
+                                pass: 'NJDOT2020!GPI'
+                            }
+                        });
+
+                        let body = 'You recently requested to reset your password';
+                        body += `<br><br><a href="https://gpi.services/voyager/reset/?token=${result.rows[0].token}'&UserName='${request.body.username}">Click here to reset your password</a>`;
+                        body += '<br><br>Your password is confidential and should never be shared with others.';
+                        body += '<br><br>Yours truly,';
+                        body += '<br>The NJ Voyager Team</p>';
+
+                        var mailOptions = {
+                            from: 'admin@njvoyager.org',
+                            to: 'mcollins@gpinet.com',
+                            subject: 'NJ Voyager Password Reset',
+                            text: 'That was easy!'
+                        };
+
+                        transporter.sendMail(mailOptions, function (error, info) {
+                            if (error) {
+                                console.log(error);
+                            } else {
+                                console.log('Email sent: ' + info.response);
+                            }
+                        });
+                    }
                 });
             }
 

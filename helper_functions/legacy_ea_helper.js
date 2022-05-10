@@ -123,7 +123,7 @@ function calculateAverageData(dataArray, rowIndex) {
 }
 
 function calculateHmvmtData(averageData, hmvmtValue) {
-    console.log(averageData)
+    // console.log(averageData)
     return {
         "Incapacitated": (averageData["Incapacitated"] * 1.0) / hmvmtValue,
         "Killed": (averageData["Killed"] * 1.0) / hmvmtValue

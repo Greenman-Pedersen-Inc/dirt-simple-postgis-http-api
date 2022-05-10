@@ -1,59 +1,41 @@
 // route query
 const sql = (params, query) => {
-    const [x, y, srid] = params.point.match(/^((-?\d+\.?\d+)(,-?\d+\.?\d+)(,[0-9]{4}))/)[0].split(',');
-
-    return `
-  SELECT 
+    let parsedQuery = `
+  SELECT
     ${query.columns}
-  
+
   FROM
-    ${params.table}
-  
-  WHERE
-    ST_DWithin(
-      ${query.geom_column},      
-      ST_Transform(
-        st_setsrid(
-          st_makepoint(${x}, ${y}), 
-          ${srid}
-        ),
-        (SELECT ST_SRID(${query.geom_column}) FROM ${params.table} LIMIT 1)
-      ),
-      ${query.distance}
-    )
-    -- Optional Filter
-    ${query.filter ? `AND ${query.filter}` : ''}
+  ${params.table}
+
+  -- Optional Filter
+  ${query.filter ? `WHERE ${query.filter}` : ''}
+
+  -- Optional Group
+  ${query.group ? `GROUP BY ${query.group}` : ''}
 
   -- Optional sort
   ${query.sort ? `ORDER BY ${query.sort}` : ''}
 
   -- Optional limit
   ${query.limit ? `LIMIT ${query.limit}` : ''}
+
   `;
+    // console.log(parsedQuery);
+    return parsedQuery;
 };
 
 // route schema
 const schema = {
-    description: 'Transform a point to a different coordinate system.',
-    tags: ['api'],
-    summary: 'transform point to new SRID',
+    description: 'Query a table or view.',
+    tags: ['emphasis-explorer'],
+    summary: 'table query',
     params: {
         table: {
             type: 'string',
             description: 'The name of the table or view.'
-        },
-        point: {
-            type: 'string',
-            pattern: '^((-?\\d+\\.?\\d+)(,-?\\d+\\.?\\d+)(,[0-9]{4}))',
-            description: 'A point expressed as <em>X,Y,SRID</em>. Note for Lng/Lat coordinates, Lng is X and Lat is Y.'
         }
     },
     querystring: {
-        geom_column: {
-            type: 'string',
-            description: 'The geometry column of the table.',
-            default: 'geom'
-        },
         columns: {
             type: 'string',
             description: 'Columns to return.',
@@ -63,18 +45,18 @@ const schema = {
             type: 'string',
             description: 'Optional filter parameters for a SQL WHERE statement.'
         },
-        distance: {
-            type: 'integer',
-            description: 'Buffer the overlay feature(s) by units of the geometry column.',
-            default: 0
-        },
         sort: {
             type: 'string',
-            description: 'Optional sort column(s).'
+            description: 'Optional sort by column(s).'
         },
         limit: {
             type: 'integer',
-            description: 'Optional limit to the number of output features.'
+            description: 'Optional limit to the number of output features.',
+            default: 5000
+        },
+        group: {
+            type: 'string',
+            description: 'Optional column(s) to group by.'
         }
     }
 };
@@ -82,11 +64,19 @@ const schema = {
 // create route
 module.exports = function (fastify, opts, next) {
     fastify.route({
-        method: 'GET',
-        url: '/intersect_point/:table/:point',
+        method: 'POST',
+        url: '/emphasis-explorer/post-query/:table',
         schema: schema,
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            // console.log(request.body)
+
+            if (request.query.filter) {
+                request.query.filter += `and crashid IN ('${request.body.join(`','`)}')`;
+            } else {
+                request.query.filter = `crashid IN ('${request.body.join(`','`)}')`;
+            }
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {

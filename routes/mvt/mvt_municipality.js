@@ -94,6 +94,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/mvt/municipality/:z/:x/:y',
         schema: schema,
+
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
@@ -118,11 +119,18 @@ module.exports = function (fastify, opts, next) {
                         });
                     } else {
                         try {
+                            const requestTracker = new fastify.RequestTracker(
+                                request.headers,
+                                'crash_map',
+                                'mvt_municipality',
+                                JSON.stringify(Object.assign(request.query, request.params))
+                            );
                             client.query(sql(request.params, request.query), function onResult(err, result) {
                                 release();
 
                                 if (err) {
                                     reply.send(err);
+                                    requestTracker.error(err);
                                 } else {
                                     if (result) {
                                         if (result.rows && result.rows.length > 0) {
@@ -133,7 +141,8 @@ module.exports = function (fastify, opts, next) {
                                                     reply.code(204);
                                                 }
 
-                                                reply.header('Content-Type', 'application/x-protobuf').send(mvt);
+                                                reply.header('Content-Type', 'application/x-protobuf');
+                                                reply.send(mvt);
                                             } else {
                                                 reply.send({
                                                     statusCode: 500,
@@ -155,6 +164,7 @@ module.exports = function (fastify, opts, next) {
                                             message: request
                                         });
                                     }
+                                    requestTracker.complete();
                                 }
                             });
                         } catch (error) {

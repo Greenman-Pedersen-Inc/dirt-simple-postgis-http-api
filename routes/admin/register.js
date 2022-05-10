@@ -102,7 +102,7 @@ module.exports = function (fastify, opts, next) {
                                     message: 'unable to perform database operation: ' + err
                                 });
                             } else {
-                                reply.send({success: true});
+                                reply.send({ success: true });
                             }
                         });
                     } catch (error) {

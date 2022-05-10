@@ -1,42 +1,42 @@
 // route query
+// geom_column: wkb_geometry
+// filter: (year >= 2017 AND year <= 2021)  GROUP BY muni_data.mun, muni_data.mun_mu, muni_data.county, muni_data.mun_cty_co, crash_data.wkb_geometry
 const sql = (params, query) => {
-    let query_text = `
-    WITH mvtgeom as (
-      SELECT
+    let queryText = `
+   WITH mvtgeom as (
+    SELECT 
         ST_AsMVTGeom (
-          ST_Transform(${query.geom_column}, 3857),
-          ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
-        ) as geom
-        ${query.columns ? `, ${query.columns}` : ''}
-        ${query.id_column ? `, ${query.id_column}` : ''}
-      FROM
-        ${params.table},
-        (SELECT ST_SRID(${query.geom_column}) AS srid FROM ${params.table} LIMIT 1) a
-      WHERE
-        ST_Intersects(
-          ${query.geom_column},
-          ST_Transform(
-            ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}),
-            srid
-          )
-        )
+            muni_data.wkb_geometry,
+            ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
+        ) as geom,
+        muni_data.mun,
+        muni_data.mun_mu,
+        muni_data.county,
+        muni_data.mun_cty_co,
+        SUM(crashes)::INTEGER crashes
+    FROM ${params.table} crash_data, public.municipal_boundaries_of_nj_3857 muni_data
+    WHERE crash_data.mun_cty_co = muni_data.mun_cty_co
+  and crash_data.mun_mu = muni_data.mun_mu
+  AND ST_Intersects(muni_data.wkb_geometry, ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}))
 
-        -- Optional Filter
-        ${query.filter ? ` AND ${query.filter}` : ''}
-    )
-    SELECT ST_AsMVT(mvtgeom.*, '${params.table}', 4096, 'geom' ${
+    -- Optional Filter
+  ${query.filter ? ` AND ${query.filter}` : ''}
+)
+SELECT ST_AsMVT(mvtgeom.*, 'ard_accidents_geom_partition', 4096, 'geom' ${
         query.id_column ? `, '${query.id_column}'` : ''
     }) AS mvt from mvtgeom;
-  `;
-    //console.log(query_text)
-    return query_text;
+`;
+
+    // console.log(queryText);
+
+    return queryText;
 };
 
 // route schema
 const schema = {
-    description: 'Return table as Mapbox Vector Tile (MVT). The layer name returned is the name of the table.',
-    tags: ['feature'],
-    summary: 'return MVT',
+    description: 'Return table as Mapbox Vector Tile (MVT) for Muni level',
+    tags: ['emphasis-explorer'],
+    summary: 'return Muni MVT',
     params: {
         table: {
             type: 'string',
@@ -81,7 +81,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/mvt/:table/:z/:x/:y',
+        url: '/emphasis-explorer/mvt-muni/:table/:z/:x/:y',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {

@@ -157,6 +157,7 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/mvt/cluster/:z/:x/:y',
         schema: schema,
+
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
@@ -165,10 +166,8 @@ module.exports = function (fastify, opts, next) {
                 if (err) {
                     release();
 
-
                     fastify.logRequest(request.query);
 
-                    
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
@@ -185,11 +184,18 @@ module.exports = function (fastify, opts, next) {
                         });
                     } else {
                         try {
+                            const requestTracker = new fastify.RequestTracker(
+                                request.headers,
+                                'crash_map',
+                                'mvt_cluster',
+                                JSON.stringify(Object.assign(request.query, request.params))
+                            );
                             client.query(sql(request.params, request.query), function onResult(err, result) {
                                 release();
 
                                 if (err) {
                                     reply.send(err);
+                                    requestTracker.error(err);
                                 } else {
                                     if (result) {
                                         if (result.rows && result.rows.length > 0) {
@@ -222,6 +228,7 @@ module.exports = function (fastify, opts, next) {
                                             message: request
                                         });
                                     }
+                                    requestTracker.complete();
                                 }
                             });
                         } catch (error) {

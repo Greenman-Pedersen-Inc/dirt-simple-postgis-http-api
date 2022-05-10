@@ -131,8 +131,7 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'crash filter not submitted'
                     });
-                } 
-                else {
+                } else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             release();

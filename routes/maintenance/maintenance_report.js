@@ -1,16 +1,16 @@
 // readMaintenanceData: queries accident data between a time frame for NJDOT Maintenance for insurance claims
-
+const fs = require('fs');
+const path = require('path');
+const outputPath = path.join(__dirname, '../../output', 'maintenance');
 const maintenanceHelper = require('../../helper_functions/maintenance_helper');
 const codeTranslator = require('../../helper_functions/code_translator');
-
 
 // *---------------*
 // route query
 // *---------------*
 const sql = (query) => {
-        // --- QUERY crash data based on time frame
-        let accidentQuery =
-            `
+    // --- QUERY crash data based on time frame
+    let accidentQuery = `
     SELECT  
         dln,
         year,
@@ -40,7 +40,7 @@ const sql = (query) => {
         WHERE acc_date between '${query.startDate}' and '${query.endDate}' ${query.limit ? `LIMIT ${query.limit}` : ''}
     ;`;
     return accidentQuery;
-}
+};
 
 // *---------------*
 // route schema
@@ -67,10 +67,10 @@ const schema = {
         fileFormat: {
             type: 'string',
             description: 'csv, xlsx, or pdf',
-            default: "pdf"
+            default: 'pdf'
         }
-    },
-}
+    }
+};
 
 // *---------------*
 // create route
@@ -80,81 +80,115 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/maintenance/report',
         schema: schema,
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect)
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                var queryString = request.query
-                if (queryString.startDate == undefined) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start or end date"
-                    });
-                } else if (queryString.endDate == undefined) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need start or end date"
-                    });
-                } else if (queryString.fileFormat == undefined) {
-                    return reply.send({
-                        "statusCode": 500,
-                        "error": "Internal Server Error",
-                        "message": "need file format"
-                    });
-                } else {
-                    client.query(
-                        sql(request.query),
-                        function onResult(err, result) {
-                            release();
-    
-                            if (err) {
-                                reply.send(err)
-                            } else if (result && result.rowCount > 0) {
-                                const queryStrings = request.query;
-                                ////console.log(result.rows);
-                                var data = [];
+                try {
+                    const queryString = request.query;
+                    if (queryString.startDate == undefined) {
+                        return reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'need start or end date'
+                        });
+                    } else if (queryString.endDate == undefined) {
+                        return reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'need start or end date'
+                        });
+                    } else if (queryString.fileFormat == undefined) {
+                        return reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'need file format'
+                        });
+                    } else {
+                        if (!fs.existsSync(outputPath)) {
+                            try {
+                                fs.mkdirSync(outputPath, { recursive: true });
+                            } catch (error) {
+                                console.log(error);
+                            }
+                        }
 
-                                result.rows.forEach(row => {
-                                    var dataRow = {};
-                                    for (const key in row) {
-                                        var code = row[key];
-                                        const title = codeTranslator.resolveFieldAlias(key).toUpperCase();
-                                        if (key === "mun_mu") code = row["mun_cty_co"] + code;
-                                        
-                                        if (key === "acc_date") {
-                                            const date = new Date(row["acc_date"].trim());
-                                            dataRow[title] = date.toLocaleDateString("en-US");
+                        fs.readdir(outputPath, function (err, files) {
+                            //handling error
+                            if (err) {
+                                console.log('Unable to scan directory: ' + err);
+                            }
+                            //listing all files using forEach
+                            files.forEach(function (file) {
+                                fs.stat(path.join(outputPath, file), function (err, stat) {
+                                    let now = new Date().getTime();
+                                    let endTime = new Date(stat.ctime).getTime() + 600000;
+
+                                    if (err) {
+                                        return console.error(err);
+                                    } else {
+                                        if (now > endTime) {
+                                            fs.unlink(path.join(outputPath, file), function (response) {
+                                                console.log(`${file} deleted!`);
+                                            });
                                         }
-                                        else {
+                                    }
+                                });
+                            });
+                        });
+
+                        client.query(sql(request.query), function onResult(err, result) {
+                            release();
+
+                            if (err) {
+                                reply.send(err);
+                            } else if (result && result.rowCount > 0) {
+                                let data = [];
+
+                                result.rows.forEach((row) => {
+                                    let dataRow = {};
+                                    for (const key in row) {
+                                        let code = row[key];
+                                        const title = codeTranslator.resolveFieldAlias(key).toUpperCase();
+                                        if (key === 'mun_mu') {
+                                            code = row['mun_cty_co'] + code;
+                                        }
+
+                                        if (key === 'acc_date') {
+                                            const date = new Date(row['acc_date'].trim());
+                                            dataRow[title] = date.toLocaleDateString('en-US');
+                                        } else {
                                             const value = codeTranslator.convertCodeDescription(key, code);
-                                            dataRow[title] = value;                                            
+                                            dataRow[title] = value;
                                         }
                                     }
                                     data.push(dataRow);
                                 });
 
-                                ////console.log(data[0]);
-                                const fileInfo = maintenanceHelper.fileExport(queryStrings, data);
-    
-                                fileInfo.then((createdFile) => {
-                                    //console.log(createdFile)
-                                    reply.send({ url: createdFile.fileName });
-    
-                                }).catch((error) => {
-                                    //console.log(error);
-                                })
+                                const fileInfo = maintenanceHelper.fileExport(queryString, data);
+
+                                fileInfo
+                                    .then((createdFile) => {
+                                        reply.code(200);
+                                        reply.sendFile(createdFile.fileName, outputPath);
+                                    })
+                                    .catch((error) => {
+                                        console.log('report error');
+                                        console.log(error);
+                                    });
                             } else {
-                                reply.code(204).send()
+                                reply.code(204).send();
                             }
-                        }
-                    );
+                        });
+                    }
+                } catch (error) {
+                    console.error(error);
                 }
             }
         }
-    })
+    });
     next();
-}
+};
 
-module.exports.autoPrefix = '/v1'
+module.exports.autoPrefix = '/v1';

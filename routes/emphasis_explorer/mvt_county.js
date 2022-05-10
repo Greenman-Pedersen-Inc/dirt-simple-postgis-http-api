@@ -1,20 +1,22 @@
 // route query
 const sql = (params, query) => {
-    let query_text = `
+    let queryText = `
     WITH mvtgeom as (
       SELECT
         ST_AsMVTGeom (
-          ST_Transform(${query.geom_column}, 3857),
+          ST_Transform(county_data.${query.geom_column}, 3857),
           ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
-        ) as geom
-        ${query.columns ? `, ${query.columns}` : ''}
-        ${query.id_column ? `, ${query.id_column}` : ''}
+        ) as geom,
+        county_data.county, 
+        crash_data.mun_cty_co, 
+        SUM(crashes)::INTEGER crashes
       FROM
-        ${params.table},
-        (SELECT ST_SRID(${query.geom_column}) AS srid FROM ${params.table} LIMIT 1) a
+        ${params.table} crash_data LEFT JOIN public.county_boundaries_of_nj county_data
+        ON crash_data.mun_cty_co = county_data.mun_cty_co,
+        (SELECT ST_SRID(${query.geom_column}) AS srid FROM public.county_boundaries_of_nj LIMIT 1) a
       WHERE
         ST_Intersects(
-          ${query.geom_column},
+          county_data.${query.geom_column},
           ST_Transform(
             ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}),
             srid
@@ -28,15 +30,17 @@ const sql = (params, query) => {
         query.id_column ? `, '${query.id_column}'` : ''
     }) AS mvt from mvtgeom;
   `;
-    //console.log(query_text)
-    return query_text;
+
+    // console.log(queryText);
+
+    return queryText;
 };
 
 // route schema
 const schema = {
-    description: 'Return table as Mapbox Vector Tile (MVT). The layer name returned is the name of the table.',
-    tags: ['feature'],
-    summary: 'return MVT',
+    description: 'Return table as Mapbox Vector Tile (MVT) for County level',
+    tags: ['emphasis-explorer'],
+    summary: 'return County MVT',
     params: {
         table: {
             type: 'string',
@@ -81,7 +85,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/mvt/:table/:z/:x/:y',
+        url: '/emphasis-explorer/mvt-county/:table/:z/:x/:y',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {

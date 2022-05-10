@@ -4,6 +4,7 @@ var nodemailer = require('nodemailer');
 
 // route register
 const sql = (requestBody) => {
+    const username = requestBody.username;
     // create a buffer that will be the token to send to the user
     const buffer = crypto.randomBytes(64);
     // replace characters that might be annoying to send in a url
@@ -11,11 +12,12 @@ const sql = (requestBody) => {
     // create an expiry for
     let expiryTime = new Date();
 
-    expiryTime.setHours(expiryTime.getMinutes() + 10);
+    expiryTime.setMinutes(expiryTime.getMinutes() + 10);
     expiryTime = expiryTime.getTime();
 
     const sql = `
-        INSERT INTO admin.reset_lease(user_name, token, expiration) VALUES ('${requestBody.username}', '${leaseToken}', ${expiryTime});
+        DELETE FROM admin.reset_lease where user_name = '${username}';
+        INSERT INTO admin.reset_lease(user_name, token, expiration) VALUES ('${username}', '${leaseToken}', ${expiryTime});
         SELECT '${leaseToken}' as token;
     `;
     return sql;
@@ -59,10 +61,10 @@ module.exports = function (fastify, opts, next) {
                             message: 'unable to perform database operation: ' + err
                         });
                     } else {
-                        reply.send('Password reset successful!');
+                        reply.code(200);
+                        reply.send({ success: true });
 
-                        // email - out - priv.myregisteredsite.com;
-
+                        let token = result[2].rows[0].token;
                         let transporter = nodemailer.createTransport({
                             host: 'mail.njvoyager.org',
                             port: 587,
@@ -70,11 +72,12 @@ module.exports = function (fastify, opts, next) {
                             auth: {
                                 user: 'admin@njvoyager.org',
                                 pass: 'NJDOT2020!GPI'
-                            }
+                            },
+                            tls: { rejectUnauthorized: false } // disable certificate checking
                         });
 
                         let body = 'You recently requested to reset your password';
-                        body += `<br><br><a href="https://gpi.services/voyager/reset/?token=${result.rows[0].token}'&UserName='${request.body.username}">Click here to reset your password</a>`;
+                        body += `<br><br><a href="https://gpi.services/voyager/reset/?token=${token}&username=${request.body.username}">Click here to reset your password</a>`;
                         body += '<br><br>Your password is confidential and should never be shared with others.';
                         body += '<br><br>Yours truly,';
                         body += '<br>The NJ Voyager Team</p>';
@@ -83,7 +86,7 @@ module.exports = function (fastify, opts, next) {
                             from: 'admin@njvoyager.org',
                             to: 'mcollins@gpinet.com',
                             subject: 'NJ Voyager Password Reset',
-                            text: 'That was easy!'
+                            html: body
                         };
 
                         transporter.sendMail(mailOptions, function (error, info) {

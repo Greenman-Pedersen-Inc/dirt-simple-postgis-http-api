@@ -1,7 +1,8 @@
 const path = require('path');
 const config = require('./config');
 const fastify = require('fastify')({
-    connectionTimeout: 5000
+    connectionTimeout: 5000,
+    logger: true
 });
 const fastifyStatic = require('fastify-static');
 const { maxHeaderSize } = require('http');
@@ -207,8 +208,8 @@ fastify.register(fastifyStatic, {
 });
 
 fastify.register(fastifyStatic, {
-    root: path.join(__dirname, 'output', 'record'),
-    prefix: '/record/', // optional: default '/'
+    root: path.join(__dirname, 'output', 'records'),
+    prefix: '/records/', // optional: default '/'
     decorateReply: false // the reply decorator has been added by the first plugin registration
 });
 
@@ -242,7 +243,7 @@ fastify.route({
 // Launch server
 fastify.listen(config.port, config.host || '127.0.0.1', function (err, address) {
     if (err) {
-        //console.log(err)
+        console.log(err);
         process.exit(1);
     }
     console.info(`Server listening on ${address}`);

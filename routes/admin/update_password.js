@@ -9,14 +9,13 @@ const usersql = (requestBody) => {
     const securePassword = saltHashPassword(requestBody.password);
 
     const sql = `
-        with valid_update_counter as (
-            SELECT count(*)
-                FROM admin.reset_lease
-                where expiration > ${expiryTime}
-                and token = '${token}'
-                and user_name = '${username}'
-        )
-        UPDATE admin.user_info SET password = '${securePassword}' WHERE user_name = '${username}' AND valid_update_counter > 0;
+        UPDATE admin.user_info SET password = '${securePassword}' WHERE user_name = '${username}' AND (            
+            SELECT count(*) > 0
+            FROM admin.reset_lease
+            where expiration > ${expiryTime.getTime()}
+            and token = '${token}'
+            and user_name = '${username}'
+        );
         DELETE FROM admin.reset_lease where user_name = '${username}'`;
     return sql;
 };
@@ -57,7 +56,6 @@ module.exports = function (fastify, opts, next) {
                 required: ['username', 'password', 'token']
             }
         },
-        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             function onConnect(err, client, release) {
                 if (err)
@@ -67,9 +65,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server: ' + err
                     });
 
-                // console.log(request.body)
-                const values = [request.body.username];
-                client.query(usersql(request.body), values, function onResult(err, result) {
+                client.query(usersql(request.body), function onResult(err, result) {
                     release();
 
                     if (err)

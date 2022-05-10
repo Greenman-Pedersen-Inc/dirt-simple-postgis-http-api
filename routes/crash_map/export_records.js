@@ -7,7 +7,6 @@ const JSZip = require('jszip');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
-
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 

@@ -19,6 +19,7 @@ const sql = (requestBody) => {
         DELETE FROM admin.reset_lease where user_name = '${username}';
         INSERT INTO admin.reset_lease(user_name, token, expiration) VALUES ('${username}', '${leaseToken}', ${expiryTime});
         SELECT '${leaseToken}' as token;
+        SELECT COUNT(*) = 1 as verified from admin.user_info where user_name = '${username}';
     `;
     return sql;
 };
@@ -51,53 +52,72 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server: ' + err
                     });
 
-                client.query(sql(request.body), function onResult(err, result) {
-                    release();
+                try {
+                    client.query(sql(request.body), function onResult(err, result) {
+                        release();
 
-                    if (err) {
-                        return reply.send({
-                            statusCode: 500,
-                            error: 'Internal Server Error',
-                            message: 'unable to perform database operation: ' + err
-                        });
-                    } else {
-                        reply.code(200);
-                        reply.send({ success: true });
+                        if (err) {
+                            return reply.send({
+                                statusCode: 500,
+                                error: 'Internal Server Error',
+                                message: 'unable to perform database operation: ' + err
+                            });
+                        } else {
+                            try {
+                                let token = result[2].rows[0].token;
+                                let emailAddress = request.body.username;
+                                let userVerification = result[3].rows[0].verified;
+                                let transporter = nodemailer.createTransport({
+                                    host: 'mail.njvoyager.org',
+                                    port: 587,
+                                    secure: false, // true for 465, false for other ports
+                                    auth: {
+                                        user: 'admin@njvoyager.org',
+                                        pass: 'NJDOT2020!GPI'
+                                    },
+                                    tls: { rejectUnauthorized: false } // disable certificate checking
+                                });
 
-                        let token = result[2].rows[0].token;
-                        let transporter = nodemailer.createTransport({
-                            host: 'mail.njvoyager.org',
-                            port: 587,
-                            secure: false, // true for 465, false for other ports
-                            auth: {
-                                user: 'admin@njvoyager.org',
-                                pass: 'NJDOT2020!GPI'
-                            },
-                            tls: { rejectUnauthorized: false } // disable certificate checking
-                        });
+                                let body = 'You recently requested to reset your password';
+                                body += `<br><br><a href="https://gpi.services/voyager/reset/?token=${token}&username=${emailAddress}">Click here to reset your password</a>`;
+                                body += '<br><br>Your password is confidential and should never be shared with others.';
+                                body += '<br><br>Yours truly,';
+                                body += '<br>The NJ Voyager Team</p>';
 
-                        let body = 'You recently requested to reset your password';
-                        body += `<br><br><a href="https://gpi.services/voyager/reset/?token=${token}&username=${request.body.username}">Click here to reset your password</a>`;
-                        body += '<br><br>Your password is confidential and should never be shared with others.';
-                        body += '<br><br>Yours truly,';
-                        body += '<br>The NJ Voyager Team</p>';
+                                let mailOptions = {
+                                    from: 'admin@njvoyager.org',
+                                    to: emailAddress,
+                                    subject: 'NJ Voyager Password Reset',
+                                    html: body
+                                };
 
-                        var mailOptions = {
-                            from: 'admin@njvoyager.org',
-                            to: 'mcollins@gpinet.com',
-                            subject: 'NJ Voyager Password Reset',
-                            html: body
-                        };
+                                if (userVerification) {
+                                    reply.code(200);
+                                    reply.send({ success: true });
 
-                        transporter.sendMail(mailOptions, function (error, info) {
-                            if (error) {
+                                    transporter.sendMail(mailOptions, function (error, info) {
+                                        if (error) {
+                                            console.log(error);
+                                        } else {
+                                            console.log('Email sent: ' + info.response);
+                                        }
+                                    });
+                                } else {
+                                    reply.code(500);
+                                    reply.send({ success: false, info: 'user does not exist' });
+                                }
+                            } catch (error) {
                                 console.log(error);
-                            } else {
-                                console.log('Email sent: ' + info.response);
                             }
-                        });
-                    }
-                });
+                        }
+                    });
+                } catch (error) {
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: error
+                    });
+                }
             }
 
             fastify.pg.connect(onConnect);

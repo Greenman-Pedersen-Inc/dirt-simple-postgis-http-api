@@ -15,7 +15,7 @@ const schema = {
         user: {
             type: 'string',
             description: 'The user name.',
-            default: ''
+            example: 'mcollins'
         },
         moduleType: {
             type: 'string',
@@ -40,7 +40,7 @@ const schema = {
         crashAttributes: {
             type: 'string',
             description: 'Comma seperated list of Crash Attribute codes based on the NJTR-1 form.',
-            default: 'surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code'
+            example: 'surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code'
         },
         travelDirectionCodes: {
             type: 'string',
@@ -57,15 +57,17 @@ const schema = {
         sri: {
             type: 'string',
             description: 'SRI code.',
-            default: '00000010__'
+            example: '00000010__'
         },
         countyCode: {
             type: 'string',
-            description: 'County Code.'
+            description: 'County Code.',
+            example: '01'
         },
         muniCode: {
             type: 'string',
-            description: 'Municipality code.'
+            description: 'Municipality code.',
+            example: '13'
         }
     }
 };

@@ -69,19 +69,28 @@ module.exports = function (fastify, opts, next) {
         handler: function (request, reply) {
             fastify.pg.connect(onConnect);
 
-            function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
+            function onConnect(error, client, release) {
+                if (error) {
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
-                        message: 'unable to connect to database server'
+                        message: error
                     });
-
-                client.query(sql(request.params, request.query), function onResult(err, result) {
-                    release();
-                    reply.send(err || result.rows);
-                });
+                } else {
+                    client.query(sql(request.params, request.query), function onResult(err, result) {
+                        release();
+                        reply.send(err || result.rows);
+                    });
+                }
             }
+        },
+        onRequest: async (request, reply) => {
+            request.controller = new AbortController();
+            reply.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
+                request.controller.abort();
+                reply.send(new Error('Server Timeout'));
+                reply.send = (payload) => reply;
+            });
         }
     });
     next();

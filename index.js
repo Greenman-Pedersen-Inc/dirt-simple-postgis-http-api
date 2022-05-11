@@ -1,7 +1,7 @@
 const path = require('path');
 const config = require('./config');
 const fastify = require('fastify')({
-    connectionTimeout: 5000,
+    // connectionTimeout: 5000,
     logger: true
 });
 const fastifyStatic = require('fastify-static');
@@ -158,6 +158,8 @@ function verifyToken(request, reply, next) {
     // done();
 }
 
+// this is the default timeout for replys, can be overwritten at the route level with "customTimeout" variable
+fastify.decorate('globalTimeout', 5000);
 fastify.decorate('RequestTracker', RequestTracker);
 fastify.decorate('verifyToken', verifyToken);
 

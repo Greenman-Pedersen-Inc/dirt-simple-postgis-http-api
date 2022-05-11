@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const outputPath = path.join(__dirname, '../../output', 'jurisdiction');
 const juriHelper = require('../../helper_functions/jurisdiction_report_helper');
+const customTimeout = 20000;
 
 // *---------------*
 // route schema
@@ -69,8 +70,6 @@ module.exports = function (fastify, opts, next) {
                                 message: 'need jurisdiction code'
                             });
                         } else {
-
-
                             // const requestTracker = new fastify.RequestTracker(
                             //     request.headers,
                             //     'jurisdiction_report',
@@ -176,6 +175,14 @@ module.exports = function (fastify, opts, next) {
                     console.error(error);
                 }
             }
+        },
+        onRequest: async (req, res) => {
+            req.controller = new AbortController();
+            res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
+                req.controller.abort();
+                res.send(new Error('Server Timeout'));
+                res.send = (payload) => res;
+            });
         }
     });
     next();

@@ -36,7 +36,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/jurisidiction/report',
+        url: '/jurisidiction-report',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
@@ -69,15 +69,6 @@ module.exports = function (fastify, opts, next) {
                                 message: 'need jurisdiction code'
                             });
                         } else {
-
-
-                            // const requestTracker = new fastify.RequestTracker(
-                            //     request.headers,
-                            //     'jurisdiction_report',
-                            //     'jurisdiction_report',
-                            //     JSON.stringify(Object.assign(request.query, request.params))
-                            // );
-
                             const reportQueries = juriHelper.getReportQueries(queryArgs);
                             const promises = [];
                             const categories = [];

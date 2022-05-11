@@ -78,7 +78,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/maintenance/report',
+        url: '/maintenance-report',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {

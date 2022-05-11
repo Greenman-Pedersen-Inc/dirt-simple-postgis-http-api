@@ -65,19 +65,28 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server: ' + err
                     });
 
-                client.query(usersql(request.body), function onResult(err, result) {
-                    release();
+                try {
+                    client.query(usersql(request.body), function onResult(err, result) {
+                        release();
 
-                    if (err)
-                        return reply.send({
-                            statusCode: 500,
-                            error: 'Internal Server Error',
-                            message: 'unable to perform database operation: ' + err,
-                            success: false
-                        });
+                        if (err)
+                            return reply.send({
+                                statusCode: 500,
+                                error: 'Internal Server Error',
+                                message: 'unable to perform database operation: ' + err,
+                                success: false
+                            });
 
-                    reply.send({ success: true });
-                });
+                        reply.send({ success: true });
+                    });
+                } catch (error) {
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: error,
+                        success: false
+                    });
+                }
             }
 
             fastify.pg.connect(onConnect);

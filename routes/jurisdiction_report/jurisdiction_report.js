@@ -37,7 +37,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/jurisidiction/report',
+        url: '/jurisidiction-report',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {

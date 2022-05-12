@@ -4,6 +4,7 @@ const path = require('path');
 const outputPath = path.join(__dirname, '../../output', 'maintenance');
 const maintenanceHelper = require('../../helper_functions/maintenance_helper');
 const codeTranslator = require('../../helper_functions/code_translator');
+const customTimeout = 20000;
 
 // *---------------*
 // route query
@@ -186,6 +187,14 @@ module.exports = function (fastify, opts, next) {
                     console.error(error);
                 }
             }
+        },
+        onRequest: async (req, res) => {
+            req.controller = new AbortController();
+            res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
+                req.controller.abort();
+                res.send(new Error('Server Timeout'));
+                res.send = (payload) => res;
+            });
         }
     });
     next();

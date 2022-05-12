@@ -3,6 +3,7 @@ const reportHelper = require('../../helper_functions/report_maker/predictive_rep
 const fs = require('fs');
 const path = require('path');
 const outputPath = path.join(__dirname, '../../output', 'sunglare');
+const customTimeout = 20000;
 
 // *---------------*
 // route schema
@@ -207,6 +208,14 @@ module.exports = function (fastify, opts, next) {
                     }
                 }
             }
+        },
+        onRequest: async (req, res) => {
+            req.controller = new AbortController();
+            res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
+                req.controller.abort();
+                res.send(new Error('Server Timeout'));
+                res.send = (payload) => res;
+            });
         }
     });
     next();

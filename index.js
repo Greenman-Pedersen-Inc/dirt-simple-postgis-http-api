@@ -6,6 +6,7 @@ const fastify = require('fastify')({
 });
 const fastifyStatic = require('fastify-static');
 const { maxHeaderSize } = require('http');
+const globalTimeout = 5000;
 
 /**
  * Log requests made to the server in an administrative database for further analysis.
@@ -15,33 +16,40 @@ const { maxHeaderSize } = require('http');
  * @param {*} done
  */
 function RequestTracker(credentials, module, end_point, user_query) {
-    const request_time = Date.now();
+    const self = this;
 
-    if (typeof credentials === 'string') {
-        credentials = JSON.parse(credentials);
-    }
-
+    this.start = function () {
+        self.request_time = Date.now();
+    };
     this.complete = function () {
-        const execution_time = Date.now();
-        const queryString = `
-            INSERT INTO traffic.${module}(
-                user_name, token, request_time, execution_time, end_point, user_query)
-                VALUES ('${credentials.username}','${credentials.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}');
-        `;
-        fastify.pg.connect((err, client, release) => {
-            onConnect(err, client, release, queryString);
-        });
+        try {
+            const execution_time = Date.now();
+            const queryString = `
+                INSERT INTO traffic.${module}(
+                    user_name, token, request_time, execution_time, end_point, user_query)
+                    VALUES ('${credentials.username}','${credentials.token}', ${self.request_time}, ${execution_time}, '${end_point}', '${user_query}');
+            `;
+            fastify.pg.connect((err, client, release) => {
+                onConnect(err, client, release, queryString);
+            });
+        } catch (error) {
+            reply.code(500).send(error);
+        }
     };
     this.error = function (error) {
-        const execution_time = Date.now();
-        const queryString = `
-            INSERT INTO traffic.${module}(
-                user_name, token, request_time, execution_time, end_point, user_query, error)
-                VALUES ('${credentials.username}','${credentials.token}', ${request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
-        `;
-        fastify.pg.connect((err, client, release) => {
-            onConnect(err, client, release, queryString);
-        });
+        try {
+            const execution_time = Date.now();
+            const queryString = `
+                INSERT INTO traffic.${module}(
+                    user_name, token, request_time, execution_time, end_point, user_query, error)
+                    VALUES ('${credentials.username}','${credentials.token}', ${self.request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
+            `;
+            fastify.pg.connect((err, client, release) => {
+                onConnect(err, client, release, queryString);
+            });
+        } catch (error) {
+            reply.code(500).send(error);
+        }
     };
 
     function onConnect(err, client, release, queryString) {
@@ -76,6 +84,10 @@ function RequestTracker(credentials, module, end_point, user_query) {
                 };
             }
         }
+    }
+
+    if (typeof credentials === 'string') {
+        credentials = JSON.parse(credentials);
     }
 }
 
@@ -158,16 +170,37 @@ function verifyToken(request, reply, next) {
     // done();
 }
 
+function requestTimeout(client, reply, requestTracker, timeout = globalTimeout) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            client
+                .end()
+                .then(() => {
+                    let error = new Error('Server Timeout');
+                    reply.send(error);
+                    reply.send = (payload) => reply;
+                    requestTracker.error(error);
+                })
+                .catch((error) => {
+                    reply.send(new Error(error.stack));
+                    reply.send = (payload) => reply;
+                    requestTracker.error(error);
+                });
+        }, timeout);
+    });
+}
+
 // this is the default timeout for replys, can be overwritten at the route level with "customTimeout" variable
-fastify.decorate('globalTimeout', 5000);
 fastify.decorate('RequestTracker', RequestTracker);
 fastify.decorate('verifyToken', verifyToken);
+fastify.decorate('requestTimeout', requestTimeout);
 
 fastify.register(require('fastify-auth'));
 
 // postgres connection
 fastify.register(require('fastify-postgres'), {
-    connectionString: config.db
+    connectionString: config.db,
+    query_timeout: 5000
 });
 
 // compression - add x-protobuf

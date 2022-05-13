@@ -37,80 +37,53 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/jurisidiction-report',
+        url: '/jurisidiction/report',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            fastify.pg.connect(onConnect);
+            const requestTracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'jurisidiction',
+                'report',
+                JSON.stringify(request.params)
+            );
 
-            function onConnect(err, client, release) {
+            function onConnect(error, client, release) {
                 try {
                     var queryArgs = request.query;
 
-                    if (err) {
-                        reply.send(err);
+                    if (error) {
                         release();
+                        reply.send(error);
+                        requestTracker.error(error);
                     } else {
                         if (queryArgs.startYear == undefined) {
-                            return reply.send({
+                        release();
+                        reply.send({
                                 statusCode: 500,
                                 error: 'Internal Server Error',
                                 message: 'need start or end year'
                             });
+                            message: 'need start or end year';
                         } else if (queryArgs.endYear == undefined) {
-                            return reply.send({
+                        release();
+                        reply.send({
                                 statusCode: 500,
                                 error: 'Internal Server Error',
                                 message: 'need start or end year'
                             });
+                            message: 'need start or end year';
                         } else if (queryArgs.jurisdictionCode == undefined) {
-                            return reply.send({
+                        release();
+                        reply.send({
                                 statusCode: 500,
                                 error: 'Internal Server Error',
                                 message: 'need jurisdiction code'
                             });
                         } else {
-                            // const requestTracker = new fastify.RequestTracker(
-                            //     request.headers,
-                            //     'jurisdiction_report',
-                            //     'jurisdiction_report',
-                            //     JSON.stringify(Object.assign(request.query, request.params))
-                            // );
-
                             const reportQueries = juriHelper.getReportQueries(queryArgs);
                             const promises = [];
                             const categories = [];
-                            // create output folder for route if one doesn't exist
-                            if (!fs.existsSync(outputPath)) {
-                                try {
-                                    fs.mkdirSync(outputPath, { recursive: true });
-                                } catch (error) {
-                                    console.log(error);
-                                }
-                            }
-                            // remove all reports older than 10 minutes from output directory
-                            fs.readdir(outputPath, function (err, files) {
-                                //handling error
-                                if (err) {
-                                    return console.log('Unable to scan directory: ' + err);
-                                }
-                                //listing all files using forEach
-                                files.forEach(function (file) {
-                                    fs.stat(path.join(outputPath, file), function (err, stat) {
-                                        let now = new Date().getTime();
-                                        let endTime = new Date(stat.ctime).getTime() + 600000;
-                                        if (err) {
-                                            return console.error(err);
-                                        } else {
-                                            if (now > endTime) {
-                                                fs.unlink(path.join(outputPath, file), function (response) {
-                                                    console.log(`${file} deleted!`);
-                                                });
-                                            }
-                                        }
-                                    });
-                                });
-                            });
 
                             for (var key in reportQueries) {
                                 if (reportQueries.hasOwnProperty(key)) {
@@ -119,8 +92,8 @@ module.exports = function (fastify, opts, next) {
                                             try {
                                                 const res = client.query(queryObj.query);
                                                 return resolve(res);
-                                            } catch (err) {
-                                                console.log(err.stack);
+                                            } catch (error) {
+                                                console.log(error.stack);
                                                 console.log(queryObj.query);
                                                 return reject(error);
                                             }
@@ -175,14 +148,41 @@ module.exports = function (fastify, opts, next) {
                     console.error(error);
                 }
             }
-        },
-        onRequest: async (req, res) => {
-            req.controller = new AbortController();
-            res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
-                req.controller.abort();
-                res.send(new Error('Server Timeout'));
-                res.send = (payload) => res;
+
+            // create output folder for route if one doesn't exist
+            if (!fs.existsSync(outputPath)) {
+                try {
+                    fs.mkdirSync(outputPath, { recursive: true });
+                } catch (error) {
+                    console.log(error);
+                }
+            }
+
+            // remove all reports older than 10 minutes from output directory
+            fs.readdir(outputPath, function (error, files) {
+                //handling error
+                if (error) {
+                    return console.log('Unable to scan directory: ' + error);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    fs.stat(path.join(outputPath, file), function (error, stat) {
+                        let now = new Date().getTime();
+                        let endTime = new Date(stat.ctime).getTime() + 600000;
+                        if (error) {
+                            return console.error(error);
+                        } else {
+                            if (now > endTime) {
+                                fs.unlink(path.join(outputPath, file), function (response) {
+                                    console.log(`${file} deleted!`);
+                                });
+                            }
+                        }
+                    });
+                });
             });
+
+            fastify.pg.connect(onConnect);
         }
     });
     next();

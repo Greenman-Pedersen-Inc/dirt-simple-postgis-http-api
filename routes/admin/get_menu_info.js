@@ -1,7 +1,7 @@
 // get_menu_info: gets a list of all menu modules and their meta data
 
 // route register
-const getQuery = () => {
+const getQuery = (username) => {
     const sql = `SELECT * FROM usermanagement.module;`;
     return sql;
 };
@@ -26,41 +26,45 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            function onConnect(err, client, release) {
-                if (err) {
-                    reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'unable to connect to database server: ' + err
-                    });
-                } else {
-                    const query = getQuery();
-                    const requestTracker = new fastify.RequestTracker(
-                        request.headers.credentials,
-                        'admin',
-                        'get-menu-info',
-                        JSON.stringify(request.params)
-                    );
+            const query = getQuery(request.params.username);
 
-                    client.query(query, function onResult(err, result) {
-                        release();
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'admin',
+                'get-menu-info',
+                JSON.stringify(request.params)
+            );
 
-                        if (err) {
-                            reply.send({
-                                statusCode: 500,
-                                error: 'Internal Server Error',
-                                message: 'unable to perform database operation: ' + err
+            if (request.params.username == undefined) {
+                reply.code(400).send('no user name specified');
+            } else {
+                fastify.pg
+                    .connect()
+                    .then((client) => {
+                        client
+                            .query(query)
+                            .then((result) => {
+                                if (result.rows && result.rows.length > 0) {
+                                    reply.code(200).send(result.rows);
+                                } else {
+                                    reply.code(204).send();
+                                }
+
+                                request.tracker.complete();
+                            })
+                            .catch((error) => {
+                                reply.code(500).send(error);
+                                request.tracker.error(error);
+                            })
+                            .then(() => {
+                                client.end();
                             });
-                            requestTracker.error(err);
-                        } else {
-                            reply.send(result.rows);
-                            requestTracker.complete();
-                        }
+                    })
+                    .catch((error) => {
+                        reply.code(500).send(error);
+                        request.tracker.error(error);
                     });
-                }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
 

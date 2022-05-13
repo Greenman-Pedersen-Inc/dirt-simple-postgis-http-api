@@ -183,14 +183,6 @@ module.exports = function (fastify, opts, next) {
             }
 
             fastify.pg.connect(onConnect);
-        },
-        onRequest: async (req, res) => {
-            req.controller = new AbortController();
-            res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
-                req.controller.abort();
-                res.send(new Error('Server Timeout'));
-                res.send = (payload) => res;
-            });
         }
     });
     next();

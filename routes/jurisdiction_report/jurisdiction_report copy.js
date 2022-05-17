@@ -4,10 +4,6 @@ const path = require('path');
 const outputPath = path.join(__dirname, '../../output', 'jurisdiction');
 const juriHelper = require('../../helper_functions/jurisdiction_report_helper');
 const customTimeout = 30000;
-
-// *---------------*
-// route schema
-// *---------------*
 const schema = {
     description: 'generates a jurisdiction report pdf.',
     tags: ['jurisdiction'],
@@ -31,9 +27,19 @@ const schema = {
     }
 };
 
-// *---------------*
-// create route
-// *---------------*
+if (!fs.existsSync(outputPath)) {
+    try {
+        fs.mkdirSync(outputPath, { recursive: true });
+    } catch (error) {
+        console.error(error);
+    }
+}
+fastify.register(fastifyStatic, {
+    root: outputPath,
+    prefix: '/jurisdiction/', // optional: default '/'
+    decorateReply: false // the reply decorator has been added by the first plugin registration
+});
+
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',

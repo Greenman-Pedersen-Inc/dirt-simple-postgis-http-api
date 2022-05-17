@@ -5,10 +5,6 @@ const outputPath = path.join(__dirname, '../../output', 'maintenance');
 const maintenanceHelper = require('../../helper_functions/maintenance_helper');
 const codeTranslator = require('../../helper_functions/code_translator');
 const customTimeout = 20000;
-
-// *---------------*
-// route query
-// *---------------*
 const sql = (query) => {
     // --- QUERY crash data based on time frame
     let accidentQuery = `
@@ -42,10 +38,6 @@ const sql = (query) => {
     ;`;
     return accidentQuery;
 };
-
-// *---------------*
-// route schema
-// *---------------*
 const schema = {
     description: 'queries accident data between a time frame for NJDOT Maintenance for insurance claims.',
     tags: ['maintenance'],
@@ -72,6 +64,20 @@ const schema = {
         }
     }
 };
+
+if (!fs.existsSync(outputPath)) {
+    try {
+        fs.mkdirSync(outputPath, { recursive: true });
+    } catch (error) {
+        console.error(error);
+    }
+}
+// static documentation path
+fastify.register(fastifyStatic, {
+    root: outputPath,
+    prefix: '/maintenance/', // optional: default '/'
+    decorateReply: true
+});
 
 // *---------------*
 // create route

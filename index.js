@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path');
 const config = require('./config');
 const fastify = require('fastify')({
@@ -222,83 +221,6 @@ fastify.register(require('fastify-cors'));
 fastify.register(require('fastify-swagger'), {
     exposeRoute: true,
     swagger: config.swagger
-});
-
-const maintenanceOutput = path.join(__dirname, 'output', 'maintenance');
-// create output folder for route if one doesn't exist
-if (!fs.existsSync(maintenanceOutput)) {
-    try {
-        fs.mkdirSync(maintenanceOutput, { recursive: true });
-    } catch (error) {
-        console.error(error);
-    }
-}
-// static documentation path
-fastify.register(fastifyStatic, {
-    root: maintenanceOutput,
-    prefix: '/maintenance/', // optional: default '/'
-    decorateReply: true
-});
-
-const recordsOutput = path.join(__dirname, 'output', 'records');
-// create output folder for route if one doesn't exist
-if (!fs.existsSync(recordsOutput)) {
-    try {
-        fs.mkdirSync(recordsOutput, { recursive: true });
-    } catch (error) {
-        console.error(error);
-    }
-}
-fastify.register(fastifyStatic, {
-    root: recordsOutput,
-    prefix: '/records/', // optional: default '/'
-    decorateReply: false // the reply decorator has been added by the first plugin registration
-});
-
-const weatherOutput = path.join(__dirname, 'output', 'weather');
-// create output folder for route if one doesn't exist
-if (!fs.existsSync(weatherOutput)) {
-    try {
-        fs.mkdirSync(weatherOutput, { recursive: true });
-    } catch (error) {
-        console.error(error);
-    }
-}
-fastify.register(fastifyStatic, {
-    root: weatherOutput,
-    prefix: '/weather/', // optional: default '/'
-    decorateReply: false // the reply decorator has been added by the first plugin registration
-});
-
-const jurisdictionOutput = path.join(__dirname, 'output', 'jurisdiction');
-// create output folder for route if one doesn't exist
-if (!fs.existsSync(jurisdictionOutput)) {
-    try {
-        fs.mkdirSync(jurisdictionOutput, { recursive: true });
-    } catch (error) {
-        console.error(error);
-    }
-}
-fastify.register(fastifyStatic, {
-    root: jurisdictionOutput,
-    prefix: '/jurisdiction/', // optional: default '/'
-    decorateReply: false // the reply decorator has been added by the first plugin registration
-});
-
-const sunglareOutput = path.join(__dirname, 'output', 'sunglare');
-// create output folder for route if one doesn't exist
-if (!fs.existsSync(sunglareOutput)) {
-    try {
-        fs.mkdirSync(sunglareOutput, { recursive: true });
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-fastify.register(fastifyStatic, {
-    root: sunglareOutput,
-    prefix: '/sunglare/', // optional: default '/'
-    decorateReply: false // the reply decorator has been added by the first plugin registration
 });
 
 // routes

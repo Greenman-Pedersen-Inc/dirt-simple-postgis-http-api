@@ -4,10 +4,6 @@ const path = require('path');
 const outputPath = path.join(__dirname, '../../output', 'weather');
 const reportHelper = require('../../helper_functions/report_maker/predictive_report_layout');
 const customTimeout = 20000;
-
-// *---------------*
-// route schema
-// *---------------*
 const schema = {
     description: 'generates a weather report pdf.',
     tags: ['weather'],
@@ -63,9 +59,19 @@ const schema = {
     }
 };
 
-// *---------------*
-// create route
-// *---------------*
+if (!fs.existsSync(outputPath)) {
+    try {
+        fs.mkdirSync(outputPath, { recursive: true });
+    } catch (error) {
+        console.error(error);
+    }
+}
+fastify.register(fastifyStatic, {
+    root: outputPath,
+    prefix: '/weather/', // optional: default '/'
+    decorateReply: false // the reply decorator has been added by the first plugin registration
+});
+
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',

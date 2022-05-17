@@ -4,7 +4,8 @@ const fastify = require('fastify')({
     // connectionTimeout: 5000,
     logger: true
 });
-const fastifyStatic = require('fastify-static');
+
+fastify.register(require('fastify-static'));
 const { maxHeaderSize } = require('http');
 const globalTimeout = 5000;
 

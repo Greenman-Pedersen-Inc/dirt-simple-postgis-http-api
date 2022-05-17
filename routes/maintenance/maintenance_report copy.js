@@ -1,6 +1,7 @@
 // readMaintenanceData: queries accident data between a time frame for NJDOT Maintenance for insurance claims
 const fs = require('fs');
 const path = require('path');
+const fastifyStatic = require('fastify-static');
 const outputPath = path.join(__dirname, '../../output', 'maintenance');
 const maintenanceHelper = require('../../helper_functions/maintenance_helper');
 const codeTranslator = require('../../helper_functions/code_translator');
@@ -65,24 +66,24 @@ const schema = {
     }
 };
 
-if (!fs.existsSync(outputPath)) {
-    try {
-        fs.mkdirSync(outputPath, { recursive: true });
-    } catch (error) {
-        console.error(error);
-    }
-}
-// static documentation path
-fastify.register(fastifyStatic, {
-    root: outputPath,
-    prefix: '/maintenance/', // optional: default '/'
-    decorateReply: true
-});
-
 // *---------------*
 // create route
 // *---------------*
 module.exports = function (fastify, opts, next) {
+    if (!fs.existsSync(outputPath)) {
+        try {
+            fs.mkdirSync(outputPath, { recursive: true });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    // static documentation path
+    fastify.register(fastifyStatic, {
+        root: outputPath,
+        prefix: '/maintenance/', // optional: default '/'
+        decorateReply: false
+    });
+
     fastify.route({
         method: 'GET',
         url: '/maintenance/report',

@@ -1,6 +1,7 @@
 // sunglare_report: generates the sunglare report
 const reportHelper = require('../../helper_functions/report_maker/predictive_report_layout');
 const fs = require('fs');
+const fastifyStatic = require('fastify-static');
 const path = require('path');
 const outputPath = path.join(__dirname, '../../output', 'sunglare');
 const customTimeout = 20000;
@@ -69,21 +70,21 @@ const schema = {
     }
 };
 
-if (!fs.existsSync(outputPath)) {
-    try {
-        fs.mkdirSync(outputPath, { recursive: true });
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-fastify.register(fastifyStatic, {
-    root: outputPath,
-    prefix: '/sunglare/', // optional: default '/'
-    decorateReply: false // the reply decorator has been added by the first plugin registration
-});
-
 module.exports = function (fastify, opts, next) {
+    if (!fs.existsSync(outputPath)) {
+        try {
+            fs.mkdirSync(outputPath, { recursive: true });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    fastify.register(fastifyStatic, {
+        root: outputPath,
+        prefix: '/sunglare/', // optional: default '/'
+        decorateReply: false // the reply decorator has been added by the first plugin registration
+    });
+
     fastify.route({
         method: 'GET',
         url: '/sunglare/report',

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const outputPath = path.join(__dirname, '../../output', 'jurisdiction');
 const juriHelper = require('../../helper_functions/jurisdiction_report_helper');
-const customTimeout = 20000;
+const customTimeout = 30000;
 
 // *---------------*
 // route schema
@@ -51,16 +51,6 @@ module.exports = function (fastify, opts, next) {
                 JSON.stringify(request.params)
             );
 
-            // create output folder for route if one doesn't exist
-            if (!fs.existsSync(outputPath)) {
-                try {
-                    fs.mkdirSync(outputPath, { recursive: true });
-                } catch (error) {
-                    reply.code(500).send(error);
-                    request.tracker.error(error);
-                }
-            }
-
             // remove all reports older than 10 minutes from output directory
             fs.readdir(outputPath, function (error, files) {
                 if (error) {
@@ -100,7 +90,7 @@ module.exports = function (fastify, opts, next) {
                     .connect()
                     .then((client) => {
                         request.tracker.start();
-                        client.connectionParameters.query_timeout = 20000;
+                        client.connectionParameters.query_timeout = customTimeout;
 
                         for (let key in reportQueries) {
                             if (reportQueries.hasOwnProperty(key)) {

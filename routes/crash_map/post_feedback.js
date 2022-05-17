@@ -25,14 +25,14 @@ const getQuery = (queryArgs) => {
 
     // values to be input
     const values = [
-        queryArgs.userName,
+        queryArgs.username,
         queryArgs.label,
         decodeURI(queryArgs.title),
-        queryArgs.openLocation,
-        queryArgs.boundingBoxMaxY,
+        queryArgs.open_location,
         decodeURI(queryArgs.description),
-        decodeURI(queryArgs.crashDescription),
-        queryArgs.crashFilter,
+        decodeURI(queryArgs.crash_description),
+        decodeURI(queryArgs.filter_description),
+        queryArgs.crash_filter,
         'Not Started'
     ];
 
@@ -129,7 +129,8 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            const queryArgs = request.query;
+            // const queryArgs = request.query;
+            const queryArgs = JSON.parse(request.headers.body);
 
             function onConnect(err, client, release) {
                 if (err) {
@@ -169,14 +170,14 @@ module.exports = function (fastify, opts, next) {
 
             fastify.pg.connect(onConnect);
         },
-        onRequest: async (req, res) => {
-            req.controller = new AbortController();
-            res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
-                req.controller.abort();
-                res.send(new Error('Server Timeout'));
-                res.send = (payload) => res;
-            });
-        }
+        // onRequest: async (req, res) => {
+        //     req.controller = new AbortController();
+        //     res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
+        //         req.controller.abort();
+        //         res.send(new Error('Server Timeout'));
+        //         res.send = (payload) => res;
+        //     });
+        // }
     });
     next();
 };

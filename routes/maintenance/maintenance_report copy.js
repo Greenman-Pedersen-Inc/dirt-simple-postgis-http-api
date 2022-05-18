@@ -1,14 +1,11 @@
 // readMaintenanceData: queries accident data between a time frame for NJDOT Maintenance for insurance claims
 const fs = require('fs');
 const path = require('path');
+const fastifyStatic = require('fastify-static');
 const outputPath = path.join(__dirname, '../../output', 'maintenance');
 const maintenanceHelper = require('../../helper_functions/maintenance_helper');
 const codeTranslator = require('../../helper_functions/code_translator');
 const customTimeout = 20000;
-
-// *---------------*
-// route query
-// *---------------*
 const sql = (query) => {
     // --- QUERY crash data based on time frame
     let accidentQuery = `
@@ -42,10 +39,6 @@ const sql = (query) => {
     ;`;
     return accidentQuery;
 };
-
-// *---------------*
-// route schema
-// *---------------*
 const schema = {
     description: 'queries accident data between a time frame for NJDOT Maintenance for insurance claims.',
     tags: ['maintenance'],
@@ -77,6 +70,20 @@ const schema = {
 // create route
 // *---------------*
 module.exports = function (fastify, opts, next) {
+    if (!fs.existsSync(outputPath)) {
+        try {
+            fs.mkdirSync(outputPath, { recursive: true });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    // static documentation path
+    fastify.register(fastifyStatic, {
+        root: outputPath,
+        prefix: '/maintenance/', // optional: default '/'
+        decorateReply: false
+    });
+
     fastify.route({
         method: 'GET',
         url: '/maintenance/report',
@@ -91,16 +98,6 @@ module.exports = function (fastify, opts, next) {
                 'report',
                 JSON.stringify(request.query)
             );
-
-            if (!fs.existsSync(outputPath)) {
-                try {
-                    fs.mkdirSync(outputPath, { recursive: true });
-                } catch (error) {
-                    reply.code(500).send(error);
-                    request.tracker.error(error);
-                }
-            }
-
             // remove all reports older than 10 minutes from output directory
             fs.readdir(outputPath, function (error, files) {
                 if (error) {
@@ -140,7 +137,7 @@ module.exports = function (fastify, opts, next) {
                     .connect()
                     .then((client) => {
                         request.tracker.start();
-                        client.connectionParameters.query_timeout = 20000;
+                        client.connectionParameters.query_timeout = customTimeout;
                         client
                             .query(query)
                             .then((result) => {

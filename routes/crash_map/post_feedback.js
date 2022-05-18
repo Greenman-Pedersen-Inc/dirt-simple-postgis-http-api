@@ -41,10 +41,6 @@ const getQuery = (queryArgs) => {
         params.push('image_byte_array_string');
         valuesParams.push('$' + (valuesParamLength + 1));
         values.push(decodeURI(queryArgs['imageUri']));
-
-        // params.push('image_type');
-        // valuesParams.push('$' + (valuesParamLength + 2));
-        // values.push(queryArgs['image_type']);
     }
 
     var sql = `
@@ -182,15 +178,7 @@ module.exports = function (fastify, opts, next) {
             }
 
             fastify.pg.connect(onConnect);
-        },
-        // onRequest: async (req, res) => {
-        //     req.controller = new AbortController();
-        //     res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
-        //         req.controller.abort();
-        //         res.send(new Error('Server Timeout'));
-        //         res.send = (payload) => res;
-        //     });
-        // }
+        }
     });
     next();
 };

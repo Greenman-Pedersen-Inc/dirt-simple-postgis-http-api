@@ -103,36 +103,29 @@ module.exports = function (fastify, opts, next) {
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             function onConnect(err, client, release) {
+                request.tracker = new fastify.RequestTracker(
+                    request.headers,
+                    'crash_map',
+                    'mvt_route',
+                    JSON.stringify(Object.assign(request.query, request.params))
+                );
+
                 if (err) {
                     release();
-
-                    reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'unable to connect to database server'
-                    });
+                    reply.code(500).send(error);
+                    request.tracker.error(error);
                 } else if (request.query.selected_filters == undefined) {
                     release();
-
-                    reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'crash filter not submitted'
-                    });
+                    reply.code(400).send('no crash filter submitted');
+                    request.tracker.error('no crash filter submitted');
                 } else {
                     try {
-                        const requestTracker = new fastify.RequestTracker(
-                            request.headers,
-                            'crash_map',
-                            'mvt_route',
-                            JSON.stringify(Object.assign(request.query, request.params))
-                        );
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             release();
 
                             if (err) {
-                                reply.send(err);
-                                requestTracker.error(err);
+                                reply.code(500).send(error);
+                                request.tracker.error(error);
                             } else {
                                 if (result) {
                                     if (result.rows && result.rows.length > 0) {
@@ -144,39 +137,25 @@ module.exports = function (fastify, opts, next) {
                                             }
 
                                             reply.header('Content-Type', 'application/x-protobuf').send(mvt);
+                                            request.tracker.complete();
                                         } else {
-                                            reply.send({
-                                                statusCode: 500,
-                                                error: 'no mvt returned',
-                                                message: request
-                                            });
+                                            reply.code(500).send(error);
+                                            request.tracker.error(error);
                                         }
                                     } else {
-                                        reply.send({
-                                            statusCode: 500,
-                                            error: 'no rows returned',
-                                            message: request
-                                        });
+                                        reply.code(500).send(error);
+                                        request.tracker.error(error);
                                     }
                                 } else {
-                                    reply.send({
-                                        statusCode: 500,
-                                        error: 'no data returned',
-                                        message: request
-                                    });
+                                    reply.code(500).send(error);
+                                    request.tracker.error(error);
                                 }
-                                
-                                requestTracker.complete();
                             }
                         });
                     } catch (error) {
                         release();
-
-                        reply.send({
-                            statusCode: 500,
-                            error: error,
-                            message: request
-                        });
+                        reply.code(500).send(error);
+                        request.tracker.error(error);
                     }
                 }
             }

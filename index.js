@@ -4,7 +4,7 @@ const fastify = require('fastify')({
     // connectionTimeout: 5000,
     logger: true
 });
-const fastifyStatic = require('fastify-static');
+
 const { maxHeaderSize } = require('http');
 const globalTimeout = 5000;
 
@@ -221,31 +221,6 @@ fastify.register(require('fastify-cors'));
 fastify.register(require('fastify-swagger'), {
     exposeRoute: true,
     swagger: config.swagger
-});
-
-// static documentation path
-fastify.register(fastifyStatic, {
-    root: path.join(__dirname, 'output', 'maintenance'),
-    prefix: '/maintenance/', // optional: default '/'
-    decorateReply: true
-});
-
-fastify.register(fastifyStatic, {
-    root: path.join(__dirname, 'output', 'jurisdiction'),
-    prefix: '/jurisdiction/', // optional: default '/'
-    decorateReply: false // the reply decorator has been added by the first plugin registration
-});
-
-fastify.register(fastifyStatic, {
-    root: path.join(__dirname, 'output', 'weather'),
-    prefix: '/weather/', // optional: default '/'
-    decorateReply: false // the reply decorator has been added by the first plugin registration
-});
-
-fastify.register(fastifyStatic, {
-    root: path.join(__dirname, 'output', 'records'),
-    prefix: '/records/', // optional: default '/'
-    decorateReply: false // the reply decorator has been added by the first plugin registration
 });
 
 // routes

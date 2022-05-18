@@ -83,14 +83,6 @@ module.exports = function (fastify, opts, next) {
                     });
                 }
             }
-        },
-        onRequest: async (request, reply) => {
-            request.controller = new AbortController();
-            reply.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
-                request.controller.abort();
-                reply.send(new Error('Server Timeout'));
-                reply.send = (payload) => reply;
-            });
         }
     });
     next();

@@ -36,9 +36,9 @@ const getQuery = (queryArgs) => {
         'Not Started'
     ];
 
-    if (queryArgs.hasImage) { 
+    if (queryArgs.hasImage) {
         params.push('image_byte_array');
-        valuesParams.push('$' + (valuesParams.length));
+        valuesParams.push('$' + valuesParams.length);
         values.push(queryArgs['imageUri']);
     }
 
@@ -169,15 +169,7 @@ module.exports = function (fastify, opts, next) {
             }
 
             fastify.pg.connect(onConnect);
-        },
-        // onRequest: async (req, res) => {
-        //     req.controller = new AbortController();
-        //     res.raw.setTimeout(typeof customTimeout == 'undefined' ? fastify.globalTimeout : customTimeout, () => {
-        //         req.controller.abort();
-        //         res.send(new Error('Server Timeout'));
-        //         res.send = (payload) => res;
-        //     });
-        // }
+        }
     });
     next();
 };

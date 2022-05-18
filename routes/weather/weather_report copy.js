@@ -131,7 +131,7 @@ module.exports = function (fastify, opts, next) {
                     .connect()
                     .then((client) => {
                         request.tracker.start();
-                        client.connectionParameters.query_timeout = 20000;
+                        client.connectionParameters.query_timeout = 30000;
 
                         for (let key in reportQueries) {
                             if (reportQueries.hasOwnProperty(key)) {

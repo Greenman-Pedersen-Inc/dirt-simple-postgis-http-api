@@ -210,7 +210,6 @@ module.exports = function (fastify, opts, next) {
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
                                     }
-                                    requestTracker.complete();
                                 }
                             });
                         } catch (error) {

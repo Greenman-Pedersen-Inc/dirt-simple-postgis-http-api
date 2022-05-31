@@ -1,6 +1,6 @@
 // get_statistics: gets stats based on category and subcategory
 const { makeWhereClause, getTableQuery, calculateRollingAverage } = require('../../helper_functions/emphasis_explorer_helper');
-const customTimeout = 30000;
+const customTimeout = 300000;
 
 // *---------------*
 // route query
@@ -148,18 +148,24 @@ module.exports = function (fastify, opts, next) {
                             release();
 
                             for (let i = 0; i < returnData.length; i++) {
-                                let table = Object.keys(queriesObject.queries)[i];
-                                // console.log(table);
                                 let data = returnData[i].rows;
 
-                                //crashData[table] = data;
-                                if (data && data.length > 0) {
-                                    if (table && table === 'annual_bodies_rolling_average') {
-                                        const rollingAvgData = calculateRollingAverage(data, parseInt(filterJson.startYear));
-                                        crashData[table] = rollingAvgData;
-                                    }
-                                    else {
-                                        crashData[table] = data;
+                                if (data.length === 0) {
+                                    let table = Object.keys(queriesObject.queries)[i];
+                                    crashData[table] = [];
+                                }
+                                else {
+                                    let table = Object.keys(queriesObject.queries)[i];
+                                    // console.log(table);
+    
+                                    if (data && data.length > 0) {
+                                        if (table && table === 'annual_bodies_rolling_average') {
+                                            const rollingAvgData = calculateRollingAverage(data, parseInt(filterJson.startYear));
+                                            crashData[table] = rollingAvgData;
+                                        }
+                                        else {
+                                            crashData[table] = data;
+                                        }
                                     }
                                 }
                             }

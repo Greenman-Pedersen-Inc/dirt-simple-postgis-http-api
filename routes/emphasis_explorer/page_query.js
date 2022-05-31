@@ -1,4 +1,6 @@
 // route query
+const customTimeout = 30000;
+
 const sql = (params, query, requestURL) => {
     // let baseURL = requestURL.split('&limit')[0]
 
@@ -80,6 +82,8 @@ module.exports = function (fastify, opts, next) {
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                client.connectionParameters.query_timeout = customTimeout;
+
                 if (err)
                     return reply.send({
                         statusCode: 500,

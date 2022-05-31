@@ -29,7 +29,7 @@ const sql = (params, query) => {
       SELECT ST_AsMVT(mvtgeom.*, '${params.table}', 4096, 'geom' ${query.id_column ? `, '${query.id_column}'` : ''}) AS mvt from mvtgeom;
     `
   
-    //console.log(queryText);
+    // console.log(queryText);
     
     return queryText;
   }

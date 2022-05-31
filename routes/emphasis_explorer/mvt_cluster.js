@@ -14,10 +14,10 @@ const sql = (params, query) => {
         queryText = `
                 with crash_data as (
                     SELECT 
-                        ST_Transform(crashes.geom, 3857) as geom,
-                        crashes.crashid,
-                        crashes.sri
-                    FROM ${params.table} crashes
+                        ST_Transform(crash_data.geom, 3857) as geom,
+                        crash_data.crashid,
+                        crash_data.sri
+                    FROM ${params.table} crash_data
                     WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))
                     -- Optional filter for the query input
                     ${query.filter ? ` AND ${query.filter}` : ''}
@@ -48,10 +48,10 @@ const sql = (params, query) => {
         queryText = `
                 with crash_data as (
                     SELECT
-                    crashes.crashid,
-                    crashes.sri,
-                    crashes.geom
-                    FROM ${params.table} crashes
+                    crash_data.crashid,
+                    crash_data.sri,
+                    crash_data.geom
+                    FROM ${params.table} crash_data
                     WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))
                     -- Optional filter for the query input
                     ${query.filter ? ` AND ${query.filter}` : ''}
@@ -101,7 +101,7 @@ const sql = (params, query) => {
             `;
     }
 
-    //console.log(queryText);
+    // console.log(queryText);
     return queryText;
 };
 
@@ -183,8 +183,8 @@ module.exports = function (fastify, opts, next) {
                                 release();
 
                                 if (err) {
-                                    reply.code(500).send(error);
-                                    request.tracker.error(error);
+                                    reply.code(500).send(err);
+                                    request.tracker.error(err);
                                 } else {
                                     if (result) {
                                         if (result.rows && result.rows.length > 0) {

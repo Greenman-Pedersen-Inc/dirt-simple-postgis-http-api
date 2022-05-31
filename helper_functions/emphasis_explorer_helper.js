@@ -22,8 +22,14 @@ function makeWhereClause(queryParamObject, isRollingAvg = false) {
         clauseValues.push(queryParamObject['sri']);
     }
     else if (queryParamObject.hasOwnProperty('mun_cty_co')) {
-        whereClauses.push(`mun_cty_co = $${valueCounter}`);
-        clauseValues.push(queryParamObject['mun_cty_co']);
+        if (queryParamObject['mun_cty_co'].includes(',')) {
+            const valueString = formatCodes(queryParamObject['mun_cty_co']);
+            whereClauses.push(`mun_cty_co IN (${valueString})`);
+        }
+        else {
+            whereClauses.push(`mun_cty_co = $${valueCounter}`);
+            clauseValues.push(queryParamObject['mun_cty_co']);
+        }
         if (queryParamObject.hasOwnProperty('mun_mu')) {
             whereClauses.push(`mun_mu = $${valueCounter + 1}`);
             clauseValues.push(queryParamObject['mun_mu']);
@@ -39,10 +45,10 @@ function makeWhereClause(queryParamObject, isRollingAvg = false) {
 function getTableQuery(category, subcategory = null, whereClause, whereClauseRollingAvg) {
     const tables = {
         lane_departure: {
-            // annual_bodies_rolling_average: {
-            //     table: 'lane_departure_crashes',
-            //     query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
-            // },
+            annual_bodies_rolling_average: {
+                table: 'lane_departure_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            },
             annual_bodies: {
                 table: 'lane_departure_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
@@ -81,10 +87,10 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
             }
         },
         ped_cyclist: {
-            // annual_bodies_rolling_average: {
-            //     table: 'ped_bike_crashes',
-            //     query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
-            // },
+            annual_bodies_rolling_average: {
+                table: 'ped_bike_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            },
             annual_bodies: {
                 table: 'ped_bike_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
@@ -123,10 +129,10 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
             }
         },
         intersection: {
-            // annual_bodies_rolling_average: {
-            //     table: 'intersection_crashes',
-            //     query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
-            // },
+            annual_bodies_rolling_average: {
+                table: 'intersection_crashes',
+                query: function () { return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg); }
+            },
             annual_bodies: {
                 table: 'intersection_crashes',
                 query: function () { return getAnnualBodiesQuery(schema, this.table, whereClause); }
@@ -222,10 +228,10 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
                         if (aCategory == subcategory) {
                             return { 
                                 [subcategory]: categoryValues,
-                                // annual_bodies_rolling_average: {
-                                //     table: categoryValues['table'],
-                                //     query: function () { return getAnnualBodiesQuery(schema, categoryValues['table'], whereClauseRollingAvg); }
-                                // }
+                                annual_bodies_rolling_average: {
+                                    table: categoryValues['table'],
+                                    query: function () { return getAnnualBodiesQuery(schema, categoryValues['table'], whereClauseRollingAvg); }
+                                }
                             };
                         }
                     }
@@ -386,6 +392,33 @@ function calculateRollingAverage(annualData, startYear) {
     }
 
     return rollingAvgData;
+}
+
+// Splits a code string by "," to return an array of codes
+// INPUT: "07,08,15,16,18"
+// OUTPUT: [07, 08, ...]
+function splitCodes(codeString) {
+    var splitCodes = [];
+    if (codeString !== undefined && codeString !== null) {
+        splitCodes = codeString.split(',');
+    }
+    return splitCodes;
+}
+
+// This formats the codes for the IN statement by adding single quotes and commas to each code from the request parameters.
+// EXAMPLE: enviornmentCode = "01,02,03"
+// RETURNS: "'01','02','03'"
+function formatCodes(codeString) {
+    var returnCodes = "";
+    var codes = splitCodes(codeString);
+    if (codes.length > 0) {
+        var formattedCodes = [];
+        codes.forEach(splitCode => {
+            formattedCodes.push("'" + splitCode + "'");
+        });
+        returnCodes = formattedCodes.join(", ");
+    }
+    return returnCodes;
 }
 
 

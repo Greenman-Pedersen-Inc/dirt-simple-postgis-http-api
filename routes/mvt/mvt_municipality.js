@@ -105,7 +105,7 @@ module.exports = function (fastify, opts, next) {
             );
             fastify.pg.connect(onConnect);
 
-            function onConnect(err, client, release) {
+            function onConnect(error, client, release) {
                 if (err) {
                     release();
                     reply.code(500).send(error);
@@ -121,7 +121,7 @@ module.exports = function (fastify, opts, next) {
                             client.query(sql(request.params, request.query), function onResult(err, result) {
                                 release();
 
-                                if (err) {
+                                if (error) {
                                     reply.code(500).send(error);
                                     request.tracker.error(error);
                                 } else {

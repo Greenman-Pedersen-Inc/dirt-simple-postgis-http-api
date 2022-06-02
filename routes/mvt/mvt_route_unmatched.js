@@ -100,8 +100,8 @@ module.exports = function (fastify, opts, next) {
                 JSON.stringify(Object.assign(request.query, request.params))
             );
 
-            function onConnect(err, client, release) {
-                if (err) {
+            function onConnect(error, client, release) {
+                if (error) {
                     release();
                     reply.code(500).send(error);
                     request.tracker.error(error);

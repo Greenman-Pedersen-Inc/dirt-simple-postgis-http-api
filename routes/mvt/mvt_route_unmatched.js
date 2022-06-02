@@ -106,6 +106,7 @@ module.exports = function (fastify, opts, next) {
                     reply.code(500).send(error);
                     request.tracker.error(error);
                 } else {
+                    request.tracker.start();
                     if (request.query.selected_filters == undefined) {
                         release();
                         reply.code(400).send('no crash filter submitted');

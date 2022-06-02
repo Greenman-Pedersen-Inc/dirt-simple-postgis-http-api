@@ -11,6 +11,8 @@ const sql = (body) => {
             select 
                 crashid, 
                 acc_case,
+                calc_latitude,
+                calc_longitude,
                 sri,
                 milepost,
                 mun_cty_co,

@@ -1,5 +1,6 @@
 // get_statistics: gets stats based on category and subcategory
 const { makeWhereClause, getTableQuery, calculateRollingAverage } = require('../../helper_functions/emphasis_explorer_helper');
+const customTimeout = 300000;
 
 // *---------------*
 // route query
@@ -10,7 +11,7 @@ const getQueries = (queryArgs) => {
     const clauses = makeWhereClause(filterJson);
     const clausesRollingAvg = makeWhereClause(filterJson, true);
     const queries = getTableQuery(filterJson.category,
-        filterJson.hasOwnProperty('subcategory') ? filterJson['subcategory'] : null,
+        filterJson.hasOwnProperty('subCategory') ? filterJson['subCategory'] : null,
         clauses.whereClauses.join(' AND '), clausesRollingAvg.whereClauses.join(' AND '));
 
     return {
@@ -33,7 +34,7 @@ const schema = {
             description: 'Emphasis Area category',
             example: 'lane_departure, ped_cyclist, intersection, driver_behavior, road_users'
         },
-        subcategory: {
+        subCategory: {
             type: 'string',
             description: 'Emphasis Area subcategory',
             example:
@@ -74,11 +75,14 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/emphasis-explorer/get-statistics',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            // fastify.pg.connect(onConnect);
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                client.connectionParameters.query_timeout = customTimeout;
+
                 if (err) return reply.send({
                     "statusCode": 500,
                     "error": "Internal Server Error",
@@ -132,7 +136,7 @@ module.exports = function (fastify, opts, next) {
                                     return resolve(res);
                                 }
                             } catch (err) {
-                                return reject(error);
+                                return reject(err);
                             }
                         });
 
@@ -144,25 +148,29 @@ module.exports = function (fastify, opts, next) {
                             release();
 
                             for (let i = 0; i < returnData.length; i++) {
-                                let table = Object.keys(queriesObject.queries)[i];
-                                // console.log(table);
                                 let data = returnData[i].rows;
 
-                                //crashData[table] = data;
-                                if (data && data.length > 0) {
-                                    if (table && table === 'annual_bodies_rolling_average') {
-                                        const rollingAvgData = calculateRollingAverage(data, filterJson.startYear);
-                                        crashData[table] = rollingAvgData;
-                                    }
-                                    else {
-                                        crashData[table] = data;
+                                if (data.length === 0) {
+                                    let table = Object.keys(queriesObject.queries)[i];
+                                    crashData[table] = [];
+                                }
+                                else {
+                                    let table = Object.keys(queriesObject.queries)[i];
+                                    // console.log(table);
+    
+                                    if (data && data.length > 0) {
+                                        if (table && table === 'annual_bodies_rolling_average') {
+                                            const rollingAvgData = calculateRollingAverage(data, parseInt(filterJson.startYear));
+                                            crashData[table] = rollingAvgData;
+                                        }
+                                        else {
+                                            crashData[table] = data;
+                                        }
                                     }
                                 }
-                                // console.log({ [filterJson.category]: crashData })
-                                reply.send({ [filterJson.category]: crashData });
                             }
 
-                            console.log({ [filterJson.category]: crashData })
+                            // console.log({ [filterJson.category]: crashData })
                             reply.send({ [filterJson.category]: crashData });
                         })
                         .catch((error) => {
@@ -170,7 +178,7 @@ module.exports = function (fastify, opts, next) {
                             reply.send({
                                 statusCode: 500,
                                 error: error,
-                                message: 'issue with crash id queries'
+                                message: 'Query Error'
                             });
                         })
                 }

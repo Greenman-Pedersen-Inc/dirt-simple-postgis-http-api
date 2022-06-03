@@ -22,7 +22,7 @@ const sql = (params, query) => {
                 ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
             )
         )
-        SELECT ST_AsMVT(selected_signals.*, 'signals_data', 4096, 'geom', 'ogc_fid') AS mvt from selected_signals;
+        SELECT ST_AsMVT(selected_signals.*, 'signals_data', 4096, 'geom') AS mvt from selected_signals;
     `;
     return queryText;
 };
@@ -33,10 +33,6 @@ const schema = {
     tags: ['signals'],
     summary: 'return signals MVT',
     params: {
-        table: {
-            type: 'string',
-            description: 'The name of the table or view.'
-        },
         z: {
             type: 'integer',
             description: 'Z value of ZXY tile.'
@@ -81,12 +77,13 @@ module.exports = function (fastify, opts, next) {
                     reply.code(500).send(error);
                     request.tracker.error(error);
                 } else {
-                    if (request.query.selected_filters == undefined) {
-                        release();
-                        reply.code(400).send('no crash filter submitted');
-                        request.tracker.error('no crash filter submitted');
-                    } 
-                    else {
+                    // if (request.query.selected_filters == undefined) {
+                    //     // release();
+                    //     // reply.code(400).send('no crash filter submitted');
+                    //     // request.tracker.error('no crash filter submitted');
+                    // } 
+                    
+                    // else {
                         try {
                             client.query(sql(request.params, request.query), function onResult(err, result) {
                                 release();
@@ -125,7 +122,7 @@ module.exports = function (fastify, opts, next) {
                             reply.code(500).send(error);
                             request.tracker.error(error);
                         }
-                    }
+                    // }
                 }
             }
             fastify.pg.connect(onConnect);

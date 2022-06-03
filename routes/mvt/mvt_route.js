@@ -102,7 +102,7 @@ module.exports = function (fastify, opts, next) {
 
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            function onConnect(err, client, release) {
+            function onConnect(error, client, release) {
                 request.tracker = new fastify.RequestTracker(
                     request.headers,
                     'crash_map',
@@ -110,7 +110,7 @@ module.exports = function (fastify, opts, next) {
                     JSON.stringify(Object.assign(request.query, request.params))
                 );
 
-                if (err) {
+                if (error) {
                     release();
                     reply.code(500).send(error);
                     request.tracker.error(error);
@@ -119,11 +119,12 @@ module.exports = function (fastify, opts, next) {
                     reply.code(400).send('no crash filter submitted');
                     request.tracker.error('no crash filter submitted');
                 } else {
+                    request.tracker.start();
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             release();
 
-                            if (err) {
+                            if (error) {
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
                             } else {

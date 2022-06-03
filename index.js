@@ -52,25 +52,25 @@ function RequestTracker(credentials, module, end_point, user_query) {
         }
     };
 
-    function onConnect(err, client, release, queryString) {
-        if (err) {
+    function onConnect(error, client, release, queryString) {
+        if (error) {
             release();
 
             return {
                 statusCode: 500,
                 error: 'Internal Server Error',
-                message: 'unable to connect to database server: ' + err
+                message: 'unable to connect to database server: ' + error
             };
         } else {
             try {
-                client.query(queryString, function onResult(err, result) {
+                client.query(queryString, function onResult(error, result) {
                     release();
 
-                    if (err) {
+                    if (error) {
                         return {
                             statusCode: 500,
                             error: 'Internal Server Error: Inner Query Error',
-                            message: 'unable to perform database operation: ' + err
+                            message: 'unable to perform database operation: ' + error
                         };
                     }
                 });
@@ -91,13 +91,6 @@ function RequestTracker(credentials, module, end_point, user_query) {
     }
 }
 
-/**
- * Verifies a pre-existing token.
- *
- * @param {*} request
- * @param {*} reply
- * @param {*} next
- */
 function verifyToken(request, reply, next) {
     // console.log(request.headers)
     const sql = (headers) => {
@@ -117,33 +110,20 @@ function verifyToken(request, reply, next) {
         return query;
     };
 
-    /**
-     *
-     *
-     * @param {*} err
-     * @param {*} client
-     * @param {*} release
-     * @return {*}
-     */
-    function onConnect(err, client, release) {
-        if (err) {
+    function onConnect(error, client, release) {
+        if (error) {
             release();
-
-            reply.send({
-                statusCode: 500,
-                error: 'Internal Server Error',
-                message: 'unable to connect to database server: ' + err
-            });
+            reply.code(500).send(error);
         } else {
             try {
-                client.query(sql(request.headers), function onResult(err, result) {
+                client.query(sql(request.headers), function onResult(error, result) {
                     release();
 
-                    if (err) {
+                    if (error) {
                         reply.send({
                             statusCode: 500,
                             error: 'Internal Server Error: Inner Query Error',
-                            message: 'unable to perform database operation: ' + err
+                            message: 'unable to perform database operation: ' + error
                         });
                     } else {
                         if (result.rows.map((row) => row.count).reduce((acc, count) => acc + count, 0) > 0) {

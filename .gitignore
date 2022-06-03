@@ -9,3 +9,11 @@ routes/dirt/tiles
 *.zip
 routes/crash_map/post_github_issue.js
 output
+install.js
+uninstall.js
+daemon/voyagerdataservices.err.log
+daemon/voyagerdataservices.exe
+daemon/voyagerdataservices.exe.config
+daemon/voyagerdataservices.out.log
+daemon/voyagerdataservices.wrapper.log
+daemon/voyagerdataservices.xml

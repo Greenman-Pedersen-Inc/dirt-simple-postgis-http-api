@@ -3,7 +3,7 @@
 // route register
 const getQuery = (requestBody) => {
     const sql = `SELECT CONCAT(first_name, ' ', last_name) "fullName" FROM admin.user_info
-    WHERE user_name = $1;`;
+    WHERE LOWER(user_name) = LOWER($1);`;
 
     return {
         query: sql,
@@ -60,7 +60,6 @@ module.exports = function (fastify, opts, next) {
                         });
                     if (result.rows.length <= 0) reply.send(null);
                     else reply.send(result.rows[0]);
-                    
                 });
             }
 

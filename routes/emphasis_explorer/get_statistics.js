@@ -1,5 +1,9 @@
 // get_statistics: gets stats based on category and subcategory
-const { makeWhereClause, getTableQuery, calculateRollingAverage } = require('../../helper_functions/emphasis_explorer_helper');
+const {
+    makeWhereClause,
+    getTableQuery,
+    calculateRollingAverage
+} = require('../../helper_functions/emphasis_explorer_helper');
 const customTimeout = 300000;
 
 // *---------------*
@@ -10,9 +14,12 @@ const getQueries = (queryArgs) => {
 
     const clauses = makeWhereClause(filterJson);
     const clausesRollingAvg = makeWhereClause(filterJson, true);
-    const queries = getTableQuery(filterJson.category,
+    const queries = getTableQuery(
+        filterJson.category,
         filterJson.hasOwnProperty('subCategory') ? filterJson['subCategory'] : null,
-        clauses.whereClauses.join(' AND '), clausesRollingAvg.whereClauses.join(' AND '));
+        clauses.whereClauses.join(' AND '),
+        clausesRollingAvg.whereClauses.join(' AND ')
+    );
 
     return {
         values: clauses.values,
@@ -83,11 +90,12 @@ module.exports = function (fastify, opts, next) {
             function onConnect(err, client, release) {
                 client.connectionParameters.query_timeout = customTimeout;
 
-                if (err) return reply.send({
-                    "statusCode": 500,
-                    "error": "Internal Server Error",
-                    "message": "unable to connect to database server"
-                });
+                if (err)
+                    return reply.send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'unable to connect to database server'
+                    });
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
@@ -153,17 +161,19 @@ module.exports = function (fastify, opts, next) {
                                 if (data.length === 0) {
                                     let table = Object.keys(queriesObject.queries)[i];
                                     crashData[table] = [];
-                                }
-                                else {
+                                } else {
                                     let table = Object.keys(queriesObject.queries)[i];
                                     // console.log(table);
-    
+
                                     if (data && data.length > 0) {
                                         if (table && table === 'annual_bodies_rolling_average') {
-                                            const rollingAvgData = calculateRollingAverage(data, parseInt(filterJson.startYear));
+                                            const rollingAvgData = calculateRollingAverage(
+                                                data,
+                                                parseInt(filterJson.startYear),
+                                                parseInt(filterJson.endYear)
+                                            );
                                             crashData[table] = rollingAvgData;
-                                        }
-                                        else {
+                                        } else {
                                             crashData[table] = data;
                                         }
                                     }
@@ -174,15 +184,13 @@ module.exports = function (fastify, opts, next) {
                             reply.send({ [filterJson.category]: crashData });
                         })
                         .catch((error) => {
-                            release();
                             reply.send({
                                 statusCode: 500,
                                 error: error,
                                 message: 'Query Error'
                             });
-                        })
-                }
-                catch (error) {
+                        });
+                } catch (error) {
                     release();
                     console.log(error);
                     reply.send({

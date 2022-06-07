@@ -106,7 +106,7 @@ module.exports = function (fastify, opts, next) {
             fastify.pg.connect(onConnect);
 
             function onConnect(error, client, release) {
-                if (err) {
+                if (error) {
                     release();
                     reply.code(500).send(error);
                     request.tracker.error(error);
@@ -118,7 +118,7 @@ module.exports = function (fastify, opts, next) {
                         request.tracker.error('no crash filter submitted');
                     } else {
                         try {
-                            client.query(sql(request.params, request.query), function onResult(err, result) {
+                            client.query(sql(request.params, request.query), function onResult(error, result) {
                                 release();
 
                                 if (error) {

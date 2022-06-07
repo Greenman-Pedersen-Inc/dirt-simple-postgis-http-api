@@ -1,17 +1,24 @@
-const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
+const { makeCrashFilterQuery } = require('../../helper_functions/signals_filter_helper');
 
 // route query
 // require the funciton
 const sql = (params, query) => {
     const accidentsTableName = 'signals.signals_data';
-    // const parsed_filter = JSON.parse(query.selected_filters);
-    // const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
-    // const whereClause = filter.whereClause;
-    // const fromClause = filter.fromClause;
+    const parsed_filter = JSON.parse(query.selected_filters);
+    const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
+    const whereClause = filter.whereClause;
+    const fromClause = filter.fromClause;
+
+    let whereClauses = [];
+    if (parsed_filter.hasOwnProperty("mun_mu")) {
+
+    }
+
     const queryText = `
         with selected_signals as (
             select
                 *,
+                id "signal_id",
                 ST_AsMVTGeom(
                     geom_mercator,
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
@@ -21,8 +28,9 @@ const sql = (params, query) => {
                 geom_mercator,
                 ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
             )
+            ${whereClause ? ` AND ${whereClause}` : ''}
         )
-        SELECT ST_AsMVT(selected_signals.*, 'signals_data', 4096, 'geom') AS mvt from selected_signals;
+        SELECT ST_AsMVT(selected_signals.*, 'signals_data', 4096, 'geom', 'id') AS mvt from selected_signals;
     `;
     return queryText;
 };
@@ -71,8 +79,8 @@ module.exports = function (fastify, opts, next) {
                 JSON.stringify(Object.assign(request.query, request.params))
             );
 
-            function onConnect(err, client, release) {
-                if (err) {
+            function onConnect(error, client, release) {
+                if (error) {
                     release();
                     reply.code(500).send(error);
                     request.tracker.error(error);
@@ -85,10 +93,10 @@ module.exports = function (fastify, opts, next) {
                     
                     // else {
                         try {
-                            client.query(sql(request.params, request.query), function onResult(err, result) {
+                            client.query(sql(request.params, request.query), function onResult(error, result) {
                                 release();
 
-                                if (err) {
+                                if (error) {
                                     reply.code(500).send(error);
                                     request.tracker.error(error);
                                 } else {

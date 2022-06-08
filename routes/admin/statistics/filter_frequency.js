@@ -50,7 +50,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/module_frequency',
+        url: '/filter_frequency',
         schema: schema,
         // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {

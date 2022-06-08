@@ -4,7 +4,7 @@ const {
     getTableQuery,
     calculateRollingAverage
 } = require('../../helper_functions/emphasis_explorer_helper');
-const customTimeout = 300000;
+const customTimeout = 30000;
 
 // *---------------*
 // route query
@@ -17,6 +17,7 @@ const getQueries = (queryArgs) => {
     const queries = getTableQuery(
         filterJson.category,
         filterJson.hasOwnProperty('subCategory') ? filterJson['subCategory'] : null,
+        filterJson.hasOwnProperty('chartType') ? filterJson['chartType'] : null,
         clauses.whereClauses.join(' AND '),
         clausesRollingAvg.whereClauses.join(' AND ')
     );
@@ -46,6 +47,12 @@ const schema = {
             description: 'Emphasis Area subcategory',
             example:
                 'aggressive, drowsy_distracted, impaired, unlicensed, unbelted, heavy_vehicle, mature, younger, motorcyclist, work_zone'
+        },
+        chartType: {
+            type: 'string',
+            description: 'chart type',
+            example:
+                'annual_bodies, annual_bodies_rolling_average, crash_type, related_behavior, null'
         },
         startYear: {
             type: 'string',
@@ -131,12 +138,34 @@ module.exports = function (fastify, opts, next) {
                             message: 'Please check category or subcategory input and try again.'
                         });
                     }
-                    for (const [category, values] of Object.entries(queriesObject.queries)) {
+
+                    if (queryArgs.chartType === 'related_behavior') {
+                        for (const [category, values] of Object.entries(queriesObject.queries)) {
+                            const promise = new Promise((resolve, reject) => {
+                                try {
+                                    const queryString = values.query();
+                                    // console.log(queryString)
+                                    if (category === 'annual_bodies_rolling_average') {
+                                        const res = client.query(queryString, queriesObject.values_rolling_avg);
+                                        return resolve(res);
+                                    } else {
+                                        const res = client.query(queryString, queriesObject.values);
+                                        return resolve(res);
+                                    }
+                                } catch (err) {
+                                    return reject(err);
+                                }
+                            });
+
+                            promises.push(promise);
+                        }
+                    }
+                    else {
                         const promise = new Promise((resolve, reject) => {
                             try {
-                                const queryString = values.query();
+                                const queryString = queriesObject.queries.query();
                                 // console.log(queryString)
-                                if (category === 'annual_bodies_rolling_average') {
+                                if (queryArgs.chartType === 'annual_bodies_rolling_average') {
                                     const res = client.query(queryString, queriesObject.values_rolling_avg);
                                     return resolve(res);
                                 } else {
@@ -147,9 +176,10 @@ module.exports = function (fastify, opts, next) {
                                 return reject(err);
                             }
                         });
-
+    
                         promises.push(promise);
                     }
+
 
                     Promise.all(promises)
                         .then((returnData) => {
@@ -157,24 +187,27 @@ module.exports = function (fastify, opts, next) {
 
                             for (let i = 0; i < returnData.length; i++) {
                                 let data = returnData[i].rows;
+                                let table = `${queryArgs.subCategory ? queryArgs.subCategory : queryArgs.chartType}`;
 
                                 if (data.length === 0) {
-                                    let table = Object.keys(queriesObject.queries)[i];
                                     crashData[table] = [];
                                 } else {
-                                    let table = Object.keys(queriesObject.queries)[i];
-                                    // console.log(table);
-
-                                    if (data && data.length > 0) {
-                                        if (table && table === 'annual_bodies_rolling_average') {
-                                            const rollingAvgData = calculateRollingAverage(
-                                                data,
-                                                parseInt(filterJson.startYear),
-                                                parseInt(filterJson.endYear)
-                                            );
-                                            crashData[table] = rollingAvgData;
-                                        } else {
-                                            crashData[table] = data;
+                                    if (table === 'related_behavior') {
+                                        let relatedBehaviorTable = Object.keys(queriesObject.queries)[i];
+                                        crashData[relatedBehaviorTable] = data;
+                                    }
+                                    else {
+                                        if (data && data.length > 0) {
+                                            if (table && table === 'annual_bodies_rolling_average') {
+                                                const rollingAvgData = calculateRollingAverage(
+                                                    data,
+                                                    parseInt(filterJson.startYear),
+                                                    parseInt(filterJson.endYear)
+                                                );
+                                                crashData[table] = rollingAvgData;
+                                            } else {
+                                                crashData[table] = data;
+                                            }
                                         }
                                     }
                                 }

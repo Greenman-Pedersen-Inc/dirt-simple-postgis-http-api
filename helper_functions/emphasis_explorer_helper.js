@@ -39,19 +39,19 @@ function makeWhereClause(queryParamObject, isRollingAvg = false) {
     };
 }
 
-function getTableQuery(category, subcategory = null, whereClause, whereClauseRollingAvg) {
+function getTableQuery(category, subcategory = null, chartType = null, whereClause, whereClauseRollingAvg) {
     const tables = {
         lane_departure: {
-            annual_bodies_rolling_average: {
-                table: 'lane_departure_crashes',
-                query: function () {
-                    return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg);
-                }
-            },
             annual_bodies: {
                 table: 'lane_departure_crashes',
                 query: function () {
                     return getAnnualBodiesQuery(schema, this.table, whereClause);
+                }
+            },
+            annual_bodies_rolling_average: {
+                table: 'lane_departure_crashes',
+                query: function () {
+                    return getAnnualBodiesQuery(schema, this.table, whereClauseRollingAvg);
                 }
             },
             crash_type: {
@@ -72,34 +72,36 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
                     return getAgeQuery(schema, this.table, whereClause);
                 }
             },
-            aggressive: {
-                table: 'lane_departure_crashes_aggressive',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            drowsy_distracted: {
-                table: 'lane_departure_crashes_drowsy_distracted',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            unbelted: {
-                table: 'lane_departure_crashes_unbelted',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            impaired: {
-                table: 'lane_departure_crashes_impaired',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            unlicensed: {
-                table: 'lane_departure_crashes_unlicensed',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
+            related_behavior: {
+                aggressive: {
+                    table: 'lane_departure_crashes_aggressive',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                drowsy_distracted: {
+                    table: 'lane_departure_crashes_drowsy_distracted',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                unbelted: {
+                    table: 'lane_departure_crashes_unbelted',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                impaired: {
+                    table: 'lane_departure_crashes_impaired',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                unlicensed: {
+                    table: 'lane_departure_crashes_unlicensed',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
                 }
             }
         },
@@ -134,34 +136,36 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
                     return getAgeQuery(schema, this.table, whereClause);
                 }
             },
-            aggressive: {
-                table: 'ped_bike_crashes_aggressive',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            drowsy_distracted: {
-                table: 'ped_bike_crashes_drowsy_distracted',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            unbelted: {
-                table: 'ped_bike_crashes_unbelted',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            impaired: {
-                table: 'ped_bike_crashes_impaired',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            unlicensed: {
-                table: 'ped_bike_crashes_unlicensed',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
+            related_behavior: {
+                aggressive: {
+                    table: 'ped_bike_crashes_aggressive',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                drowsy_distracted: {
+                    table: 'ped_bike_crashes_drowsy_distracted',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                unbelted: {
+                    table: 'ped_bike_crashes_unbelted',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                impaired: {
+                    table: 'ped_bike_crashes_impaired',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                unlicensed: {
+                    table: 'ped_bike_crashes_unlicensed',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
                 }
             }
         },
@@ -196,34 +200,36 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
                     return getAgeQuery(schema, this.table, whereClause);
                 }
             },
-            aggressive: {
-                table: 'intersection_crashes_aggressive',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            drowsy_distracted: {
-                table: 'intersection_crashes_drowsy_distracted',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            unbelted: {
-                table: 'intersection_crashes_unbelted',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            impaired: {
-                table: 'intersection_crashes_impaired',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
-                }
-            },
-            unlicensed: {
-                table: 'intersection_crashes_unlicensed',
-                query: function () {
-                    return getBehaviorQuery(schema, this.table, whereClause);
+            related_behavior: {
+                aggressive: {
+                    table: 'intersection_crashes_aggressive',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                drowsy_distracted: {
+                    table: 'intersection_crashes_drowsy_distracted',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                unbelted: {
+                    table: 'intersection_crashes_unbelted',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                impaired: {
+                    table: 'intersection_crashes_impaired',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
+                },
+                unlicensed: {
+                    table: 'intersection_crashes_unlicensed',
+                    query: function () {
+                        return getBehaviorQuery(schema, this.table, whereClause);
+                    }
                 }
             }
         },
@@ -303,19 +309,18 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
                 if (categories.hasOwnProperty('subcategory')) {
                     for (const [aCategory, categoryValues] of Object.entries(categories['subcategory'])) {
                         if (aCategory == subcategory) {
-                            return {
-                                [subcategory]: categoryValues,
-                                annual_bodies_rolling_average: {
+                            if (chartType == null) {
+                                return categoryValues;
+                            }
+                            else {
+                                const rollingAvgData = {
                                     table: categoryValues['table'],
                                     query: function () {
-                                        return getAnnualBodiesQuery(
-                                            schema,
-                                            categoryValues['table'],
-                                            whereClauseRollingAvg
-                                        );
+                                        return getAnnualBodiesQuery(schema, categoryValues['table'], whereClauseRollingAvg)
                                     }
                                 }
-                            };
+                                return rollingAvgData;
+                            }
                         }
                     }
                 }
@@ -323,7 +328,9 @@ function getTableQuery(category, subcategory = null, whereClause, whereClauseRol
         }
     } else {
         for (const [table, categories] of Object.entries(tables)) {
-            if (table == category) return categories;
+            if (table == category) {
+                return categories[chartType];
+            }
         }
     }
 }
@@ -455,7 +462,8 @@ function calculateRollingAverage(annualData, startYear, endYear) {
     const windowSize = 5;
     var rollingAvgData = [];
     const rollingAvgDataTemplate = createRollingAverageTemplate(annualData, startYear, endYear);
-    const startYearIdx = rollingAvgDataTemplate.findIndex((yr) => yr['Year'] === startYear);
+    const startYearIdx = windowSize - 1;
+    // const startYearIdx = rollingAvgDataTemplate.findIndex((yr) => yr['Year'] === startYear);
     for (let yearIdx = startYearIdx; yearIdx < rollingAvgDataTemplate.length; yearIdx++) {
         var fatalSum = 0;
         var siSum = 0;

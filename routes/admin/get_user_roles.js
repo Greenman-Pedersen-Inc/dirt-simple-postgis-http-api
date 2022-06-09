@@ -5,7 +5,7 @@ const getQuery = (userName) => {
     const sql = `SELECT admin.user_roles.*, description FROM admin.user_roles 
     LEFT JOIN admin.roles 
     ON admin.user_roles.role_id = admin.roles.role_id
-    WHERE user_name = $1`;
+    WHERE LOWER(user_name) = LOWER($1)`;
     return sql;
 };
 

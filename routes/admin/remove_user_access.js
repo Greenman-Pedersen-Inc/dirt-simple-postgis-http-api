@@ -5,7 +5,7 @@ const usersql = (requestBody) => {
     const sql = `UPDATE admin.user_info
 	SET has_access = false, update_date = NOW() 
     ${requestBody.notes ? `, notes = $2` : ''}
-    WHERE user_name = $1;`;
+    WHERE LOWER(user_name) = LOWER($1);`;
 
     var values = [requestBody.username];
     if (requestBody.notes) values.push(requestBody.notes);

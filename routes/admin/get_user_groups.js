@@ -3,7 +3,7 @@
 // route register
 const getQuery = () => {
     const sql = `SELECT *
-	FROM admin.types_group;`;
+	FROM admin.lookup_types_group;`;
     return sql;
 };
 

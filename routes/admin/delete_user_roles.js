@@ -2,8 +2,9 @@
 
 // route register
 const usersql = (requestBody) => {
-    const sql = `DELETE FROM admin.user_roles
-    WHERE user_name = $1;`;
+    const sql = `DELETE FROM admin.user_module
+    WHERE user_id = (SELECT internal_id from admin.user_info WHERE LOWER(user_name) = LOWER($1))
+    `;
 
     var values = [requestBody.username];
 

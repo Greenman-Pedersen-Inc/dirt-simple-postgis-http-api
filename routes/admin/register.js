@@ -59,7 +59,6 @@ module.exports = function (fastify, opts, next) {
                 properties: {
                     username: { type: 'string' },
                     pass: { type: 'string' },
-                    email: { type: 'string' },
                     first_name: { type: 'string' },
                     last_name: { type: 'string' },
                     beg_access_date: { type: 'string' },
@@ -73,7 +72,7 @@ module.exports = function (fastify, opts, next) {
                     notes: { type: 'string' },
                     is_admin: { type: 'boolean', default: false }
                 },
-                required: ['username', 'pass', 'email']
+                required: ['username', 'pass']
             }
         },
         preHandler: fastify.auth([fastify.verifyToken]),

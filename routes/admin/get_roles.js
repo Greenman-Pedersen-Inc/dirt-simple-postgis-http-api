@@ -5,8 +5,6 @@ const getQuery = () => {
     const sql = `SELECT internal_id, title, description, default_module
     FROM admin.module
     ORDER BY default_module, title;`;
-    // const sql = `SELECT *
-	// FROM admin.roles;`;
     return sql;
 };
 

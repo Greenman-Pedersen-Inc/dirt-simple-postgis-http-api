@@ -2,8 +2,9 @@
 
 // route register
 const getQuery = () => {
-    const sql = `SELECT *
-	FROM admin.roles;`;
+    const sql = `SELECT internal_id, title, description, default_module
+    FROM admin.module
+    ORDER BY default_module, title;`;
     return sql;
 };
 

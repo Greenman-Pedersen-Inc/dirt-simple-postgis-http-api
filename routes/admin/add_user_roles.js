@@ -1,13 +1,13 @@
 // add_user_roles: adds rows in the admin.user_roles table. Each row corresponds to one role for a user.
 
 // route register
-const getQuery = (userName, roleId) => {
-    const sql = `INSERT INTO admin.user_roles(user_name, role_id, role_name)
-	VALUES ($1, $2, (SELECT role_name from admin.roles WHERE role_id = $2))`;
+const getQuery = (userName, moduleId) => {
+    const sql = `INSERT INTO admin.user_module(user_id, module_id)
+	VALUES ((SELECT internal_id from admin.user_info WHERE user_name = $1), $2)`;
 
     return {
         query: sql,
-        values: [userName, roleId]
+        values: [userName, moduleId]
     };
 };
 
@@ -24,9 +24,9 @@ module.exports = function (fastify, opts, next) {
                 type: 'object',
                 properties: {
                     username: { type: 'string' },
-                    roles: { type: 'string' } // string of comma seperated values: "1,2,4"
+                    modules: { type: 'string' } // string of comma seperated values: "1,2,4"
                 },
-                required: ['username', 'roles']
+                required: ['username', 'modules']
             }
         },
         preHandler: fastify.auth([fastify.verifyToken]),
@@ -40,9 +40,9 @@ module.exports = function (fastify, opts, next) {
                     });
 
                 var promises = [];
-                const roleList = request.body.roles.split(',');
-                roleList.forEach((role) => {
-                    const queryParameters = getQuery(request.body.username, role);
+                const modulesList = request.body.modules.split(',');
+                modulesList.forEach((module) => {
+                    const queryParameters = getQuery(request.body.username, parseInt(module));
                     const promise = new Promise((resolve, reject) => {
                         try {
                             const res = client.query(queryParameters.query, queryParameters.values);
@@ -64,7 +64,7 @@ module.exports = function (fastify, opts, next) {
                         return reply.send({
                             statusCode: 500,
                             error: err,
-                            message: 'issue with adding roles for user' + request.body.username,
+                            message: 'issue with adding roles for user ' + request.body.username,
                             success: false
                         });
                     });

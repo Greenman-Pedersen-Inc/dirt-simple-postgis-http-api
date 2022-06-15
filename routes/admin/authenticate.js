@@ -15,13 +15,13 @@ function sql(requestBody) {
 
     var sqlString = `
         SELECT
-            CASE WHEN user_count = 1 THEN admin.CLEAN_TABLE('${requestBody.username}', '${leaseToken}', ${expiryTime})
+            CASE WHEN user_count = 1 THEN admin.CLEAN_TABLE('${requestBody.username.toLowerCase()}', '${leaseToken}', ${expiryTime})
                  ELSE '-1000'
             END as token
         FROM (
             SELECT COUNT(*) AS user_count
             FROM admin.user_info
-            WHERE user_name = '${requestBody.username}'
+            WHERE user_name = '${requestBody.username.toLowerCase()}'
             AND password = '${securePassword}'
         ) AS count_query
     `;

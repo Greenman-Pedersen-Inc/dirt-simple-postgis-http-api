@@ -18,7 +18,7 @@ const sql = (params, query) => {
         with selected_signals as (
             select
                 *,
-                id "signal_id",
+                internal_id "signal_id",
                 ST_AsMVTGeom(
                     geom_mercator,
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
@@ -30,7 +30,7 @@ const sql = (params, query) => {
             )
             ${whereClause ? ` AND ${whereClause}` : ''}
         )
-        SELECT ST_AsMVT(selected_signals.*, 'signals_data', 4096, 'geom', 'id') AS mvt from selected_signals;
+        SELECT ST_AsMVT(selected_signals.*, 'signals_data', 4096, 'geom', 'internal_id') AS mvt from selected_signals;
     `;
     return queryText;
 };

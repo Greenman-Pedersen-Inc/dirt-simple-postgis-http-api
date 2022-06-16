@@ -1,5 +1,8 @@
 // route authenticate
 const crypto = require('crypto');
+var EventLogger = require('node-windows').EventLogger;
+
+var log = new EventLogger('Voyager Data Services');
 
 function sql(requestBody) {
     var buffer = crypto.randomBytes(64);
@@ -65,6 +68,9 @@ module.exports = function (fastify, opts, next) {
             function onConnect(err, client, release) {
                 if (err) {
                     release();
+                    // myeventlog.logSync("warn", "a message");
+                    // myeventlog.logSync("a message"); // severity defaults to "info"
+                    log.error(err);
 
                     return reply.send({
                         statusCode: 500,
@@ -77,7 +83,8 @@ module.exports = function (fastify, opts, next) {
                             release();
 
                             if (err) {
-                                return reply.send({
+                                log.error(err);
+                                reply.send({
                                     statusCode: 500,
                                     error: 'Internal Server Error: Inner Query Error',
                                     message: 'unable to perform database operation: ' + err
@@ -85,12 +92,14 @@ module.exports = function (fastify, opts, next) {
                             } else {
                                 if (result.rows && result.rows.length > 0) {
                                     if (result.rows[0].token === '-1000') {
-                                        result.rows = {
+                                        reply.send({
                                             description: 'user/password authentication unsuccesful!',
                                             tokenError: -1000
-                                        };
+                                        });
                                     } else {
-                                        reply.send(err || result.rows);
+                                        log.info('authentication successful!');
+
+                                        reply.send(result.rows);
                                     }
                                 } else {
                                     reply.send({
@@ -102,6 +111,7 @@ module.exports = function (fastify, opts, next) {
                         });
                     } catch (error) {
                         release();
+                        log.error(err);
 
                         return reply.send({
                             statusCode: 500,

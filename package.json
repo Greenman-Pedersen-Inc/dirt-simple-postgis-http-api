@@ -26,11 +26,13 @@
     "jspdf": "^2.4.0",
     "jspdf-autotable": "^3.5.23",
     "jszip": "^3.9.1",
+    "node-windows": "^1.0.0-beta.7",
     "nodemailer": "^6.7.5",
     "octokit": "^1.7.1",
     "pdfkit": "^0.12.3",
     "pdfkit-table": "^0.1.54",
     "pg": "^8.6.0",
+    "windows-eventlog": "^2.0.0",
     "zip-local": "^0.3.5"
   },
   "devDependencies": {

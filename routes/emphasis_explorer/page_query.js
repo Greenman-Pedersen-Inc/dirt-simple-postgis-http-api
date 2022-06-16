@@ -73,7 +73,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/emphasis-explorer/page-query/:table',
+        url: '/page-query/:table',
         schema: schema,
         // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
@@ -101,4 +101,4 @@ module.exports = function (fastify, opts, next) {
     next();
 };
 
-module.exports.autoPrefix = '/v1';
+module.exports.autoPrefix = '/emphasis_explorer';

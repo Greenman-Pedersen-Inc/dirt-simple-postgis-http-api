@@ -311,14 +311,17 @@ function getTableQuery(category, subcategory = null, chartType = null, whereClau
                         if (aCategory == subcategory) {
                             if (chartType == null) {
                                 return categoryValues;
-                            }
-                            else {
+                            } else {
                                 const rollingAvgData = {
                                     table: categoryValues['table'],
                                     query: function () {
-                                        return getAnnualBodiesQuery(schema, categoryValues['table'], whereClauseRollingAvg)
+                                        return getAnnualBodiesQuery(
+                                            schema,
+                                            categoryValues['table'],
+                                            whereClauseRollingAvg
+                                        );
                                     }
-                                }
+                                };
                                 return rollingAvgData;
                             }
                         }
@@ -337,17 +340,79 @@ function getTableQuery(category, subcategory = null, chartType = null, whereClau
 
 function getAnnualBodiesQuery(schemaName, tableName, whereClause) {
     const sql = `
-    SELECT YEAR::INT "Year", SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0))::INT "Serious_Injury",
-    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0))::INT "Fatal",
-    SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(occupant_phys_cond_incapacitated,0) + 
-        COALESCE(occupant_phys_cond_moderate_injury,0) + COALESCE(occupant_phys_cond_complaint_pain,0) + 
-        COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + 
-        COALESCE(pedestrian_phys_cond_moderate_injury,0) + COALESCE(pedestrian_phys_cond_complaint_pain,0) +
-        COALESCE(cyclist_killed,0) + COALESCE(cyclist_incapacitated,0) + COALESCE(cyclist_complaint_of_pain,0) + COALESCE(cyclist_moderate_pain,0)
-        )::INT "Total"
-    FROM 
-    ${schemaName}.${tableName} WHERE ${whereClause}
-    GROUP BY YEAR ORDER BY YEAR;`;
+        with serious_injuries as (
+            select year,
+                SUM(
+                    COALESCE(occupant_phys_cond_incapacitated, 0) + 
+                    COALESCE(pedestrian_phys_cond_incapacitated, 0) + 
+                    COALESCE(cyclist_incapacitated, 0)
+                )
+            FROM ${schemaName}.${tableName} WHERE ${whereClause}
+            GROUP BY YEAR
+            ORDER BY YEAR
+        ),
+        fatalities as (
+            select year,
+                SUM(
+                    COALESCE(occupant_phys_cond_killed, 0) + 
+                    COALESCE(pedestrian_phys_cond_killed, 0) + 
+                    COALESCE(cyclist_killed, 0)
+                )
+            FROM ${schemaName}.${tableName} WHERE ${whereClause}
+            GROUP BY YEAR
+            ORDER BY YEAR
+        ),
+        moderate_injuries as (
+            select year,
+                SUM(
+                    COALESCE(occupant_phys_cond_moderate_injury, 0) + 
+                    COALESCE(pedestrian_phys_cond_moderate_injury, 0) + 
+                    COALESCE(cyclist_moderate_pain, 0)
+                )
+            FROM ${schemaName}.${tableName} WHERE ${whereClause}
+            GROUP BY YEAR
+            ORDER BY YEAR
+        ),
+        complaints_of_pain as (
+            select year,
+                SUM(
+                    COALESCE(occupant_phys_cond_complaint_pain, 0) + 
+                    COALESCE(pedestrian_phys_cond_complaint_pain, 0) + 
+                    COALESCE(cyclist_complaint_of_pain, 0)
+                )
+            FROM ${schemaName}.${tableName} WHERE ${whereClause}
+            GROUP BY YEAR
+            ORDER BY YEAR
+        )
+        
+        select complaints_of_pain.year::INT as "Year",
+            sum(
+                complaints_of_pain.sum + 
+                moderate_injuries.sum + 
+                serious_injuries.sum + 
+                fatalities.sum
+            )::INT as "Total",
+            sum(serious_injuries.sum)::INT as "Serious_Injury",
+            sum(fatalities.sum)::INT as "Fatal"
+        from complaints_of_pain
+            full outer join moderate_injuries using (year)
+            full outer join serious_injuries using (year)
+            full outer join fatalities using (year)
+        group by complaints_of_pain.year
+        order by complaints_of_pain.year;
+    `;
+
+    // SELECT YEAR::INT "Year", SUM(COALESCE(occupant_phys_cond_incapacitated,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) + COALESCE(cyclist_incapacitated,0))::INT "Serious_Injury",
+    // SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(cyclist_killed,0))::INT "Fatal",
+    // SUM(COALESCE(occupant_phys_cond_killed,0) + COALESCE(occupant_phys_cond_incapacitated,0) +
+    //     COALESCE(occupant_phys_cond_moderate_injury,0) + COALESCE(occupant_phys_cond_complaint_pain,0) +
+    //     COALESCE(pedestrian_phys_cond_killed,0) + COALESCE(pedestrian_phys_cond_incapacitated,0) +
+    //     COALESCE(pedestrian_phys_cond_moderate_injury,0) + COALESCE(pedestrian_phys_cond_complaint_pain,0) +
+    //     COALESCE(cyclist_killed,0) + COALESCE(cyclist_incapacitated,0) + COALESCE(cyclist_complaint_of_pain,0) + COALESCE(cyclist_moderate_pain,0)
+    //     )::INT "Total"
+    // FROM
+    // ${schemaName}.${tableName} WHERE ${whereClause}
+    // GROUP BY YEAR ORDER BY YEAR;`;
 
     return sql;
 }

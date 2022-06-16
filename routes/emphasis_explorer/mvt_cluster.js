@@ -18,7 +18,9 @@ const sql = (params, query) => {
                         crash_data.crashid,
                         crash_data.sri
                     FROM ${params.table} crash_data
-                    WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))
+                    WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${
+            params.y
+        }), 4326))
                     -- Optional filter for the query input
                     ${query.filter ? ` AND ${query.filter}` : ''}
                     and geom is not null
@@ -31,7 +33,9 @@ const sql = (params, query) => {
                     FROM crash_data
                 ), complete_data as (
                     SELECT
-                        cast(concat(cluster_id, ${params.z}::text, ${params.x}::text, ${params.y}::text) as bigint) as cluster_reference,
+                        cast(concat(cluster_id, ${params.z}::text, ${params.x}::text, ${
+            params.y
+        }::text) as bigint) as cluster_reference,
                         array_to_json(array_agg(crashid)) as crash_array,
                         array_to_json(array_agg(sri)) as sri_array,
                         count(*)::int as crash_count,
@@ -52,7 +56,9 @@ const sql = (params, query) => {
                     crash_data.sri,
                     crash_data.geom
                     FROM ${params.table} crash_data
-                    WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${params.y}), 4326))
+                    WHERE ST_Intersects(geom, ST_Transform(ST_TileEnvelope(${params.z}, ${params.x}, ${
+            params.y
+        }), 4326))
                     -- Optional filter for the query input
                     ${query.filter ? ` AND ${query.filter}` : ''}
                 ), crash_count as (
@@ -87,7 +93,9 @@ const sql = (params, query) => {
                 ), complete_data as (
                     SELECT
                         sum(crash_count)::int as crash_count,
-                        cast(concat(cluster_id, ${params.z}::text, ${params.x}::text, ${params.y}::text) as bigint) as cluster_reference,
+                        cast(concat(cluster_id, ${params.z}::text, ${params.x}::text, ${
+            params.y
+        }::text) as bigint) as cluster_reference,
                         ST_AsMVTGeom(
                             ST_Centroid(ST_Extent(geom)),
                             ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
@@ -97,7 +105,9 @@ const sql = (params, query) => {
                     FROM merged_cluster_data
                     GROUP BY cluster_id
                 )
-                SELECT ST_AsMVT(complete_data.*, 'ard_accidents', 4096, 'geom' ${query.id_column ? `, '${query.id_column}'` : ''}) AS mvt from complete_data;
+                SELECT ST_AsMVT(complete_data.*, 'ard_accidents', 4096, 'geom' ${
+                    query.id_column ? `, '${query.id_column}'` : ''
+                }) AS mvt from complete_data;
             `;
     }
 
@@ -133,21 +143,20 @@ const schema = {
             type: 'string',
             description: 'Optional geometry column of the table. The default is geom.',
             default: 'geom'
-          },
-          columns: {
+        },
+        columns: {
+            type: 'string',
+            description: 'Optional columns to return with MVT. The default is no columns.'
+        },
+        id_column: {
             type: 'string',
             description:
-              'Optional columns to return with MVT. The default is no columns.'
-          },
-          id_column: {
-            type: 'string',
-            description:
-              'Optional id column name to be used with Mapbox GL Feature State. This column must be an integer a string cast as an integer.'
-          },
-          filter: {
+                'Optional id column name to be used with Mapbox GL Feature State. This column must be an integer a string cast as an integer.'
+        },
+        filter: {
             type: 'string',
             description: 'Optional filter parameters for a SQL WHERE statement.'
-          }
+        }
     }
 };
 
@@ -155,7 +164,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/emphasis-explorer/mvt-cluster/:table/:z/:x/:y',
+        url: '/mvt-cluster/:table/:z/:x/:y',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
@@ -227,4 +236,4 @@ module.exports = function (fastify, opts, next) {
     next();
 };
 
-module.exports.autoPrefix = '/v1';
+module.exports.autoPrefix = '/emphasis_explorer';

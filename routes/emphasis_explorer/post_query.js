@@ -65,7 +65,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'POST',
-        url: '/emphasis-explorer/post-query/:table',
+        url: '/post-query/:table',
         schema: schema,
         // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
@@ -97,4 +97,4 @@ module.exports = function (fastify, opts, next) {
     next();
 };
 
-module.exports.autoPrefix = '/v1';
+module.exports.autoPrefix = '/emphasis_explorer';

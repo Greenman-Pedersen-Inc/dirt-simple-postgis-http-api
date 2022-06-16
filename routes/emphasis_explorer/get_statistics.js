@@ -51,8 +51,7 @@ const schema = {
         chartType: {
             type: 'string',
             description: 'chart type',
-            example:
-                'annual_bodies, annual_bodies_rolling_average, crash_type, related_behavior, null'
+            example: 'annual_bodies, annual_bodies_rolling_average, crash_type, related_behavior, null'
         },
         startYear: {
             type: 'string',
@@ -87,155 +86,145 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/emphasis-explorer/get-statistics',
+        url: '/get_statistics',
         schema: schema,
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            // fastify.pg.connect(onConnect);
-            fastify.pg.connect(onConnect);
+            request.tracker = new fastify.RequestTracker(
+                request.headers,
+                'emphasis_explorer',
+                'get_statistics',
+                JSON.stringify(Object.assign(request.query, request.params))
+            );
 
             function onConnect(err, client, release) {
-                client.connectionParameters.query_timeout = customTimeout;
+                // client.connectionParameters.query_timeout = customTimeout;
 
-                if (err)
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'unable to connect to database server'
-                    });
+                if (err) {
+                    reply.code(500).send(err);
+                    request.tracker.error(err);
+                } else {
+                    var queryArgs = request.query;
+                    if (queryArgs.startYear == undefined) {
+                        release();
+                        reply.code(400).send('need start year');
+                        request.tracker.error('no start year submitted');
+                    } else if (queryArgs.endYear == undefined) {
+                        release();
+                        reply.code(400).send('no end year submitted');
+                        request.tracker.error('no end year submitted');
+                    } else if (queryArgs.category == undefined) {
+                        release();
+                        reply.code(400).send('no category submitted');
+                        request.tracker.error('no category submitted');
+                    } else {
+                        try {
+                            const filterJson = JSON.parse(JSON.stringify(queryArgs));
+                            const queriesObject = getQueries(filterJson);
+                            const crashData = {};
+                            const promises = []; // store all promises to be queried on
 
-                var queryArgs = request.query;
-                if (queryArgs.startYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need start year'
-                    });
-                } else if (queryArgs.endYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need end year'
-                    });
-                } else if (queryArgs.category == undefined) {
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need category'
-                    });
-                }
+                            if (queriesObject.queries === undefined) {
+                                release();
+                                reply.code(400).send('Please check category or subcategory input and try again.');
+                                request.tracker.error('Please check category or subcategory input and try again.');
+                            } else {
+                                if (queryArgs.chartType === 'related_behavior') {
+                                    for (const [category, values] of Object.entries(queriesObject.queries)) {
+                                        const promise = new Promise((resolve, reject) => {
+                                            try {
+                                                const queryString = values.query();
+                                                // console.log(queryString)
+                                                if (category === 'annual_bodies_rolling_average') {
+                                                    const res = client.query(
+                                                        queryString,
+                                                        queriesObject.values_rolling_avg
+                                                    );
+                                                    return resolve(res);
+                                                } else {
+                                                    const res = client.query(queryString, queriesObject.values);
+                                                    return resolve(res);
+                                                }
+                                            } catch (err) {
+                                                return reject(err);
+                                            }
+                                        });
 
-                let filterJson = JSON.parse(JSON.stringify(queryArgs));
-                const queriesObject = getQueries(filterJson);
-
-                try {
-                    let crashData = {};
-                    let promises = []; // store all promises to be queried on
-                    if (queriesObject.queries === undefined) {
-                        reply.send({
-                            statusCode: 500,
-                            error: 'Invalid category or subcategory',
-                            message: 'Please check category or subcategory input and try again.'
-                        });
-                    }
-
-                    if (queryArgs.chartType === 'related_behavior') {
-                        for (const [category, values] of Object.entries(queriesObject.queries)) {
-                            const promise = new Promise((resolve, reject) => {
-                                try {
-                                    const queryString = values.query();
-                                    // console.log(queryString)
-                                    if (category === 'annual_bodies_rolling_average') {
-                                        const res = client.query(queryString, queriesObject.values_rolling_avg);
-                                        return resolve(res);
-                                    } else {
-                                        const res = client.query(queryString, queriesObject.values);
-                                        return resolve(res);
+                                        promises.push(promise);
                                     }
-                                } catch (err) {
-                                    return reject(err);
-                                }
-                            });
-
-                            promises.push(promise);
-                        }
-                    }
-                    else {
-                        const promise = new Promise((resolve, reject) => {
-                            try {
-                                const queryString = queriesObject.queries.query();
-                                // console.log(queryString)
-                                if (queryArgs.chartType === 'annual_bodies_rolling_average') {
-                                    const res = client.query(queryString, queriesObject.values_rolling_avg);
-                                    return resolve(res);
                                 } else {
-                                    const res = client.query(queryString, queriesObject.values);
-                                    return resolve(res);
-                                }
-                            } catch (err) {
-                                return reject(err);
-                            }
-                        });
-    
-                        promises.push(promise);
-                    }
-
-
-                    Promise.all(promises)
-                        .then((returnData) => {
-                            release();
-
-                            for (let i = 0; i < returnData.length; i++) {
-                                let data = returnData[i].rows;
-                                let table = `${queryArgs.subCategory ? queryArgs.subCategory : queryArgs.chartType}`;
-
-                                if (data.length === 0) {
-                                    crashData[table] = [];
-                                } else {
-                                    if (table === 'related_behavior') {
-                                        let relatedBehaviorTable = Object.keys(queriesObject.queries)[i];
-                                        crashData[relatedBehaviorTable] = data;
-                                    }
-                                    else {
-                                        if (data && data.length > 0) {
-                                            if (table && table === 'annual_bodies_rolling_average') {
-                                                const rollingAvgData = calculateRollingAverage(
-                                                    data,
-                                                    parseInt(filterJson.startYear),
-                                                    parseInt(filterJson.endYear)
-                                                );
-                                                crashData[table] = rollingAvgData;
+                                    const promise = new Promise((resolve, reject) => {
+                                        try {
+                                            const queryString = queriesObject.queries.query();
+                                            // console.log(queryString)
+                                            if (queryArgs.chartType === 'annual_bodies_rolling_average') {
+                                                const res = client.query(queryString, queriesObject.values_rolling_avg);
+                                                return resolve(res);
                                             } else {
-                                                crashData[table] = data;
+                                                const res = client.query(queryString, queriesObject.values);
+                                                return resolve(res);
+                                            }
+                                        } catch (err) {
+                                            return reject(err);
+                                        }
+                                    });
+
+                                    promises.push(promise);
+                                }
+
+                                Promise.all(promises)
+                                    .then((returnData) => {
+                                        release();
+
+                                        for (let i = 0; i < returnData.length; i++) {
+                                            let data = returnData[i].rows;
+                                            let table = `${
+                                                queryArgs.subCategory ? queryArgs.subCategory : queryArgs.chartType
+                                            }`;
+
+                                            if (data.length === 0) {
+                                                crashData[table] = [];
+                                            } else {
+                                                if (table === 'related_behavior') {
+                                                    let relatedBehaviorTable = Object.keys(queriesObject.queries)[i];
+                                                    crashData[relatedBehaviorTable] = data;
+                                                } else {
+                                                    if (data && data.length > 0) {
+                                                        if (table && table === 'annual_bodies_rolling_average') {
+                                                            const rollingAvgData = calculateRollingAverage(
+                                                                data,
+                                                                parseInt(filterJson.startYear),
+                                                                parseInt(filterJson.endYear)
+                                                            );
+                                                            crashData[table] = rollingAvgData;
+                                                        } else {
+                                                            crashData[table] = data;
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
-                                    }
-                                }
-                            }
 
-                            // console.log({ [filterJson.category]: crashData })
-                            reply.send({ [filterJson.category]: crashData });
-                        })
-                        .catch((error) => {
-                            reply.send({
-                                statusCode: 500,
-                                error: error,
-                                message: 'Query Error'
-                            });
-                        });
-                } catch (error) {
-                    release();
-                    console.log(error);
-                    reply.send({
-                        statusCode: 500,
-                        error: error,
-                        message: request
-                    });
+                                        reply.send({ [filterJson.category]: crashData });
+                                        request.tracker.complete();
+                                    })
+                                    .catch((error) => {
+                                        reply.code(505).send(err);
+                                        request.tracker.error(error);
+                                    });
+                            }
+                        } catch (error) {
+                            release();
+                            reply.code(555).send(error);
+                            request.tracker.error(error);
+                        }
+                    }
                 }
             }
+            fastify.pg.connect(onConnect);
         }
     });
     next();
 };
 
-module.exports.autoPrefix = '/v1';
+module.exports.autoPrefix = '/emphasis_explorer';

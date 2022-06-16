@@ -79,7 +79,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/emphasis-explorer/ea-geojson/:table',
+        url: '/ea-geojson/:table',
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
@@ -119,4 +119,4 @@ module.exports = function (fastify, opts, next) {
     next();
 };
 
-module.exports.autoPrefix = '/v1';
+module.exports.autoPrefix = '/emphasis_explorer';

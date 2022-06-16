@@ -145,7 +145,6 @@ module.exports = function (fastify, opts, next) {
                                 let data = returnData[i].rows;
                                 if (table === 'accidents') {
                                     crashData = transcribeKeys(data[0]);
-                                    // crashData = data[0];
                                 } else {
                                     crashData[table] = transcribeKeysArray(data);
                                 }

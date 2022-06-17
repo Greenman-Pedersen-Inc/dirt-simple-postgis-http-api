@@ -113,10 +113,10 @@ module.exports = function (fastify, opts, next) {
                         request.tracker.error('no crash filter submitted');
                     } else {
                         try {
-                            client.query(sql(request.params, request.query), function onResult(err, result) {
+                            client.query(sql(request.params, request.query), function onResult(error, result) {
                                 release();
 
-                                if (err) {
+                                if (error) {
                                     reply.code(500).send(error);
                                     request.tracker.error(error);
                                 } else {

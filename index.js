@@ -39,10 +39,16 @@ function RequestTracker(credentials, module, end_point, user_query) {
     this.error = function (error) {
         try {
             const execution_time = Date.now();
+            let errorString;
+            if (typeof error === 'object') {
+                errorString = error.message;
+            } else if (typeof error === 'string') {
+                errorString = error;
+            }
             const queryString = `
                 INSERT INTO traffic.${module}(
                     user_name, token, request_time, execution_time, end_point, user_query, error)
-                    VALUES ('${credentials.username}','${credentials.token}', ${self.request_time}, ${execution_time}, '${end_point}', '${user_query}', '${error}'});
+                    VALUES ('${credentials.username}','${credentials.token}', ${self.request_time}, ${execution_time}, '${end_point}', '${user_query}', '${errorString}');
             `;
             fastify.pg.connect((err, client, release) => {
                 onConnect(err, client, release, queryString);

@@ -70,7 +70,8 @@ module.exports = function (fastify, opts, next) {
                     user_type: { type: 'string' },
                     user_group: { type: 'string' },
                     notes: { type: 'string' },
-                    is_admin: { type: 'boolean', default: false }
+                    is_admin: { type: 'boolean', default: false },
+                    added_by: { type: 'string' }
                 },
                 required: ['username', 'pass']
             }

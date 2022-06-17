@@ -5,8 +5,8 @@ const getQuery = () => {
     const sql = `
     select name from admin.user_module
     left join 
-    admin.module
-    on admin.module.internal_id = admin.user_module.module_id
+    usermanagement.module
+    on usermanagement.module.internal_id = admin.user_module.module_id
     where admin.user_module.user_id = (SELECT internal_id from admin.user_info WHERE LOWER(user_name) = LOWER($1))
     ORDER BY default_module, title;
     

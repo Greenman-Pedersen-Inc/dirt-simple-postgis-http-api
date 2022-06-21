@@ -3,18 +3,10 @@
 // route register
 const getQuery = () => {
     const sql = `
-    select name from admin.user_module
-    left join 
-    usermanagement.module
-    on usermanagement.module.internal_id = admin.user_module.module_id
-    where admin.user_module.user_id = (SELECT internal_id from admin.user_info WHERE LOWER(user_name) = LOWER($1))
-    ORDER BY default_module, title;
-    
+    SELECT title from admin.user_module_access
+    WHERE user_id = (SELECT internal_id from admin.user_info WHERE LOWER(user_name) = LOWER($1))
+    ORDER BY title;
     `;
-    // const sql = `SELECT admin.user_roles.*, description FROM admin.user_roles 
-    // LEFT JOIN admin.roles 
-    // ON admin.user_roles.role_id = admin.roles.role_id
-    // WHERE LOWER(user_name) = LOWER($1)`;
     return sql;
 };
 

@@ -2,6 +2,7 @@ const { createQueryClauseSingleton, createQueryClauseMultiple, createQueryClause
 const tableName = "signals.signals_data";
 
 const filterDictionary = [
+    { title: 'SRI', fieldName: 'sri', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
     {
         title: 'County',
         fieldName: 'mun_cty_co',
@@ -606,7 +607,7 @@ const filterDictionary = [
         query: function (input) { return createQueryClauseMunicipality(tableName, input); }
     },
     {
-        title: 'Signal Type',
+        title: 'Intersection Type',
         fieldName: 'type',
         values: [
             { code: 'R', description: 'Ramp' },
@@ -614,6 +615,66 @@ const filterDictionary = [
             { code: 'L', description: 'Local' },
             { code: 'P', description: 'One-Way Pair' },
             { code: 'D', description: 'Route Direction Change' }
+        ],
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+    },
+    {
+        title: 'Signal Type',
+        fieldName: 'sig',
+        values: [
+            { code: 'FL', description: 'Flasher' },
+            { code: 'SFL', description: 'Sign Flasher' },
+            { code: 'HB', description: 'Hybrid Beacon' }
+        ],
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+    },
+    {
+        title: 'Notes',
+        fieldName: 'notes',
+        values: [
+            { code: 'BR, I/O', description: 'BR, I/O'},
+            { code: 'DRAWBR', description: 'DRAWBR'},
+            { code: 'EHB', description: 'EHB'},
+            { code: 'FIRE', description: 'FIRE'},
+            { code: 'FIREFL', description: 'FIREFL'},
+            { code: 'FLASHER', description: 'FLASHER'},
+            { code: 'FP', description: 'FP'},
+            { code: 'FP, J', description: 'FP, J'},
+            { code: 'I/O', description: 'I/O'},
+            { code: 'I/O, RR', description: 'I/O, RR'},
+            { code: 'J', description: 'J'},
+            { code: 'J, I/O', description: 'J, I/O'},
+            { code: 'J, RR', description: 'J, RR'},
+            { code: 'MAINT', description: 'MAINT'},
+            { code: 'MTR', description: 'MTR'},
+            { code: 'MTS', description: 'MTS'},
+            { code: 'OWB', description: 'OWB'},
+            { code: 'PED', description: 'PED'},
+            { code: 'PHB', description: 'PHB'},
+            { code: 'RR', description: 'RR'},
+            { code: 'RRFB', description: 'RRFB'},
+            { code: 'SIGNFLR-S', description: 'SIGNFLR-S'},
+            { code: 'SIGNFLR-SL', description: 'SIGNFLR-SL'},
+            { code: 'SIGNFLR-SSL', description: 'SIGNFLR-SSL'},
+            { code: 'SIGNFLW-C', description: 'SIGNFLW-C'},
+            { code: 'SIGNFLW-F', description: 'SIGNFLW-F'},
+            { code: 'SIGNFLW-M', description: 'SIGNFLW-M'},
+            { code: 'SIGNFLW-OV', description: 'SIGNFLW-OV'},
+            { code: 'SIGNFLW-P', description: 'SIGNFLW-P'},
+            { code: 'SIGNFLW-PD', description: 'SIGNFLW-PD'},
+            { code: 'SIGNFLW-RA', description: 'SIGNFLW-RA'},
+            { code: 'SIGNFLW-RR', description: 'SIGNFLW-RR'},
+            { code: 'SIGNFLW-RS', description: 'SIGNFLW-RS'},
+            { code: 'SIGNFLW-SA', description: 'SIGNFLW-SA'},
+            { code: 'SIGNFLW-SC', description: 'SIGNFLW-SC'},
+            { code: 'SIGNFLW-ST', description: 'SIGNFLW-ST'},
+            { code: 'SIGNFLW-SV', description: 'SIGNFLW-SV'},
+            { code: 'SIGNFLW-TV', description: 'SIGNFLW-TV'},
+            { code: 'SIGNFLW-YA', description: 'SIGNFLW-YA'},
+            { code: 'STC', description: 'STC'},
+            { code: 'STC, I/O', description: 'STC, I/O'},
+            { code: 'U', description: 'U'},
+            { code: 'U, J', description: 'U, J'}            
         ],
         query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     }

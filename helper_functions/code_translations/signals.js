@@ -1,7 +1,7 @@
 const { createQueryClauseSingleton, createQueryClauseMultiple, createQueryClauseMunicipality, createQueryDateRange, createTimeDateRange, createQueryMilepost, createQueryVehicleTotal, createQueryPedCyclist } = require('./query_maker');
 const tableName = "signals.signals_data";
 
-const filterDictonary = [
+const filterDictionary = [
     {
         title: 'County',
         fieldName: 'mun_cty_co',
@@ -605,11 +605,23 @@ const filterDictonary = [
         ],
         query: function (input) { return createQueryClauseMunicipality(tableName, input); }
     },
+    {
+        title: 'Signal Type',
+        fieldName: 'type',
+        values: [
+            { code: 'R', description: 'Ramp' },
+            { code: 'O', description: 'Off-Mainline' },
+            { code: 'L', description: 'Local' },
+            { code: 'P', description: 'One-Way Pair' },
+            { code: 'D', description: 'Route Direction Change' }
+        ],
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+    }
 ];
 
 const codeDefinitions = {
     table: tableName,
-    filters: filterDictonary
+    filters: filterDictionary
 };
 
 module.exports = codeDefinitions;

@@ -9,11 +9,6 @@ const sql = (params, query) => {
     const whereClause = filter.whereClause;
     const fromClause = filter.fromClause;
 
-    let whereClauses = [];
-    if (parsed_filter.hasOwnProperty("mun_mu")) {
-
-    }
-
     const queryText = `
         with selected_signals as (
             select

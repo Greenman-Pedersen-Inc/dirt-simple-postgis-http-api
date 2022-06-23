@@ -2,7 +2,7 @@
 
 // route register
 const getQuery = (username) => {
-    const sql = `SELECT * FROM usermanagement.module;`;
+    const sql = `SELECT * FROM admin.module;`;
     return sql;
 };
 

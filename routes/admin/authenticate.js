@@ -24,7 +24,7 @@ function sql(requestBody) {
             SELECT COUNT(*) AS user_count
             FROM admin.user_info
             WHERE LOWER(user_name) = '${requestBody.username.toLowerCase()}' 
-            AND (end_access_data IS NULL OR end_access_date > TO_TIMESTAMP(${expiryTime}) )
+            AND (end_access_date IS NULL OR end_access_date > TO_TIMESTAMP(${expiryTime}))
             AND password = '${securePassword}'
         ) AS count_query
     `;

@@ -62,16 +62,7 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                } 
-                // else if (request.query.userName == undefined) {
-                //     release();
-                //     reply.send({
-                //         statusCode: 500,
-                //         error: 'Internal Server Error',
-                //         message: 'need user name'
-                //     });
-                // } 
-                else {
+                } {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             release();

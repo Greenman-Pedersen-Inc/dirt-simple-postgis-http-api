@@ -1,8 +1,15 @@
 // get_menu_info: gets a list of all menu modules and their meta data
 
 // route register
-const getQuery = (username) => {
-    const sql = `SELECT * FROM admin.module;`;
+const getQuery = () => {
+    const sql = `
+    SELECT title, description, image, link, status from admin.module
+    LEFT JOIN
+    admin.user_module
+    ON admin.module.internal_id = admin.user_module.module_id
+    WHERE admin.user_module.user_id = (SELECT internal_id from admin.user_info WHERE LOWER(user_name) = LOWER($1))
+    ORDER BY display_order
+    ;`;
     return sql;
 };
 
@@ -26,8 +33,6 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            const query = getQuery(request.params.username);
-
             request.tracker = new fastify.RequestTracker(
                 request.headers.credentials,
                 'admin',
@@ -38,11 +43,13 @@ module.exports = function (fastify, opts, next) {
             if (request.params.username == undefined) {
                 reply.code(400).send('no user name specified');
             } else {
+                const query = getQuery();
+
                 fastify.pg
                     .connect()
                     .then((client) => {
                         client
-                            .query(query)
+                            .query(query, [request.params.username])
                             .then((result) => {
                                 if (result.rows && result.rows.length > 0) {
                                     reply.code(200).send(result.rows);

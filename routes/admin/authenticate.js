@@ -21,7 +21,7 @@ function sql(requestBody) {
         FROM (
             SELECT COUNT(*) AS user_count
             FROM admin.user_info
-            WHERE user_name = '${requestBody.username.toLowerCase()}'
+            WHERE LOWER(user_name) = '${requestBody.username.toLowerCase()}'
             AND password = '${securePassword}'
         ) AS count_query
     `;

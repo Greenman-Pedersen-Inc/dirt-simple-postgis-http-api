@@ -13,6 +13,8 @@ function sql(requestBody) {
     expiryTime.setHours(expiryTime.getHours() + 4);
     expiryTime = expiryTime.getTime();
 
+    // yr month day
+
     var sqlString = `
         SELECT
             CASE WHEN user_count = 1 THEN admin.CLEAN_TABLE('${requestBody.username.toLowerCase()}', '${leaseToken}', ${expiryTime})
@@ -21,7 +23,8 @@ function sql(requestBody) {
         FROM (
             SELECT COUNT(*) AS user_count
             FROM admin.user_info
-            WHERE LOWER(user_name) = '${requestBody.username.toLowerCase()}'
+            WHERE LOWER(user_name) = '${requestBody.username.toLowerCase()}' 
+            AND (end_access_data IS NULL OR end_access_date > TO_TIMESTAMP(${expiryTime}) )
             AND password = '${securePassword}'
         ) AS count_query
     `;

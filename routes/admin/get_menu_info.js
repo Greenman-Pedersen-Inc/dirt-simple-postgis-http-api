@@ -51,6 +51,7 @@ module.exports = function (fastify, opts, next) {
                         client
                             .query(query, [request.params.username])
                             .then((result) => {
+                                release();
                                 if (result.rows && result.rows.length > 0) {
                                     reply.code(200).send(result.rows);
                                 } else {
@@ -60,6 +61,7 @@ module.exports = function (fastify, opts, next) {
                                 request.tracker.complete();
                             })
                             .catch((error) => {
+                                release();
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
                             })
@@ -68,6 +70,7 @@ module.exports = function (fastify, opts, next) {
                             });
                     })
                     .catch((error) => {
+                        release();
                         reply.code(500).send(error);
                         request.tracker.error(error);
                     });

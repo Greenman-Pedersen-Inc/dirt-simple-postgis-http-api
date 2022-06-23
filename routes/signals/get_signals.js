@@ -35,10 +35,10 @@ const schema = {
         }
     },
     querystring: {
-        filter: {
+        selected_filters: {
             type: 'string',
-            description: 'a filter',
-            example: ''
+            description:
+                'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
         }
     }
 };

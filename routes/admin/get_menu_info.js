@@ -45,32 +45,40 @@ module.exports = function (fastify, opts, next) {
             } else {
                 const query = getQuery();
 
-                fastify.pg
-                    .connect()
-                    .then((client) => {
-                        client
-                            .query(query, [request.params.username])
-                            .then((result) => {
-                                if (result.rows && result.rows.length > 0) {
-                                    reply.code(200).send(result.rows);
+                function onConnect(err, client, release) {
+                    if (err) {
+                        release();
+                        reply.send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'unable to connect to database server'
+                        });
+                    } {
+                        try {
+                            client.query(query, [request.params.username], function onResult(err, result) {
+                                release();
+    
+                                if (err) {
+                                    reply.send(err);
+                                } else if (result && result.rows) {
+                                    reply.send(result.rows);
                                 } else {
-                                    reply.code(204).send();
+                                    reply.code(204);
                                 }
-
-                                request.tracker.complete();
-                            })
-                            .catch((error) => {
-                                reply.code(500).send(error);
-                                request.tracker.error(error);
-                            })
-                            .then(() => {
-                                client.end();
                             });
-                    })
-                    .catch((error) => {
-                        reply.code(500).send(error);
-                        request.tracker.error(error);
-                    });
+                        } catch (error) {
+                            release();
+    
+                            reply.send({
+                                statusCode: 500,
+                                error: error,
+                                message: request
+                            });
+                        }
+                    }
+                }
+    
+                fastify.pg.connect(onConnect);
             }
         }
     });

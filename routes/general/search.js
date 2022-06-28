@@ -27,15 +27,15 @@ const makeSeachQueries = (params) => {
         desc limit 10`;
         } else {
             sql = `SELECT 
-      'SRI' AS "ResultType",
-      CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
-          stndrd_rt_id AS "ResultID"
-          FROM srilookup  
-          where UPPER(name)  
-          Like $1
-          --Like '%${params.searchText.toUpperCase()}%'  
-          order by count  
-          desc limit 10`;
+            'SRI' AS "ResultType",
+            CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
+            stndrd_rt_id AS "ResultID"
+            FROM srilookup  
+            where UPPER(name)  
+            Like $1
+            --Like '%${params.searchText.toUpperCase()}%'  
+            order by count  
+            desc limit 10`;
         }
         // console.log(sql)
         sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
@@ -92,6 +92,32 @@ const makeSeachQueries = (params) => {
         //console.log(sql)
         // sqlQueries.push( {'text': sql, 'values': [params.searchText, params.searchText + '%'] } );
         sqlQueries.push({ text: sql, values: [params.searchText + '%'] });
+    }
+    if (params.includeSignalsRoute) {
+        sql = `SELECT 
+        'SRI' AS "ResultType",
+        CONCAT(name, ' (', sri, ')') AS "ResultText",
+        sri AS "ResultID"
+        FROM signals.signals_sri_search
+        where UPPER(name)  
+        Like $1
+        limit 10`;
+        // console.log(sql)
+        sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
+    }
+    if (params.includeSignalsIntersection) {
+        sql = `SELECT 'INTERSECTION' AS "ResultType",
+        search AS "ResultText",
+        internal_id AS "ResultID",
+        lat AS "Latitude",
+        long AS "Longitude"
+        FROM signals.signals_intersection_search 
+        WHERE UPPER(search) like $1  
+        order by search  
+        limit 5`;
+        // console.log(sql)
+        sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
+        // sqlQueries.push(sql);
     }
     return sqlQueries;
 };
@@ -187,6 +213,16 @@ const schema = {
             type: 'string',
             description: 'county or muni location code',
             default: ''
+        },
+        includeSignalsRoute: {
+            type: 'string',
+            description: 'search for an SRI based on the "sri" in signals.signals_data',
+            default: ''
+        },
+        includeSignalsIntersection: {
+            type: 'string',
+            description: 'search for an intersection based on the "search" column in signals.signals_data',
+            default: ''
         }
     }
 };
@@ -200,15 +236,24 @@ module.exports = function (fastify, opts, next) {
 
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers,
+                'crash_map',
+                'search',
+                JSON.stringify(Object.assign(request.query, request.params))
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
+                if (err) {
+                    request.tracker.error(err);
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
 
                 var sqlQueries = makeSeachQueries(request.query);
                 var resultsList = [];
@@ -256,7 +301,6 @@ module.exports = function (fastify, opts, next) {
 
                 Promise.all(promises).then((responseArray) => {
                     responseArray.forEach((response) => {
-                        //console.log(response)
                         if (response.rows) {
                             response.rows.forEach((row) => {
                                 resultsList.push(row);
@@ -275,6 +319,11 @@ module.exports = function (fastify, opts, next) {
                     });
                     release();
                     reply.send(err || { SearchResults: resultsList });
+                })
+                .catch(err => {
+                    console.error(err.message);
+                    reply.code(500).send(err);
+                    request.tracker.error(err);
                 });
             }
         }

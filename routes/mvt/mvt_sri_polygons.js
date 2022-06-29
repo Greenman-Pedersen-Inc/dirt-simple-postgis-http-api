@@ -2,7 +2,6 @@
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-    const accidentsTableName = 'ard_accidents_geom_partition';
     let parsed_filter = JSON.parse(query.selected_filters);
     const selectedSRI = parsed_filter.sri;
     const queryText = `
@@ -11,6 +10,7 @@ const sql = (params, query) => {
                         internal_id, 
                         sri, 
                         mp,
+                        centroid,
                         ST_AsMVTGeom(
                             segment_polygon.geom,
                             ST_TileEnvelope(

@@ -5,10 +5,6 @@ const sql = (params, query) => {
     const accidentsTableName = 'ard_accidents_geom_partition';
     let parsed_filter = JSON.parse(query.selected_filters);
     const selectedSRI = parsed_filter.sri;
-
-    delete parsed_filter.sri;
-
-    const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
     const queryText = `
                 with selected_segment_polygons as (
                     select 
@@ -33,12 +29,13 @@ const sql = (params, query) => {
                             ${params.y}
                         )
                     )
+
+                    ${parsed_filter.mp_start ? ` AND mp >= ${parsed_filter.mp_start}` : ''}
+                    ${parsed_filter.mp_end ? ` AND mp <= ${parsed_filter.mp_end}` : ''}
                 )
 
                 SELECT ST_AsMVT(selected_segment_polygons.*, 'segment_polygon', 4096, 'geom', 'internal_id') AS mvt from selected_segment_polygons;
             `;
-
-    console.log(queryText);
 
     return queryText;
 };

@@ -3,6 +3,9 @@ const tableName = "signals.signals_data";
 
 const filterDictionary = [
     { title: 'SRI', fieldName: 'sri', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Milepost', fieldName: 'milepost', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Starting Milepost', fieldName: 'mp_start', query: function (startMp) { return createQueryMilepost(startMp, 'start', tableName, "mp"); } },
+    { title: 'Ending Milepost', fieldName: 'mp_end', query: function (endMp) { return createQueryMilepost(endMp, 'end', tableName, "mp"); } },
     {
         title: 'County',
         fieldName: 'mun_cty_co',
@@ -675,6 +678,27 @@ const filterDictionary = [
             { code: 'STC, I/O', description: 'STC, I/O'},
             { code: 'U', description: 'U'},
             { code: 'U, J', description: 'U, J'}            
+        ],
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+    },
+    {
+        title: 'Functional Class',
+        fieldName: 'jurisdiction_type_code',
+        values: [
+            { code: '1', description: 'N.J.D.O.T.'},
+            { code: '2', description: 'County'},
+            { code: '3', description: 'Municipal'},
+            { code: '4', description: 'D.R.J.T.B.C.'},      
+            { code: '5', description: 'Delaware River Port Authority'},      
+            { code: '6', description: 'Delaware River and Bay Authority'},      
+            { code: '7', description: 'New Jersey Turnpike Authority'},      
+            { code: '8', description: 'Port Authority of N.Y & N.J.'},      
+            { code: '9', description: 'Burlington County Bridge Commission'},      
+            { code: '10', description: 'Palisades Interstate Parkway Commission'},      
+            { code: '11', description: 'South Jersey Transportation Authority'},      
+            { code: '12', description: 'Beesley\'s Point Bridge Co.'},      
+            { code: '13', description: 'Unknown'},      
+            { code: '14', description: 'Margate Bridge Company'}     
         ],
         query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     }

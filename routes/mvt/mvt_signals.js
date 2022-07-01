@@ -33,7 +33,7 @@ const sql = (params, query) => {
 // route schema
 const schema = {
     description: 'Return table as Mapbox Vector Tile (MVT) for signals',
-    tags: ['signals'],
+    tags: ['mvt'],
     summary: 'return signals MVT',
     params: {
         z: {
@@ -62,7 +62,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/signals/mvt-signals/:z/:x/:y',
+        url: '/mvt/signals/:z/:x/:y',
         schema: schema,
 
         // preHandler: fastify.auth([fastify.verifyToken]),

@@ -2,39 +2,35 @@
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-    let parsed_filter = JSON.parse(query.selected_filters);
-    const selectedSRI = parsed_filter.sri;
+    const tableName = 'signals.signals_sri_multipoly';
+    const geomName = 'geom_multipoly';
+    //let parsed_filter = JSON.parse(query.selected_filters);
     const queryText = `
-                with selected_segment_polygons as (
+                WITH selected_segment_polygons AS (
                     select 
                         internal_id, 
                         sri, 
-                        mp,
-                        centroid,
+                        route_name,
                         ST_AsMVTGeom(
-                            segment_polygon.geom,
+                            ${tableName}.${geomName},
                             ST_TileEnvelope(
                                 ${params.z}, 
                                 ${params.x}, 
                                 ${params.y}
                             )
-                        ) as geom
-                    from segment_polygon
-                    where sri = '${selectedSRI}'
-                    and st_intersects(
-                        geom,
+                        ) AS geom
+                    FROM ${tableName}
+                    WHERE st_intersects(
+                        ${geomName},
                         ST_TileEnvelope(
                             ${params.z}, 
                             ${params.x}, 
                             ${params.y}
                         )
                     )
-
-                    ${parsed_filter.mp_start ? ` AND mp >= ${parsed_filter.mp_start}` : ''}
-                    ${parsed_filter.mp_end ? ` AND mp <= ${parsed_filter.mp_end}` : ''}
                 )
 
-                SELECT ST_AsMVT(selected_segment_polygons.*, 'segment_polygon', 4096, 'geom', 'internal_id') AS mvt from selected_segment_polygons;
+                SELECT ST_AsMVT(selected_segment_polygons.*, 'sri_route_lines', 4096, 'geom', 'internal_id') AS mvt from selected_segment_polygons;
             `;
 
     return queryText;
@@ -42,9 +38,9 @@ const sql = (params, query) => {
 
 // route schema
 const schema = {
-    description: 'Returns SRI polygon segments by milepost',
+    description: 'Returns the entire SRI route line',
     tags: ['mvt'],
-    summary: 'Returns SRI polygon segments by milepost',
+    summary: 'Returns the entire SRI route line',
 
     params: {
         z: {
@@ -72,7 +68,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/mvt/sri-polygons/:z/:x/:y',
+        url: '/mvt/signals-sri-route-lines/:z/:x/:y',
         schema: schema,
 
         preHandler: fastify.auth([fastify.verifyToken]),

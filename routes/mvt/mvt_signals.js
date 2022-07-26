@@ -13,7 +13,7 @@ const sql = (params, query) => {
         with selected_signals as (
             select
             cs,
-            sri
+            sri,
             mp,
             mun_cty_co,
             mun_mu,
@@ -64,10 +64,11 @@ const sql = (params, query) => {
             plan_10,
             parent_signal,
             parent_id,
-            CASE
-                WHEN signal_timer = true THEN 'True'
-                ELSE 'False'
-            END AS signal_timer,
+            signal_timer,
+            --CASE
+                --WHEN signal_timer = true THEN 'True'
+                --ELSE 'False'
+            --END AS signal_timer,
             child_record,
             jurisdiction_type_code,
                 internal_id "signal_id",

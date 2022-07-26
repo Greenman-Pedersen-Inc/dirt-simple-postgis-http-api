@@ -1,0 +1,15 @@
+type_code,descr
+1,N.J.D.O.T.
+2,County
+3,Municipal
+4,D.R.J.T.B.C.
+5,Delaware River Port Authority
+6,Delaware River and Bay Authority
+7,New Jersey Turnpike Authority
+8,Port Authority of N.Y & N.J.
+9,Burlington County Bridge Commission
+10,Palisades Interstate Parkway Commission
+11,South Jersey Transportation Authority
+12,Beesley's Point Bridge Co.
+13,Unknown
+14,Margate Bridge Company

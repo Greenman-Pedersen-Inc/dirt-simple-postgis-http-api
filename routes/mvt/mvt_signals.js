@@ -12,7 +12,65 @@ const sql = (params, query) => {
     const queryText = `
         with selected_signals as (
             select
-                *,
+            cs,
+            sri,
+            mp,
+            mun_cty_co,
+            mun_mu,
+            sig,
+            type,
+            intersection,
+            tr_reg,
+            el_reg,
+            signal_offset,
+            notes,
+            row_1,
+            row_2,
+            row_3,
+            row_4,
+            via,
+            internal_id,
+            agreement,
+            ad_12_1,
+            ad_12_2,
+            ad_12_3,
+            ad_12_4,
+            ad_12_5,
+            ad_12_6,
+            ad_12_7,
+            ad_12_8,
+            ad_12_9,
+            ad_12_10,
+            plan_1,
+            plan_date,
+            directive,
+            lat,
+            long,
+            acc,
+            draw,
+            tm,
+            cd,
+            mn,
+            prefix,
+            search,
+            plan_2,
+            plan_3,
+            plan_4,
+            plan_5,
+            plan_6,
+            plan_7,
+            plan_8,
+            plan_9,
+            plan_10,
+            parent_signal,
+            parent_id,
+            signal_timer,
+            --CASE
+                --WHEN signal_timer = true THEN 'True'
+                --ELSE 'False'
+            --END AS signal_timer,
+            child_record,
+            jurisdiction_type_code,
                 internal_id "signal_id",
                 ST_AsMVTGeom(
                     geom_mercator,
@@ -33,7 +91,7 @@ const sql = (params, query) => {
 // route schema
 const schema = {
     description: 'Return table as Mapbox Vector Tile (MVT) for signals',
-    tags: ['signals'],
+    tags: ['mvt'],
     summary: 'return signals MVT',
     params: {
         z: {
@@ -62,7 +120,7 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/signals/mvt-signals/:z/:x/:y',
+        url: '/mvt/signals/:z/:x/:y',
         schema: schema,
 
         // preHandler: fastify.auth([fastify.verifyToken]),

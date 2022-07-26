@@ -456,7 +456,7 @@ function getBehaviorQuery(schemaName, tableName, whereClause) {
  * @param {object} annualData - Fatal, SI, and Total persons data from startYear - 4
  * @param {string} startYear
  * @param {string} endYear
- * @returns {object} Calculated 5 year rolling avarage Fatal, SI, and Total persons counts from startYear to endYear
+ * @returns {object} Calculated 5 year rolling average Fatal, SI, and Total persons counts from startYear to endYear
  */
 function calculateRollingAverage(annualData, startYear, endYear) {
     const windowSize = 5;

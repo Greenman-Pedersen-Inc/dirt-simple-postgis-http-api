@@ -6,7 +6,7 @@
 const sql = () => {
     var sql = `
     WITH sri_extent AS (
-        SELECT MIN(mp) start_mp, MAX(mp) end_mp, ST_Transform(ST_SetSrid(ST_Extent(geom), 3857), 4326) extent
+        SELECT MIN(mp) start_mp, MAX(mp) end_mp, ST_Extent(geom_latlong) extent
         FROM public.segment_polygon
         WHERE sri = $1
     )

@@ -37,9 +37,7 @@ const makeSeachQueries = (params) => {
             order by count  
             desc limit 10`;
         }
-        // console.log(sql)
         sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
-        // sqlQueries.push(sql);
     }
     if (params.includeCounty) {
         const countyQuery = params.searchText.toUpperCase().replace('COUNTY', '');
@@ -53,9 +51,7 @@ const makeSeachQueries = (params) => {
       where UPPER(county) like $1  
       order by county 
       limit 5`;
-        // console.log(sql)
         sqlQueries.push({ text: sql, values: ['%' + countyQuery + '%'] });
-        // sqlQueries.push(sql);
     }
     if (params.includeMunicipality) {
         sql = `SELECT 'MUNICIPALITY' AS "ResultType",
@@ -68,29 +64,25 @@ const makeSeachQueries = (params) => {
       WHERE UPPER(mun) like $1  
       order by mun  
       limit 5`;
-        // console.log(sql)
         sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
-        // sqlQueries.push(sql);
     }
     if (params.includeCaseNumber && params.searchText.length > 4) {
         sql = `SELECT 
-    'CASE' AS "ResultType",
-      CONCAT(acc_case, ' ', muni_name) AS "ResultText",
-      crashid AS "ResultID",
-      calc_longitude AS "Longitude",
-      calc_latitude AS "Latitude"
-      FROM public.ard_accidents_geom_partition
-      inner join ard_municipality
-      on ard_accidents_geom_partition.mun_cty_co = ard_municipality.county_code
-      and ard_accidents_geom_partition.mun_mu = ard_municipality.muni_code
-      inner join ard_county
-      on ard_accidents_geom_partition.mun_cty_co = ard_county.county_code
-      --where acc_case = $1
-      --or acc_case LIKE $2 
-      WHERE acc_case LIKE $1
-      limit 5`;
-        //console.log(sql)
-        // sqlQueries.push( {'text': sql, 'values': [params.searchText, params.searchText + '%'] } );
+        'CASE' AS "ResultType",
+        CONCAT(acc_case, ' ', muni_name) AS "ResultText",
+        crashid AS "ResultID",
+        calc_longitude AS "Longitude",
+        calc_latitude AS "Latitude"
+        FROM public.ard_accidents_geom_partition
+        inner join ard_municipality
+        on ard_accidents_geom_partition.mun_cty_co = ard_municipality.county_code
+        and ard_accidents_geom_partition.mun_mu = ard_municipality.muni_code
+        inner join ard_county
+        on ard_accidents_geom_partition.mun_cty_co = ard_county.county_code
+        --where acc_case = $1
+        --or acc_case LIKE $2 
+        WHERE acc_case LIKE $1
+        limit 5`;
         sqlQueries.push({ text: sql, values: [params.searchText + '%'] });
     }
     if (params.includeSignalsRoute) {
@@ -102,7 +94,6 @@ const makeSeachQueries = (params) => {
         where UPPER(name)  
         Like $1
         limit 10`;
-        // console.log(sql)
         sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
     }
     if (params.includeSignalsIntersection) {
@@ -115,9 +106,19 @@ const makeSeachQueries = (params) => {
         WHERE UPPER(search) like $1  
         order by search  
         limit 5`;
-        // console.log(sql)
         sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
-        // sqlQueries.push(sql);
+    }
+    if (params.includeSectionControlNumber) {
+        sql = `SELECT 'SECTION CONTROL NUMBER' AS "ResultType",
+        cs AS "ResultText",
+        internal_id AS "ResultID",
+        lat AS "Latitude",
+        long AS "Longitude"
+        FROM signals.signals_data 
+        WHERE cs like $1  
+        order by cs  
+        limit 5`;
+        sqlQueries.push({ text: sql, values: ['%' + params.searchText + '%'] });
     }
     return sqlQueries;
 };
@@ -222,6 +223,11 @@ const schema = {
         includeSignalsIntersection: {
             type: 'string',
             description: 'search for an intersection based on the "search" column in signals.signals_data',
+            default: ''
+        },
+        includeSectionControlNumber: {
+            type: 'string',
+            description: 'search for a signal based on the section control number "cs" in signals.signals_data',
             default: ''
         }
     }

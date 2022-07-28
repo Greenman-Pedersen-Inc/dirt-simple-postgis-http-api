@@ -16,9 +16,111 @@ const { createQueryClauseSingleton, createQueryClauseMultiple, createQueryClause
 // *---------------*
 const tableName = "ard_accidents_geom_partition";
 
+const viewableAttributes = [
+    'crashid',
+    'year',
+    'mun_cty_co',
+    'mun_mu',
+    'acc_case',
+    'dln',
+    'dept_num',
+    'dept_name',
+    'station',
+    'acc_date',
+    'acc_dow',
+    'acc_time',
+    'severity_code',
+    'severity_rating5',
+    'intersection',
+    'alcohol_involved',
+    'hazmat_involved',
+    'hs_collision_type',
+    'hs_fixed_object',
+    'crash_type',
+    'tot_veh_involved',
+    'location',
+    'location_dir',
+    'route_num',
+    'route_sx',
+    'sri',
+    'milepost',
+    'road_sys_code',
+    'road_char_code',
+    'road_horiz_align_code',
+    'road_grade_code',
+    'road_surf_code',
+    'surf_cond_code',
+    'light_cond_code',
+    'environ_cond_code',
+    'road_median_code',
+    'temp_traffic_zone',
+    'dist_to_xstreet',
+    'dist_xstreet_unit',
+    'dir_from_xstreet',
+    'xstreet_name',
+    'is_ramp',
+    'ramp_route',
+    'ramp_direction',
+    'latitude',
+    'longitude',
+    'posted_speed',
+    'posted_speed_xstreet',
+    'first_harmful_event',
+    'other_prop_damage',
+    'report_badge_num',
+    'review_badge_num',
+    'flg_cell_in_use',
+    // 'driver_phys_apptly_nrml',
+    // 'driver_phys_alcl_use',
+    // 'driver_phys_drug_use_illicit',
+    // 'driver_phys_medication',
+    // 'driver_phys_alcl_drug_med_use',
+    // 'driver_phys_handicaps',
+    // 'driver_phys_illness',
+    // 'driver_phys_fatigue',
+    // 'driver_phys_fell_aslp',
+    // 'driver_phys_other',
+    // 'driver_phys_unknown',
+    // 'driver_phys_not_recorded',
+    // 'cyclist_involved',
+    // 'trf_ctrl_police_officer',
+    // 'trf_ctrl_rr_watchman',
+    // 'trf_ctrl_traffic_signal',
+    // 'trf_ctrl_lane_markings',
+    // 'trf_ctrl_channelization_painted',
+    // 'trf_ctrl_channelization_physical',
+    // 'trf_ctrl_warning_signal',
+    // 'trf_ctrl_stop_sign',
+    // 'trf_ctrl_yield_sign',
+    // 'trf_ctrl_flagman',
+    // 'trf_ctrl_no_control_present',
+    // 'trf_ctrl_flashing_traffic_control',
+    // 'trf_ctrl_school_zone_signs_controls',
+    // 'trf_ctrl_adult_crossing_guard',
+    // 'trf_ctrl_other',
+    // 'trf_ctrl_unknown',
+    // 'trf_ctrl_not_recorded',
+    // 'occupant_phys_cond_killed',
+    // 'occupant_phys_cond_incapacitated',
+    // 'occupant_phys_cond_moderate_injury',
+    // 'occupant_phys_cond_complaint_pain',
+    // 'occupant_phys_cond_unknown',
+    // 'occupant_phys_cond_not_recorded',
+    // 'pedestrian_phys_cond_killed',
+    // 'pedestrian_phys_cond_incapacitated',
+    // 'pedestrian_phys_cond_moderate_injury',
+    // 'pedestrian_phys_cond_complaint_pain',
+    // 'pedestrian_phys_cond_unknown',
+    // 'cyclist_killed',
+    // 'cyclist_incapacitated',
+    // 'cyclist_complaint_of_pain',
+    // 'cyclist_moderate_pain'
+];
+
+    
 const filterDictonary = 
 [
-    { title: 'Crash Identifier', fieldName: 'crashid', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Crash Identifier', fieldName: 'crashid', query: function (input) { return createQueryClauseSingleton(this, tableName, input); }, redacted: true },
     { title: 'Year', fieldName: 'year', query: function (input) { return createQueryClauseMultiple(this, tableName, input); } },
     {
         title: 'County',
@@ -1037,10 +1139,10 @@ const filterDictonary =
     { title: 'Traffic Control: Unknown', fieldName: 'trf_ctrl_unknown', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
     { title: 'Traffic Control: Not Recorded', fieldName: 'trf_ctrl_not_recorded', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
 
-    { title: 'Mercator X', fieldName: 'mercatorx', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Mercator Y', fieldName: 'mercatory', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Calculated SRI', fieldName: 'calc_sri', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Calculated Milepost', fieldName: 'calc_milepost', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Mercator X', fieldName: 'mercatorx', query: function (input) { return createQueryClauseSingleton(this, tableName, input); }, redacted: true },
+    { title: 'Mercator Y', fieldName: 'mercatory', query: function (input) { return createQueryClauseSingleton(this, tableName, input); }, redacted: true },
+    { title: 'Calculated SRI', fieldName: 'calc_sri', query: function (input) { return createQueryClauseSingleton(this, tableName, input); }, redacted: true },
+    { title: 'Calculated Milepost', fieldName: 'calc_milepost', query: function (input) { return createQueryClauseSingleton(this, tableName, input); }, redacted: true },
 
     { title: 'Occupant Physical Condition: Fatal Injury', fieldName: 'occupant_phys_cond_killed', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
     { title: 'Occupant Physical Condition: Suspected Serious Injury', fieldName: 'occupant_phys_cond_incapacitated', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
@@ -1077,9 +1179,9 @@ const filterDictonary =
         query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
     },
     { title: 'Hit and Run', fieldName: 'hit_run', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
-    { title: 'Pedestrians Involved', fieldName: 'ped_involved', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
-    { title: 'Calculated Longitude', fieldName: 'calc_latitude', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
-    { title: 'Calculated Latitude', fieldName: 'calc_longitude', query: function (input) { return createQueryClauseSingleton(this, tableName, input); } },
+    { title: 'Pedestrians Involved', fieldName: 'ped_involved', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); }, redacted: true },
+    { title: 'Calculated Longitude', fieldName: 'calc_latitude', query: function (input) { return createQueryClauseSingleton(this, tableName, input); }, redacted: true },
+    { title: 'Calculated Latitude', fieldName: 'calc_longitude', query: function (input) { return createQueryClauseSingleton(this, tableName, input); }, redacted: true },
     { title: 'Pedestrian: Suspected Serious Injury', fieldName: 'ped_incapacitated', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
 
     { title: 'Cyclist: Fatal Injury', fieldName: 'cyclist_killed', query: function (input) { return createQueryClauseSingleton(this, tableName, input, ">"); } },
@@ -1096,7 +1198,8 @@ const filterDictonary =
             { code: '04', description: 'West' },
             { code: '-20', description: 'Not Recorded' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); },
+        redacted: true
     },
     {
         title: 'Vehicle Two Travel Direction Code',
@@ -1108,13 +1211,15 @@ const filterDictonary =
             { code: '04', description: 'West' },
             { code: '-20', description: 'Not Recorded' }
         ],
-        query: function (input) { return createQueryClauseMultiple(this, tableName, input); }
+        query: function (input) { return createQueryClauseMultiple(this, tableName, input); },
+        redacted: true
     }
 ];
 
 const codeDefinitions = {
     table: tableName,
-    filters: filterDictonary
+    filters: filterDictonary,
+    viewableAttributes: viewableAttributes
 };
 
 module.exports = codeDefinitions;

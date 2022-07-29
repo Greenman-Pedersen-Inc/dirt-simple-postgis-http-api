@@ -8,6 +8,7 @@ const sql = (params, query) => {
     SELECT 
     cs,
     sri,
+    rt,
     mp,
     mun_cty_co,
     mun_mu,

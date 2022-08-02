@@ -1,5 +1,6 @@
 // get_crashes_radius: gets crashes within a user-specified radius (in feet) of a signal based on signal id
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
+const { viewableAttributes } = require('../../helper_functions/code_translations/accidents');
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 // *---------------*
@@ -18,7 +19,7 @@ const sql = (params, query) => {
         SELECT geom_latlong from signals.signals_data
         WHERE internal_id = ${query.signalId}
     )
-    SELECT * FROM public.${accidentsTableName}, signal_geom 
+    SELECT ${viewableAttributes.join(', ')} FROM public.${accidentsTableName}, signal_geom 
     ${fromClause ? `${fromClause}` : ''}
     WHERE ST_DWithin(signal_geom.geom_latlong::geography, public.${accidentsTableName}.geom::geometry, ${feetToMeters})
     ${whereClause ? ` AND ${whereClause}` : ''}

@@ -11,6 +11,8 @@ const sql = (params, query) => {
                         internal_id, 
                         sri, 
                         route_name,
+                        sri_signals_num,
+                        centroid,
                         ST_AsMVTGeom(
                             ${tableName}.${geomName},
                             ST_TileEnvelope(

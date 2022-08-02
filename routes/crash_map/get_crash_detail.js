@@ -1,13 +1,14 @@
 // get_crash_detail: Gets Accident, Vehicle, Occupant, Ped data in the Detailed Crash Information dialog
 
 const { transcribeKeys, transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
+const { viewableAttributes } = require('../../helper_functions/code_translations/accidents');
 
 // *---------------*
 // route query
 // *---------------*
 function getQueries(queryArgs) {
     var queries = {};
-    queries.accidents = `SELECT * FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, 'accidents')}`; // ACCIDENTS query
+    queries.accidents = `SELECT ${viewableAttributes.join(', ')} FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, 'accidents')}`; // ACCIDENTS query
     queries.vehicles = `SELECT ${getColumns('vehicles')} FROM ard_vehicles_partition where ${getWhereClause(
         queryArgs,
         'vehicles'

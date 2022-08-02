@@ -1,14 +1,66 @@
-// get_signals: gets signals within a Z X Y tile
+// get_signals: gets signal data based on internal ID
 
 // *---------------*
 // route query
 // *---------------*
 const sql = (params, query) => {
     var sql = `
-    SELECT * FROM signals.signals_data WHERE 
-    ST_Intersects(
-        signals.signals_data.geom_mercator, ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
-    )
+    SELECT 
+    cs,
+    sri,
+    rt,
+    mp,
+    mun_cty_co,
+    mun_mu,
+    sig,
+    type,
+    intersection,
+    tr_reg,
+    el_reg,
+    signal_offset,
+    notes,
+    row_1,
+    row_2,
+    row_3,
+    row_4,
+    via,
+    internal_id,
+    agreement,
+    ad_12_1,
+    ad_12_2,
+    ad_12_3,
+    ad_12_4,
+    ad_12_5,
+    ad_12_6,
+    ad_12_7,
+    ad_12_8,
+    ad_12_9,
+    ad_12_10,
+    plan_1,
+    plan_date,
+    directive,
+    lat,
+    long,
+    acc,
+    draw,
+    tm,
+    cd,
+    mn,
+    prefix,
+    search,
+    plan_2,
+    plan_3,
+    plan_4,
+    plan_5,
+    plan_6,
+    plan_7,
+    plan_8,
+    plan_9,
+    plan_10,
+    signal_timer,
+    child_record,
+    internal_id
+    FROM signals.signals_data WHERE internal_id = ${query.signalId}
     `;
     return sql;
 };
@@ -17,28 +69,14 @@ const sql = (params, query) => {
 // route schema
 // *---------------*
 const schema = {
-    description: "gets signals within a Z X Y tile",
+    description: "gets signal data based on internal ID",
     tags: ['signals'],
-    summary: "gets signals within a Z X Y tile",
-    params: {
-        z: {
-            type: 'integer',
-            description: 'Z value of ZXY tile.'
-        },
-        x: {
-            type: 'integer',
-            description: 'X value of ZXY tile.'
-        },
-        y: {
-            type: 'integer',
-            description: 'Y value of ZXY tile.'
-        }
-    },
+    summary: "gets signal data based on internal ID",
     querystring: {
-        selected_filters: {
+        signalId: {
             type: 'string',
-            description:
-                'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+            description: 'Internal ID of a signal',
+            example: '763'
         }
     }
 };
@@ -49,9 +87,9 @@ const schema = {
 module.exports = function (fastify, opts, next) {
     fastify.route({
         method: 'GET',
-        url: '/signals/get-signals/:z/:x/:y',
+        url: '/signals/get-signal-data',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
 
             function onConnect(err, client, release) {

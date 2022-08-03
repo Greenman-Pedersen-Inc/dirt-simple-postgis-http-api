@@ -2,8 +2,8 @@
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 const sql = (params, query) => {
-    const tableName = 'signals.signals_sri_multipoly';
-    const geomName = 'geom_multipoly';
+    const tableName = 'signals.signals_sri_lines';
+    const geomName = 'geom';
     //let parsed_filter = JSON.parse(query.selected_filters);
     const queryText = `
                 WITH selected_segment_polygons AS (
@@ -14,7 +14,7 @@ const sql = (params, query) => {
                         sri_signals_num,
                         centroid,
                         ST_AsMVTGeom(
-                            ${tableName}.${geomName},
+                            ST_TRANSFORM(${tableName}.${geomName}, 3857),
                             ST_TileEnvelope(
                                 ${params.z}, 
                                 ${params.x}, 
@@ -23,7 +23,7 @@ const sql = (params, query) => {
                         ) AS geom
                     FROM ${tableName}
                     WHERE st_intersects(
-                        ${geomName},
+                        ST_TRANSFORM(${tableName}.${geomName}, 3857),
                         ST_TileEnvelope(
                             ${params.z}, 
                             ${params.x}, 

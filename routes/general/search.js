@@ -93,6 +93,7 @@ const makeSeachQueries = (params) => {
         FROM signals.signals_sri_search
         where UPPER(name)  
         Like $1
+        ORDER BY sri
         limit 10`;
         sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
     }

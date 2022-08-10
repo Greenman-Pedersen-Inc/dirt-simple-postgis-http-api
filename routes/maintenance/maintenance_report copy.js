@@ -81,7 +81,7 @@ module.exports = function (fastify, opts, next) {
     fastify.register(fastifyStatic, {
         root: outputPath,
         prefix: '/maintenance/', // optional: default '/'
-        decorateReply: false
+        decorateReply: true
     });
 
     fastify.route({

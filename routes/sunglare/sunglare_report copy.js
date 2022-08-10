@@ -82,7 +82,7 @@ module.exports = function (fastify, opts, next) {
     fastify.register(fastifyStatic, {
         root: outputPath,
         prefix: '/sunglare/', // optional: default '/'
-        decorateReply: false // the reply decorator has been added by the first plugin registration
+        decorateReply: true // the reply decorator has been added by the first plugin registration
     });
 
     fastify.route({

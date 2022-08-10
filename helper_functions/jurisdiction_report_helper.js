@@ -20,7 +20,7 @@ function makeJurisdictionReport(queryArgs, reportData) {
         try {
             const juriName = getJurisdictionName(queryArgs.jurisdictionCode);
             const filterObject = getFilterObject(queryArgs);
-            const fileName = `${juriName} - Comparision Summary.pdf`;
+            const fileName = `${juriName} - Comparision Summary`;
             const savePath = path.join(output_folder, fileName);
             const fileInfo = {
                 savePath: savePath,

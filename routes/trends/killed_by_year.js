@@ -126,8 +126,10 @@ module.exports = function (fastify, opts, next) {
                     })
                     .catch((error) => {
                         release();
-                        // console.log("report error");
-                        // console.log(error);
+                        reply.send({
+                            statusCode: 500,
+                            error: error
+                        });
                     });
             }
         }

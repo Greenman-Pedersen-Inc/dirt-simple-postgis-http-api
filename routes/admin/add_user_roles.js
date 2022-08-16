@@ -2,11 +2,11 @@
 
 // route register
 const getQuery = (modules) => {
-// const getQuery = (userName, moduleId) => {
+    // const getQuery = (userName, moduleId) => {
     const sql = `INSERT INTO admin.user_module(user_id, module_id)
 	VALUES ((SELECT internal_id from admin.user_info WHERE user_name = $1), UNNEST(ARRAY[${modules}]))`;
     // const sql = `INSERT INTO admin.user_module(user_id, module_id)
-	// VALUES ((SELECT internal_id from admin.user_info WHERE user_name = $1), $2)`;
+    // VALUES ((SELECT internal_id from admin.user_info WHERE user_name = $1), $2)`;
 
     return sql;
     // return {
@@ -43,7 +43,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server: ' + err
                     });
 
-                const query = getQuery(request.body.modules); 
+                const query = getQuery(request.body.modules);
                 client.query(query, [request.body.username], function onResult(err, result) {
                     release();
 

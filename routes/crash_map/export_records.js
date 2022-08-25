@@ -112,7 +112,7 @@ module.exports = function (fastify, opts, next) {
     fastify.register(fastifyStatic, {
         root: outputPath,
         prefix: '/records/', // optional: default '/'
-        decorateReply: true // the reply decorator has been added by the first plugin registration
+        decorateReply: true, // the reply decorator has been added by the first plugin registration
     });
 
     fastify.route({
@@ -149,6 +149,8 @@ module.exports = function (fastify, opts, next) {
             });
 
             function onConnect(err, client, release) {
+                client.connectionParameters.query_timeout = customTimeout;
+
                 if (err) {
                     release();
 
@@ -239,8 +241,8 @@ module.exports = function (fastify, opts, next) {
                                             zip.writeZip(outputFile);
                                             console.log(`Created ${outputFile} successfully`);
                                             reply.code(200);
-                                            reply.header('exportCount', result.rows.length.toString());
-                                            reply.sendFile(zipFileName, outputPath);
+                                            reply.header('exportCount', result.rows.length);
+                                            reply.sendFile(zipFileName, outputPath)
                                         }
                                     }
                                 );

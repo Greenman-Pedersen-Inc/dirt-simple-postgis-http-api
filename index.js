@@ -201,7 +201,9 @@ fastify.register(require('fastify-caching'), {
 });
 
 // CORS
-fastify.register(require('fastify-cors'));
+fastify.register(require('fastify-cors'), {
+    exposedHeaders: 'exportCount'
+});
 
 // swagger
 fastify.register(require('fastify-swagger'), {

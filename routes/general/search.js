@@ -19,8 +19,8 @@ const makeSeachQueries = (params) => {
                     CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
                         stndrd_rt_id AS "ResultID"
                         FROM srilookuplocation  
-                        where UPPER(name)  
-                        Like $1
+                        WHERE UPPER(name) LIKE $1
+                        OR stndrd_rt_id LIKE $1
                         --Like '%${params.searchText.toUpperCase()}%'  
                         ${locationQuery} 
                         order by count  
@@ -31,8 +31,8 @@ const makeSeachQueries = (params) => {
             CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
             stndrd_rt_id AS "ResultID"
             FROM srilookup  
-            where UPPER(name)  
-            Like $1
+            WHERE UPPER(name) LIKE $1
+            OR stndrd_rt_id LIKE $1
             --Like '%${params.searchText.toUpperCase()}%'  
             order by count  
             desc limit 10`;

@@ -17,3 +17,6 @@ daemon/voyagerdataservices.exe.config
 daemon/voyagerdataservices.out.log
 daemon/voyagerdataservices.wrapper.log
 daemon/voyagerdataservices.xml
+daemon/voyagerdataservices.0.out.log
+daemon/voyagerdataservices.1.out.log
+daemon/voyagerdataservices.2.out.log

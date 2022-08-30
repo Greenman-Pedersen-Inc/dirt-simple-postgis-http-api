@@ -12,47 +12,46 @@ const schema = {
         user: {
             type: 'string',
             description: 'The user name.',
-            default: ''
         },
         startYear: {
             type: 'string',
             description: 'The start year for crashes.',
-            default: '2015'
+            example: '2015'
         },
         endYear: {
             type: 'string',
             description: 'The end year for crashes.',
-            default: '2020'
+            example: '2020'
         },
         jurisdictionLevel: {
             type: 'string',
             description: 'state, mpo, county, municipality',
-            default: 'municipality'
+            example: 'municipality'
         },
         jurisdictionValue: {
             type: 'string',
             description: 'nj for state, njtpa for mpo, 2 digit for county, 4 digit for muni',
-            default: '1330'
+            example: '1330'
         },
         startTime: {
             type: 'string',
             description: '24 hr time; 0700 = 7 am',
-            default: '0700'
+            default: '0000'
         },
         endTime: {
             type: 'string',
             description: '24 hr time; 1300 = 1pm',
-            default: '2100'
+            default: '2400'
         },
         crashType: {
             type: 'string',
             description: 'crash type code based on the NJTR-1 form',
-            default: '01'
+            example: '01'
         },
         attribute: {
             type: 'string',
             description: 'cellphones, intersections',
-            default: 'cellphones'
+            example: 'cellphones'
         }
     }
 };
@@ -134,8 +133,7 @@ module.exports = function (fastify, opts, next) {
                         release();
                         reply.send({
                             statusCode: 500,
-                            error: error,
-                            message: request
+                            error: error
                         });
                     });
             }

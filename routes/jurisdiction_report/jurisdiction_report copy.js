@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const fastifyStatic = require('fastify-static');
 
-
 const outputPath = path.join(__dirname, '../../output', 'jurisdiction');
 const juriHelper = require('../../helper_functions/jurisdiction_report_helper');
 const customTimeout = 30000;
@@ -41,7 +40,7 @@ module.exports = function (fastify, opts, next) {
     fastify.register(fastifyStatic, {
         root: outputPath,
         prefix: '/jurisdiction/', // optional: default '/'
-        decorateReply: false // the reply decorator has been added by the first plugin registration
+        decorateReply: true // the reply decorator has been added by the first plugin registration
     });
 
     fastify.route({

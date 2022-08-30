@@ -4,11 +4,13 @@
 const fs = require('fs');
 const path = require('path');
 const JSZip = require('jszip');
+const fastifyStatic = require('fastify-static');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
+const customTimeout = 30000;
 
 // outputPath to store CSV
 // const outputPath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/output/';
@@ -100,6 +102,19 @@ const schema = {
 // create route
 // *---------------*
 module.exports = function (fastify, opts, next) {
+    if (!fs.existsSync(outputPath)) {
+        try {
+            fs.mkdirSync(outputPath, { recursive: true });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    fastify.register(fastifyStatic, {
+        root: outputPath,
+        prefix: '/records/', // optional: default '/'
+        decorateReply: true, // the reply decorator has been added by the first plugin registration
+    });
+
     fastify.route({
         method: 'GET',
         url: '/crash-map/export-records',
@@ -108,7 +123,34 @@ module.exports = function (fastify, opts, next) {
         handler: function (request, reply) {
             const queryArgs = request.query;
 
+            // remove all reports older than 10 minutes from output directory
+            fs.readdir(outputPath, function (error, files) {
+                if (error) {
+                    reply.code(500).send(error);
+                    request.tracker.error(error);
+                }
+                files.forEach(function (file) {
+                    fs.stat(path.join(outputPath, file), function (error, stat) {
+                        let now = new Date().getTime();
+                        let endTime = new Date(stat.ctime).getTime() + 600000;
+
+                        if (error) {
+                            reply.code(500).send(error);
+                            request.tracker.error(error);
+                        } else {
+                            if (now > endTime) {
+                                fs.unlink(path.join(outputPath, file), function (response) {
+                                    console.log(`${file} deleted!`);
+                                });
+                            }
+                        }
+                    });
+                });
+            });
+
             function onConnect(err, client, release) {
+                client.connectionParameters.query_timeout = customTimeout;
+
                 if (err) {
                     release();
 
@@ -176,8 +218,6 @@ module.exports = function (fastify, opts, next) {
                                     seperator: ';'
                                 });
 
-
-
                                 const AdmZip = require('adm-zip');
 
                                 fs.writeFile(
@@ -201,8 +241,8 @@ module.exports = function (fastify, opts, next) {
                                             zip.writeZip(outputFile);
                                             console.log(`Created ${outputFile} successfully`);
                                             reply.code(200);
-                                            reply.header("exportCount", result.rows.length.toString());
-                                            reply.sendFile(zipFileName, outputPath);
+                                            reply.header('exportCount', result.rows.length);
+                                            reply.sendFile(zipFileName, outputPath)
                                         }
                                     }
                                 );

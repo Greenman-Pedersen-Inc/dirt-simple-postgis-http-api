@@ -15,24 +15,24 @@ const makeSeachQueries = (params) => {
                     : `AND municode = '${params.locationCode}'`
             }`;
             sql = `SELECT DISTINCT 
-      'SRI' AS "ResultType",
-      CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
-        stndrd_rt_id AS "ResultID"
-        FROM srilookuplocation  
-        where UPPER(name)  
-        Like $1
-        --Like '%${params.searchText.toUpperCase()}%'  
-        ${locationQuery} 
-        order by count  
-        desc limit 10`;
+                    'SRI' AS "ResultType",
+                    CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
+                        stndrd_rt_id AS "ResultID"
+                        FROM srilookuplocation  
+                        WHERE UPPER(name) LIKE $1
+                        OR stndrd_rt_id LIKE $1
+                        --Like '%${params.searchText.toUpperCase()}%'  
+                        ${locationQuery} 
+                        order by count  
+                        desc limit 10`;
         } else {
             sql = `SELECT 
             'SRI' AS "ResultType",
             CONCAT(name, ' (', stndrd_rt_id, ')') AS "ResultText",
             stndrd_rt_id AS "ResultID"
             FROM srilookup  
-            where UPPER(name)  
-            Like $1
+            WHERE UPPER(name) LIKE $1
+            OR stndrd_rt_id LIKE $1
             --Like '%${params.searchText.toUpperCase()}%'  
             order by count  
             desc limit 10`;
@@ -110,7 +110,7 @@ const makeSeachQueries = (params) => {
         sqlQueries.push({ text: sql, values: ['%' + params.searchText.toUpperCase() + '%'] });
     }
     if (params.includeSectionControlNumber) {
-        sql = `SELECT 'SECTION CONTROL NUMBER' AS "ResultType",
+        sql = `SELECT 'CONTROL SECTION NUMBER' AS "ResultType",
         cs AS "ResultText",
         internal_id AS "ResultID",
         lat AS "Latitude",
@@ -217,19 +217,19 @@ const schema = {
             default: ''
         },
         includeSignalsRoute: {
-            type: 'string',
+            type: 'boolean',
             description: 'search for an SRI based on the "sri" in signals.signals_data',
-            default: ''
+            default: false
         },
         includeSignalsIntersection: {
-            type: 'string',
+            type: 'boolean',
             description: 'search for an intersection based on the "search" column in signals.signals_data',
-            default: ''
+            default: false
         },
         includeSectionControlNumber: {
-            type: 'string',
+            type: 'boolean',
             description: 'search for a signal based on the section control number "cs" in signals.signals_data',
-            default: ''
+            default: false
         }
     }
 };
@@ -306,32 +306,33 @@ module.exports = function (fastify, opts, next) {
                     }
                 }
 
-                Promise.all(promises).then((responseArray) => {
-                    responseArray.forEach((response) => {
-                        if (response.rows) {
-                            response.rows.forEach((row) => {
-                                resultsList.push(row);
-                            });
-                        } else {
-                            response.forEach((result) => {
-                                if (
-                                    result.ResultText.includes('NJ, USA') ||
-                                    result.ResultText.includes('NJ') ||
-                                    result.ResultText.includes('New Jersey, USA')
-                                ) {
-                                    resultsList.push(result);
-                                }
-                            });
-                        }
+                Promise.all(promises)
+                    .then((responseArray) => {
+                        responseArray.forEach((response) => {
+                            if (response.rows) {
+                                response.rows.forEach((row) => {
+                                    resultsList.push(row);
+                                });
+                            } else {
+                                response.forEach((result) => {
+                                    if (
+                                        result.ResultText.includes('NJ, USA') ||
+                                        result.ResultText.includes('NJ') ||
+                                        result.ResultText.includes('New Jersey, USA')
+                                    ) {
+                                        resultsList.push(result);
+                                    }
+                                });
+                            }
+                        });
+                        release();
+                        reply.send(err || { SearchResults: resultsList });
+                    })
+                    .catch((err) => {
+                        console.error(err.message);
+                        reply.code(500).send(err);
+                        request.tracker.error(err);
                     });
-                    release();
-                    reply.send(err || { SearchResults: resultsList });
-                })
-                .catch(err => {
-                    console.error(err.message);
-                    reply.code(500).send(err);
-                    request.tracker.error(err);
-                });
             }
         }
     });

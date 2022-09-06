@@ -28,7 +28,7 @@ function makeCrashFilterQuery(crashFilter, accidentTableName) {
             }
             const value = filterJson[key];
             if (value !== undefined && value !== null && value !== '') {
-                whereClauses.push(codeTranslation.query(filterJson[key]));    // add the WHERE clause for the filter in the whereClauses array
+                whereClauses.push(codeTranslation.query(filterJson[key])); // add the WHERE clause for the filter in the whereClauses array
             }
         }
     }

@@ -91,7 +91,7 @@ module.exports = function (fastify, opts, next) {
         url: '/mvt/county/:z/:x/:y',
         schema: schema,
 
-        preHandler: fastify.auth([fastify.verifyToken]),
+        // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             request.tracker = new fastify.RequestTracker(
                 request.headers,

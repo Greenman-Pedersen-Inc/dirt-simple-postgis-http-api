@@ -21,7 +21,6 @@ const schema = {
         dlnNum: {
             type: 'string',
             description: 'The DLN of the crash record.',
-            default: ''
         }
     }
 };

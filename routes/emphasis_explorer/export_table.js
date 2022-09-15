@@ -24,7 +24,7 @@ const sql = (params, query) => {
     ${query.group ? `GROUP BY ${query.group}` : ''}
     ${query.limit ? `LIMIT ${query.limit}` : ''}
   `;
-    console.log(queryText);
+    //console.log(queryText);
     return queryText;
 };
 
@@ -134,6 +134,15 @@ module.exports = function (fastify, opts, next) {
                         statusCode: 400,
                         error: 'Bad request',
                         message: 'missing columns'
+                    });
+                } 
+                else if (request.params.table === undefined) {
+                    release();
+
+                    reply.send({
+                        statusCode: 400,
+                        error: 'Bad request',
+                        message: 'missing table name'
                     });
                 } 
                 else if (queryArgs.exportType === undefined) {

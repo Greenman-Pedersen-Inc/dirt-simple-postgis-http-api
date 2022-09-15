@@ -3,8 +3,10 @@ const reportHelper = require('../../helper_functions/report_maker/predictive_rep
 const fs = require('fs');
 const fastifyStatic = require('fastify-static');
 const path = require('path');
-const outputPath = path.join(__dirname, '../../output', 'sunglare');
+const folderName = 'sunglare';
+const outputPath = path.join(__dirname, '../../output', folderName);
 const customTimeout = 20000;
+
 const schema = {
     description: 'generates a sunglare report pdf.',
     tags: ['sunglare'],
@@ -81,7 +83,7 @@ module.exports = function (fastify, opts, next) {
 
     fastify.register(fastifyStatic, {
         root: outputPath,
-        prefix: '/sunglare/', // optional: default '/'
+        prefix: '/' + folderName + '/', // optional: default '/'
         decorateReply: true // the reply decorator has been added by the first plugin registration
     });
 

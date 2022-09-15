@@ -4,7 +4,7 @@ const {
     getTableQuery,
     calculateRollingAverage
 } = require('../../helper_functions/emphasis_explorer_helper');
-const customTimeout = 30000;
+const customTimeout = 60000;
 
 // *---------------*
 // route query
@@ -144,7 +144,7 @@ module.exports = function (fastify, opts, next) {
                             const promise = new Promise((resolve, reject) => {
                                 try {
                                     const queryString = values.query();
-                                    // console.log(queryString)
+                                    //console.log(queryString)
                                     if (category === 'annual_bodies_rolling_average') {
                                         const res = client.query(queryString, queriesObject.values_rolling_avg);
                                         return resolve(res);
@@ -164,7 +164,7 @@ module.exports = function (fastify, opts, next) {
                         const promise = new Promise((resolve, reject) => {
                             try {
                                 const queryString = queriesObject.queries.query();
-                                // console.log(queryString)
+                                //console.log(queryString)
                                 if (queryArgs.chartType === 'annual_bodies_rolling_average') {
                                     const res = client.query(queryString, queriesObject.values_rolling_avg);
                                     return resolve(res);
@@ -187,7 +187,7 @@ module.exports = function (fastify, opts, next) {
 
                             for (let i = 0; i < returnData.length; i++) {
                                 let data = returnData[i].rows;
-                                let table = `${queryArgs.subCategory ? queryArgs.subCategory : queryArgs.chartType}`;
+                                let table = `${queryArgs.chartType ? queryArgs.chartType : queryArgs.subCategory}`;
 
                                 if (data.length === 0) {
                                     crashData[table] = [];
@@ -219,7 +219,7 @@ module.exports = function (fastify, opts, next) {
                         .catch((error) => {
                             reply.send({
                                 statusCode: 500,
-                                error: error,
+                                error: error.message,
                                 message: 'Query Error'
                             });
                         });
@@ -228,7 +228,7 @@ module.exports = function (fastify, opts, next) {
                     console.log(error);
                     reply.send({
                         statusCode: 500,
-                        error: error,
+                        error: error.message,
                         message: request
                     });
                 }

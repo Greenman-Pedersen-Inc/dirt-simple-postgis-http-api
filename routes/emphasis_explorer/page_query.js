@@ -1,11 +1,7 @@
 // route query
 const customTimeout = 30000;
 
-const sql = (params, query, requestURL) => {
-    // let baseURL = requestURL.split('&limit')[0]
-
-    // console.log(`base`)
-
+const sql = (params, query) => {
     let queryText = `
     select 
       count(*),
@@ -75,10 +71,8 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/emphasis-explorer/page-query/:table',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            // console.log(request.raw.url);
-
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
@@ -91,7 +85,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
 
-                client.query(sql(request.params, request.query, request.raw.url), function onResult(err, result) {
+                client.query(sql(request.params, request.query), function onResult(err, result) {
                     release();
                     reply.send(err || result.rows[0]);
                 });

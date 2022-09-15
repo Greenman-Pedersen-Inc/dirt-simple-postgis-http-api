@@ -3,81 +3,64 @@
 
 const fs = require('fs');
 const path = require('path');
-const JSZip = require('jszip');
 const fastifyStatic = require('fastify-static');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
-const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 const customTimeout = 30000;
 
 // outputPath to store CSV
-const folderName = 'records';
+const folderName = 'emphasis-explorer';
 const outputPath = path.join(__dirname, '../../output', folderName);
 // *---------------*
 // route query
 // *---------------*
-const sql = (queryArgs) => {
-    const accidentsTableName = 'ard_accidents_geom_partition';
-    const parsed_filter = JSON.parse(queryArgs.crashFilter);
-    const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
-    const whereClause = filter.whereClause;
-    const fromClause = filter.fromClause;
-
-    const query = `
-        SELECT * FROM public.ard_accidents_geom_partition 
-        ${fromClause ? ` ${fromClause}` : ''}
-        WHERE ${whereClause ? `${whereClause}` : ''}
-        ${
-            queryArgs.boundingBoxMinX
-                ? ` AND geom && ST_MakeEnvelope (${queryArgs.boundingBoxMinX}, ${queryArgs.boundingBoxMinY}, ${queryArgs.boundingBoxMaxX}, ${queryArgs.boundingBoxMaxY}, 4326)`
-                : ''
-        } 
-        LIMIT 50000;
-    `;
-
-    //console.log(query)
-    return query;
+const sql = (params, query) => {
+    let queryText = `
+    select ${query.columns}
+    from ${params.table}
+    ${query.filter ? `WHERE ${query.filter}` : ''}
+    ${query.group ? `GROUP BY ${query.group}` : ''}
+    ${query.limit ? `LIMIT ${query.limit}` : ''}
+  `;
+    console.log(queryText);
+    return queryText;
 };
 
 // *---------------*
 // route schema
 // *---------------*
 const schema = {
-    description: 'Generates a URL for a zipped folder of a CSV file containing data from the ard_accidents table.',
-    tags: ['crash-map'],
-    summary: 'Generates a URL for a zipped folder of a CSV file containing data from the ard_accidents table.',
+    description: 'Generates a URL for a zipped folder of a CSV file containing data from a specified data table.',
+    tags: ['emphasis-explorer'],
+    summary: 'Generates a URL for a zipped folder of a CSV file containing data from a specified data table.',
+    params: {
+        table: {
+            type: 'string',
+            description: 'The name of the table or view.'
+        }
+    },
     querystring: {
-        crashids: {
+        columns: {
             type: 'string',
-            description: 'list of crashid seperated by comma',
-            example: '15-23-2017-17PM02259,13-51-2019-C060-2019-02007A,15-23-2016-I-2016-004176'
+            description: 'Columns to return.',
         },
-        crashFilter: {
+        filter: {
             type: 'string',
-            description: 'stringified JSON of crash filter object',
-            example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+            description: 'Optional filter parameters for a SQL WHERE statement.'
         },
-        boundingBoxMinX: {
-            type: 'number',
-            description: 'left point of the map extent',
-            example: -75.18347186057379
+        limit: {
+            type: 'integer',
+            description: 'Optional limit to the number of output features.',
         },
-        boundingBoxMinY: {
-            type: 'number',
-            description: 'bottom point of the map extent',
-            example: 39.89214724158961
+        group: {
+            type: 'string',
+            description: 'Optional column(s) to group by.'
         },
-        boundingBoxMaxX: {
-            type: 'number',
-            description: 'right point of the map extent',
-            example: -74.99457847510519
-        },
-        boundingBoxMaxY: {
-            type: 'number',
-            description: 'top point of the map extent',
-            example: -39.93906091093021
+        exportType: {
+            type: 'string',
+            description: 'Table type: crashes, occupants, pedestrians'
         }
     }
 };
@@ -101,9 +84,9 @@ module.exports = function (fastify, opts, next) {
 
     fastify.route({
         method: 'GET',
-        url: '/crash-map/export-records',
+        url: '/emphasis-explorer/export-table/:table',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             const queryArgs = request.query;
 
@@ -143,21 +126,32 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                } else if (queryArgs.crashFilter === undefined) {
+                } 
+                else if (queryArgs.columns === undefined) {
                     release();
 
                     reply.send({
                         statusCode: 400,
                         error: 'Bad request',
-                        message: 'missing crashFilter'
+                        message: 'missing columns'
                     });
-                } else {
+                } 
+                else if (queryArgs.exportType === undefined) {
+                    release();
+
+                    reply.send({
+                        statusCode: 400,
+                        error: 'Bad request',
+                        message: 'missing exportType'
+                    });
+                } 
+                else {
                     try {
-                        client.query(sql(queryArgs), function onResult(err, result) {
+                        client.query(sql(request.params, queryArgs), function onResult(err, result) {
                             release();
                             let returnRows = [];
                             if (result) {
-                                const fileName = `Voyager_Crash_Record_Export_${Date.now()}_${Math.floor(
+                                const fileName = `Emphasis_Explorer${queryArgs.exportType}_${Date.now()}_${Math.floor(
                                     1000 + Math.random() * 9000
                                 ).toString()}`;
                                 const csvFileName = fileName + '.csv';

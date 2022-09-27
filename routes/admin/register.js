@@ -2,7 +2,8 @@
 const crypto = require('crypto');
 
 const usersql = (requestBody) => {
-    var securePassword = saltHashPassword(requestBody.pass);
+    // var securePassword = saltHashPassword(requestBody.pass);
+    var securePassword = saltHashPassword('GPI123');
     var attributes = [];
     var values = [];
     var paramValues = [];
@@ -58,7 +59,6 @@ module.exports = function (fastify, opts, next) {
                 type: 'object',
                 properties: {
                     username: { type: 'string' },
-                    pass: { type: 'string' },
                     first_name: { type: 'string' },
                     last_name: { type: 'string' },
                     beg_access_date: { type: 'string' },
@@ -73,7 +73,7 @@ module.exports = function (fastify, opts, next) {
                     is_admin: { type: 'boolean', default: false },
                     added_by: { type: 'string' }
                 },
-                required: ['username', 'pass']
+                required: ['username'],
             }
         },
         preHandler: fastify.auth([fastify.verifyToken]),

@@ -240,11 +240,10 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/general/search',
         schema: schema,
-
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             request.tracker = new fastify.RequestTracker(
-                request.headers,
+                request.headers.credentials,
                 'crash_map',
                 'search',
                 JSON.stringify(Object.assign(request.query, request.params))
@@ -253,8 +252,11 @@ module.exports = function (fastify, opts, next) {
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
                     request.tracker.error(err);
+                    release();
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
@@ -325,11 +327,12 @@ module.exports = function (fastify, opts, next) {
                                 });
                             }
                         });
+                        request.tracker.complete();
                         release();
                         reply.send(err || { SearchResults: resultsList });
                     })
                     .catch((err) => {
-                        console.error(err.message);
+                        release();
                         reply.code(500).send(err);
                         request.tracker.error(err);
                     });

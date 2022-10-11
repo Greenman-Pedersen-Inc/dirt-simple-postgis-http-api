@@ -99,7 +99,6 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/mvt/route/:z/:x/:y',
         schema: schema,
-
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             function onConnect(error, client, release) {
@@ -107,17 +106,18 @@ module.exports = function (fastify, opts, next) {
                     request.headers,
                     'crash_map',
                     'mvt_route',
-                    JSON.stringify(Object.assign(request.query, request.params))
+                    JSON.stringify(Object.assign(request.query, request.params)),
+                    reply
                 );
 
                 if (error) {
-                    release();
                     reply.code(500).send(error);
                     request.tracker.error(error);
-                } else if (request.query.selected_filters == undefined) {
                     release();
+                } else if (request.query.selected_filters == undefined) {
                     reply.code(400).send('no crash filter submitted');
                     request.tracker.error('no crash filter submitted');
+                    release();
                 } else {
                     request.tracker.start();
                     try {
@@ -127,6 +127,7 @@ module.exports = function (fastify, opts, next) {
                             if (error) {
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
+                                release();
                             } else {
                                 if (result) {
                                     if (result.rows && result.rows.length > 0) {
@@ -139,24 +140,28 @@ module.exports = function (fastify, opts, next) {
 
                                             reply.header('Content-Type', 'application/x-protobuf').send(mvt);
                                             request.tracker.complete();
+                                            release();
                                         } else {
                                             reply.code(500).send(error);
                                             request.tracker.error(error);
+                                            release();
                                         }
                                     } else {
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
+                                        release();
                                     }
                                 } else {
                                     reply.code(500).send(error);
                                     request.tracker.error(error);
+                                    release();
                                 }
                             }
                         });
                     } catch (error) {
-                        release();
                         reply.code(500).send(error);
                         request.tracker.error(error);
+                        release();
                     }
                 }
             }

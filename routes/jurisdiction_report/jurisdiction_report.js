@@ -56,7 +56,8 @@ module.exports = function (fastify, opts, next) {
                 request.headers.credentials,
                 'jurisidiction',
                 'report',
-                JSON.stringify(request.params)
+                JSON.stringify(request.params),
+                reply
             );
 
             // remove all reports older than 10 minutes from output directory

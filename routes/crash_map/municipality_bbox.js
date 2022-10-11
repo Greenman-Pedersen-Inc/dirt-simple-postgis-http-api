@@ -31,10 +31,21 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'municipality_bbox',
+                JSON.stringify(request.query),
+                reply
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
                     reply.send({
                         statusCode: 500,
@@ -42,6 +53,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 } else if (request.query.municipality_list == undefined) {
+                    request.tracker.error('muni list not submitted');
                     release();
                     reply.send({
                         statusCode: 500,
@@ -51,10 +63,10 @@ module.exports = function (fastify, opts, next) {
                 } else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
-                            release();
-
                             if (err) {
-                                reply.send(err);
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
                             } else if (result.rows && result.rows.length > 0) {
                                 const initial_bounding_box = JSON.parse(result.rows[0].bounding_box);
 
@@ -73,15 +85,18 @@ module.exports = function (fastify, opts, next) {
                                         initial_bounding_box[1][1] = contender_bounding_box[1][1];
                                     }
                                 });
-
+                                request.tracker.complete();
+                                release();
                                 reply.send(initial_bounding_box);
                             } else {
+                                request.tracker.error('no rows returned');
+                                release();
                                 reply.code(204);
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(error);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,

@@ -2,7 +2,6 @@
 get_sri_breakdown: Gets a list of number of crashes grouped by crash attribute code
 */
 
-const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 // *---------------*
@@ -66,10 +65,21 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'get_state_breakdown',
+                JSON.stringify(request.query),
+                reply
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
                     reply.send({
                         statusCode: 500,
@@ -77,6 +87,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 } else if (request.query.selected_filters == undefined) {
+                    request.tracker.error('crash filter not submitted');
                     release();
                     reply.send({
                         statusCode: 500,
@@ -84,28 +95,37 @@ module.exports = function (fastify, opts, next) {
                         message: 'crash filter not submitted'
                     });
                 } else if (request.query.breakdown_field == undefined) {
+                    request.tracker.error('breakdown field not submitted');
                     release();
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
-                        message: 'breakdown field not submitted.'
+                        message: 'breakdown field not submitted'
                     });
                 } else {
                     try {
                         client.query(sql(request.query), function onResult(err, result) {
-                            release();
-
                             if (err) {
-                                reply.send(err);
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
                             } else if (result && result.rows) {
+                                request.tracker.complete();
+                                release();
                                 reply.send(result.rows);
                             } else {
-                                reply.code(204);
+                                request.tracker.error('no rows returned');
+                                release();
+                                reply.send({
+                                    statusCode: 204,
+                                    error: 'no data returned',
+                                    message: request
+                                });
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(error);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,

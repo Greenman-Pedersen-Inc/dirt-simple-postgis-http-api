@@ -36,10 +36,22 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'get_user_query',
+                JSON.stringify(request.query),
+                reply
+            );
+
             const queryArgs = request.query;
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
                     reply.send({
                         statusCode: 500,
@@ -47,6 +59,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 } else if (queryArgs.userName == undefined) {
+                    request.tracker.error('need user name');
                     release();
                     reply.send({
                         statusCode: 500,
@@ -55,20 +68,28 @@ module.exports = function (fastify, opts, next) {
                     });
                 } else {
                     try {
-                        client.query(sql(queryArgs), function onResult(err, result) {
-                            release();
-
+                        client.query(sql(request.query), function onResult(err, result) {
                             if (err) {
-                                reply.send(err);
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
                             } else if (result && result.rows) {
+                                request.tracker.complete();
+                                release();
                                 reply.send(result.rows);
                             } else {
-                                reply.code(204);
+                                request.tracker.error('no rows returned');
+                                release();
+                                reply.send({
+                                    statusCode: 204,
+                                    error: 'no data returned',
+                                    message: request
+                                });
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(error);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,
@@ -77,8 +98,6 @@ module.exports = function (fastify, opts, next) {
                     }
                 }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
     next();

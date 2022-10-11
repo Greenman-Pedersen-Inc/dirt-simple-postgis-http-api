@@ -31,31 +31,46 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            function onConnect(err, client, release) {
-                if (err) {
-                    release();
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'county_bbox',
+                JSON.stringify(request.query),
+                reply
+            );
 
-                    return reply.send({
+            fastify.pg.connect(onConnect);
+
+            function onConnect(err, client, release) {
+                request.tracker.start();
+
+                if (err) {
+                    request.tracker.error(err);
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                } else if (request.query.county_list == undefined) {
+                } 
+                else if (request.query.county_list == undefined) {
+                    request.tracker.error('county list not submitted');
                     release();
-
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'county list not submitted'
                     });
-                } else {
+                } 
+                else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
-                            release();
-
                             if (err) {
-                                reply.send(err);
-                            } else if (result.rows && result.rows.length > 0) {
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
+                            }
+                            else if (result.rows && result.rows.length > 0) {
                                 const initial_bounding_box = JSON.parse(result.rows[0].bounding_box);
 
                                 result.rows.forEach(function (row) {
@@ -75,13 +90,17 @@ module.exports = function (fastify, opts, next) {
                                 });
 
                                 reply.send(initial_bounding_box);
-                            } else {
+                                request.tracker.complete();
+                                release();
+                            } 
+                            else {
                                 reply.code(204);
+                                release();
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(error);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: 'issue with query',
@@ -91,7 +110,6 @@ module.exports = function (fastify, opts, next) {
                 }
             }
 
-            fastify.pg.connect(onConnect);
         }
     });
     next();

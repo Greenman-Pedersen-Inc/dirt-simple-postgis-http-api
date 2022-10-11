@@ -106,10 +106,22 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'get_graph_data',
+                JSON.stringify(request.query),
+                reply
+            );
+
             const queryArgs = request.query;
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
                     reply.send({
                         statusCode: 500,
@@ -117,6 +129,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 } else if (queryArgs.selected_filters == undefined) {
+                    request.tracker.error('crash filter not submitted');
                     release();
                     reply.send({
                         statusCode: 500,
@@ -124,6 +137,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'crash filter not submitted'
                     });
                 } else if (queryArgs.dataType == undefined) {
+                    request.tracker.error('data type not submitted');
                     release();
                     reply.send({
                         statusCode: 500,
@@ -131,6 +145,7 @@ module.exports = function (fastify, opts, next) {
                         message: 'data type not submitted'
                     });
                 } else if (!dataTypes.includes(queryArgs.dataType)) {
+                    request.tracker.error('data type invalid');
                     release();
                     reply.send({
                         statusCode: 500,
@@ -140,15 +155,20 @@ module.exports = function (fastify, opts, next) {
                 } else {
                     try {
                         client.query(sql(queryArgs), function onResult(err, result) {
-                            release();
-
                             if (err) {
-                                reply.send(err);
-                            } else {
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
+                            }
+                            else {
                                 if (result) {
                                     if (result.hasOwnProperty('rows')) {
+                                        request.tracker.complete();
+                                        release();
                                         reply.send({ GraphData: transcribeKeysArray(result.rows) });
                                     } else {
+                                        request.tracker.error('no rows returned');
+                                        release();
                                         reply.send({
                                             statusCode: 500,
                                             error: 'no rows returned',
@@ -156,6 +176,8 @@ module.exports = function (fastify, opts, next) {
                                         });
                                     }
                                 } else {
+                                    request.tracker.error('no rows returned');
+                                    release();
                                     reply.send({
                                         statusCode: 500,
                                         error: 'no data returned',
@@ -165,8 +187,8 @@ module.exports = function (fastify, opts, next) {
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(error);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,
@@ -175,8 +197,6 @@ module.exports = function (fastify, opts, next) {
                     }
                 }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
     next();

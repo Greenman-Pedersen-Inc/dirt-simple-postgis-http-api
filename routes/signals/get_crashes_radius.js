@@ -34,12 +34,6 @@ const schema = {
     description: "gets crashes within a user-specified radius (in feet) of a signal based on signal id",
     tags: ['signals'],
     summary: "gets crashes within a user-specified radius (in feet) of a signal based on signal id",
-    // body: {
-    //     type: 'object',
-    //     properties: {
-    //         is_export: { type: 'boolean', default: false }
-    //     },
-    // },
     params: {},
     querystring: {
         signalId: {
@@ -56,12 +50,7 @@ const schema = {
             type: 'string',
             description: 'stringified JSON of crash filter object',
             example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
-        },
-        // isExport: {
-        //     type: 'boolean',
-        //     description: 'if this request requires crash data to be exported as a CSV',
-        //     default: false
-        // }
+        }
     }
 };
 
@@ -73,51 +62,61 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/signals/get-crashes',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'signals',
+                'get_crashes_radius',
+                JSON.stringify(request.query),
+                reply
+            );
+
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                } 
+                }
                 else if (request.query.signalId == undefined) {
+                    reply.code(400).send('need signal ID');
+                    request.tracker.error('need signal ID');
                     release();
-                    reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need signal id'
-                    });
                 } 
                 else if (request.query.radius == undefined) {
+                    reply.code(400).send('need radius');
+                    request.tracker.error('need radius');
                     release();
-                    reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need radius (ft)'
-                    });
                 } 
                 else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
-                            release();
-
                             if (err) {
-                                reply.send(err);
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
                             } else if (result && result.rows) {
+                                request.tracker.complete();
                                 const crashData = transcribeKeysArray(result.rows);
                                 reply.send(crashData);
+                                release();
                             } else {
                                 reply.code(204);
+                                release();
                             }
                         });
-                    } catch (error) {
+                    } 
+                    catch (error) {
+                        request.tracker.error(error);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,
@@ -126,8 +125,6 @@ module.exports = function (fastify, opts, next) {
                     }
                 }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
     next();

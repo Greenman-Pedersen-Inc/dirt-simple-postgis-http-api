@@ -15,7 +15,7 @@ const globalTimeout = 5000;
  * @param {*} reply
  * @param {*} done
  */
-function RequestTracker(credentials, module, end_point, user_query) {
+function RequestTracker(credentials, module, end_point, user_query, reply) {
     const self = this;
 
     this.start = function () {
@@ -59,6 +59,7 @@ function RequestTracker(credentials, module, end_point, user_query) {
     };
 
     function onConnect(error, client, release, queryString) {
+        console.log(queryString);
         if (error) {
             release();
 
@@ -160,7 +161,6 @@ function requestTimeout(client, reply, requestTracker, timeout = globalTimeout) 
     return new Promise((resolve, reject) => {
         setTimeout(() => {
             client
-                .end()
                 .then(() => {
                     let error = new Error('Server Timeout');
                     reply.send(error);
@@ -171,7 +171,8 @@ function requestTimeout(client, reply, requestTracker, timeout = globalTimeout) 
                     reply.send(new Error(error.stack));
                     reply.send = (payload) => reply;
                     requestTracker.error(error);
-                });
+                })
+                .end();
         }, timeout);
     });
 }

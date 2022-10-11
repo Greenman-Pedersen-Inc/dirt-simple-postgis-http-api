@@ -4,6 +4,7 @@ const path = require('path');
 const fastifyStatic = require('fastify-static');
 const outputPath = path.join(__dirname, '../../output', 'weather');
 const reportHelper = require('../../helper_functions/report_maker/predictive_report_layout');
+const { release } = require('os');
 const customTimeout = 30000;
 const schema = {
     description: 'generates a weather report pdf.',
@@ -86,7 +87,8 @@ module.exports = function (fastify, opts, next) {
                 request.headers.credentials,
                 'weather',
                 'report',
-                JSON.stringify(request.query)
+                JSON.stringify(request.query),
+                reply
             );
 
             // remove all reports older than 10 minutes from output directory
@@ -182,20 +184,22 @@ module.exports = function (fastify, opts, next) {
 
                                 return fileInfo
                                     .then((createdFile) => {
+                                        release();
                                         reply.code(200);
                                         reply.sendFile(createdFile.fileName, outputPath);
                                         request.tracker.complete();
                                     })
                                     .catch((error) => {
+                                        release();
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
                                     });
                             })
                             .catch((error) => {
+                                release();
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
-                            })
-                            .then(() => client.end());
+                            });
                     })
                     .catch((error) => {
                         reply.code(500).send(error);

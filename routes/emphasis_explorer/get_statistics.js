@@ -91,61 +91,95 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            // fastify.pg.connect(onConnect);
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'emphasis_explorer',
+                'get_statistics',
+                JSON.stringify(request.query),
+                reply
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
                 client.connectionParameters.query_timeout = customTimeout;
 
-                if (err)
-                    return reply.send({
+                if (err) {
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
-                    return reply.send({
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need start year'
                     });
                 } else if (queryArgs.endYear == undefined) {
-                    return reply.send({
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need end year'
                     });
                 } else if (queryArgs.category == undefined) {
-                    return reply.send({
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need category'
                     });
                 }
+                else {
+                    request.tracker.start();
 
-                let filterJson = JSON.parse(JSON.stringify(queryArgs));
-                const queriesObject = getQueries(filterJson);
+                    let filterJson = JSON.parse(JSON.stringify(queryArgs));
+                    const queriesObject = getQueries(filterJson);
 
-                try {
-                    let crashData = {};
-                    let promises = []; // store all promises to be queried on
-                    if (queriesObject.queries === undefined) {
-                        reply.send({
-                            statusCode: 500,
-                            error: 'Invalid category or subcategory',
-                            message: 'Please check category or subcategory input and try again.'
-                        });
-                    }
+                    try {
+                        let crashData = {};
+                        let promises = []; // store all promises to be queried on
+                        if (queriesObject.queries === undefined) {
+                            reply.send({
+                                statusCode: 500,
+                                error: 'Invalid category or subcategory',
+                                message: 'Please check category or subcategory input and try again.'
+                            });
+                        }
 
-                    if (queryArgs.chartType === 'related_behavior') {
-                        for (const [category, values] of Object.entries(queriesObject.queries)) {
+                        if (queryArgs.chartType === 'related_behavior') {
+                            for (const [category, values] of Object.entries(queriesObject.queries)) {
+                                const promise = new Promise((resolve, reject) => {
+                                    try {
+                                        const queryString = values.query();
+                                        //console.log(queryString)
+                                        if (category === 'annual_bodies_rolling_average') {
+                                            const res = client.query(queryString, queriesObject.values_rolling_avg);
+                                            return resolve(res);
+                                        } else {
+                                            const res = client.query(queryString, queriesObject.values);
+                                            return resolve(res);
+                                        }
+                                    } catch (err) {
+                                        return reject(err);
+                                    }
+                                });
+
+                                promises.push(promise);
+                            }
+                        }
+                        else {
                             const promise = new Promise((resolve, reject) => {
                                 try {
-                                    const queryString = values.query();
+                                    const queryString = queriesObject.queries.query();
                                     //console.log(queryString)
-                                    if (category === 'annual_bodies_rolling_average') {
+                                    if (queryArgs.chartType === 'annual_bodies_rolling_average') {
                                         const res = client.query(queryString, queriesObject.values_rolling_avg);
                                         return resolve(res);
                                     } else {
@@ -159,78 +193,61 @@ module.exports = function (fastify, opts, next) {
 
                             promises.push(promise);
                         }
-                    }
-                    else {
-                        const promise = new Promise((resolve, reject) => {
-                            try {
-                                const queryString = queriesObject.queries.query();
-                                //console.log(queryString)
-                                if (queryArgs.chartType === 'annual_bodies_rolling_average') {
-                                    const res = client.query(queryString, queriesObject.values_rolling_avg);
-                                    return resolve(res);
-                                } else {
-                                    const res = client.query(queryString, queriesObject.values);
-                                    return resolve(res);
-                                }
-                            } catch (err) {
-                                return reject(err);
-                            }
-                        });
-    
-                        promises.push(promise);
-                    }
 
+                        Promise.all(promises)
+                            .then((returnData) => {
+                                for (let i = 0; i < returnData.length; i++) {
+                                    let data = returnData[i].rows;
+                                    let table = `${queryArgs.chartType ? queryArgs.chartType : queryArgs.subCategory}`;
 
-                    Promise.all(promises)
-                        .then((returnData) => {
-                            release();
-
-                            for (let i = 0; i < returnData.length; i++) {
-                                let data = returnData[i].rows;
-                                let table = `${queryArgs.chartType ? queryArgs.chartType : queryArgs.subCategory}`;
-
-                                if (data.length === 0) {
-                                    crashData[table] = [];
-                                } else {
-                                    if (table === 'related_behavior') {
-                                        let relatedBehaviorTable = Object.keys(queriesObject.queries)[i];
-                                        crashData[relatedBehaviorTable] = data;
-                                    }
-                                    else {
-                                        if (data && data.length > 0) {
-                                            if (table && table === 'annual_bodies_rolling_average') {
-                                                const rollingAvgData = calculateRollingAverage(
-                                                    data,
-                                                    parseInt(filterJson.startYear),
-                                                    parseInt(filterJson.endYear)
-                                                );
-                                                crashData[table] = rollingAvgData;
-                                            } else {
-                                                crashData[table] = data;
+                                    if (data.length === 0) {
+                                        crashData[table] = [];
+                                    } else {
+                                        if (table === 'related_behavior') {
+                                            let relatedBehaviorTable = Object.keys(queriesObject.queries)[i];
+                                            crashData[relatedBehaviorTable] = data;
+                                        }
+                                        else {
+                                            if (data && data.length > 0) {
+                                                if (table && table === 'annual_bodies_rolling_average') {
+                                                    const rollingAvgData = calculateRollingAverage(
+                                                        data,
+                                                        parseInt(filterJson.startYear),
+                                                        parseInt(filterJson.endYear)
+                                                    );
+                                                    crashData[table] = rollingAvgData;
+                                                } else {
+                                                    crashData[table] = data;
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
 
-                            // console.log({ [filterJson.category]: crashData })
-                            reply.send({ [filterJson.category]: crashData });
-                        })
-                        .catch((error) => {
-                            reply.send({
-                                statusCode: 500,
-                                error: error.message,
-                                message: 'Query Error'
+                                // console.log({ [filterJson.category]: crashData })
+
+                                request.tracker.complete();
+                                release();
+                                reply.send({ [filterJson.category]: crashData });
+                            })
+                            .catch((error) => {
+                                request.tracker.error(error);
+                                release();
+                                reply.send({
+                                    statusCode: 500,
+                                    error: error.message,
+                                    message: 'Query Error'
+                                });
                             });
+                    } catch (error) {
+                        request.tracker.error(error);
+                        release();
+                        reply.send({
+                            statusCode: 500,
+                            error: error.message,
+                            message: request
                         });
-                } catch (error) {
-                    release();
-                    console.log(error);
-                    reply.send({
-                        statusCode: 500,
-                        error: error.message,
-                        message: request
-                    });
+                    }
                 }
             }
         }

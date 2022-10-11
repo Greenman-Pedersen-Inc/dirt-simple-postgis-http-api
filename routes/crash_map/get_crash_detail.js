@@ -86,20 +86,33 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'get_crash_detail',
+                JSON.stringify(request.query),
+                reply
+            );
+
             const queryArgs = request.query;
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
-                    return reply.send({
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
                 } else if (queryArgs.caseNumber === undefined) {
                     if (queryArgs.crashid === undefined) {
+                        request.tracker.error('need crashid');
                         release();
-                        return reply.send({
+                        reply.send({
                             statusCode: 500,
                             error: 'Internal Server Error',
                             message: 'need crashid'
@@ -111,6 +124,7 @@ module.exports = function (fastify, opts, next) {
                         queryArgs.municipality === undefined ||
                         queryArgs.year === undefined
                     ) {
+                        request.tracker.error('need county, muni, or year values');
                         release();
                         return reply.send({
                             statusCode: 500,
@@ -119,7 +133,6 @@ module.exports = function (fastify, opts, next) {
                         });
                     }
                 }
-
                 try {
                     let promises = [];
                     let crashData;
@@ -135,7 +148,6 @@ module.exports = function (fastify, opts, next) {
                                 return reject(error);
                             }
                         });
-
                         promises.push(promise);
                     }
 
@@ -150,29 +162,29 @@ module.exports = function (fastify, opts, next) {
                                     crashData[table] = transcribeKeysArray(data);
                                 }
                             }
+                            request.tracker.complete();
                             release();
-                            return reply.send(crashData);
+                            reply.send(crashData);
                         })
                         .catch((error) => {
+                            request.tracker.error(error);
                             release();
-                            return reply.send({
+                            reply.send({
                                 statusCode: 500,
                                 error: error,
                                 message: 'issue with crash id queries'
                             });
                         });
                 } catch (error) {
+                    request.tracker.error(error);
                     release();
-
-                    return reply.send({
+                    reply.send({
                         statusCode: 500,
                         error: error,
                         message: request
                     });
                 }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
     next();

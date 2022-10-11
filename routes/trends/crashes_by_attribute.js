@@ -66,35 +66,50 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'trends',
+                'crashes_by_attribute',
+                JSON.stringify(request.query),
+                reply
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
+                if (err) {
+                    release();
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
+                    release();
                     return reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need start year'
                     });
                 } else if (queryArgs.endYear == undefined) {
+                    release();
                     return reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
-                        message: 'need start year'
+                        message: 'need end year'
                     });
                 } else if (queryArgs.attribute == undefined) {
+                    release();
                     return reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need attribute'
                     });
                 }
+
+                request.tracker.start();
 
                 const table = trendsHelper.getTableNameByAttribute(queryArgs.attribute);
                 var reportQueries = trendsHelper.getTrendsQueryObject(queryArgs, table);
@@ -120,16 +135,18 @@ module.exports = function (fastify, opts, next) {
 
                 Promise.all(promises)
                     .then((reportDataArray) => {
-                        release();
                         for (let i = 0; i < reportDataArray.length; i++) {
                             var data = reportDataArray[i].rows;
                             var category = Object.keys(reportQueries)[i];
                             returnData[category] = data;
                         }
 
+                        request.tracker.complete();
+                        release();
                         reply.send({ GraphData: returnData });
                     })
                     .catch((error) => {
+                        request.tracker.error(error);
                         release();
                         reply.send({
                             statusCode: 500,

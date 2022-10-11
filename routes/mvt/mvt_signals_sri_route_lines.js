@@ -72,34 +72,33 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/mvt/signals-sri-route-lines/:z/:x/:y',
         schema: schema,
-
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            function onConnect(error, client, release) {
-                request.tracker = new fastify.RequestTracker(
-                    request.headers,
-                    'crash_map',
-                    'mvt_route',
-                    JSON.stringify(Object.assign(request.query, request.params))
-                );
+            request.tracker = new fastify.RequestTracker(
+                request.headers,
+                'crash_map',
+                'mvt_route',
+                JSON.stringify(Object.assign(request.query, request.params)),
+                reply
+            );
 
+            function onConnect(error, client, release) {
+                request.tracker.start();
                 if (error) {
-                    release();
                     reply.code(500).send(error);
                     request.tracker.error(error);
-                } else if (request.query.selected_filters == undefined) {
                     release();
+                } else if (request.query.selected_filters == undefined) {
                     reply.code(400).send('no crash filter submitted');
                     request.tracker.error('no crash filter submitted');
+                    release();
                 } else {
-                    request.tracker.start();
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
-                            release();
-
                             if (error) {
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
+                                release();  
                             } else {
                                 if (result) {
                                     if (result.rows && result.rows.length > 0) {
@@ -112,24 +111,28 @@ module.exports = function (fastify, opts, next) {
 
                                             reply.header('Content-Type', 'application/x-protobuf').send(mvt);
                                             request.tracker.complete();
+                                            release();
                                         } else {
                                             reply.code(500).send(error);
                                             request.tracker.error(error);
+                                            release();
                                         }
                                     } else {
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
+                                        release();
                                     }
                                 } else {
                                     reply.code(500).send(error);
                                     request.tracker.error(error);
+                                    release();
                                 }
                             }
                         });
                     } catch (error) {
-                        release();
                         reply.code(500).send(error);
                         request.tracker.error(error);
+                        release();
                     }
                 }
             }

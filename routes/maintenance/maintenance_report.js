@@ -96,7 +96,8 @@ module.exports = function (fastify, opts, next) {
                 request.headers.credentials,
                 'maintenance',
                 'report',
-                JSON.stringify(request.query)
+                JSON.stringify(request.query),
+                reply
             );
             // remove all reports older than 10 minutes from output directory
             fs.readdir(outputPath, function (error, files) {
@@ -123,6 +124,8 @@ module.exports = function (fastify, opts, next) {
                 });
             });
 
+            request.tracker.start();
+
             if (request.query.startDate == undefined) {
                 reply.code(400).send('need start or end year');
                 request.tracker.error('need start or end year');
@@ -136,7 +139,6 @@ module.exports = function (fastify, opts, next) {
                 fastify.pg
                     .connect()
                     .then((client) => {
-                        request.tracker.start();
                         client.connectionParameters.query_timeout = customTimeout;
                         client
                             .query(query)
@@ -171,27 +173,29 @@ module.exports = function (fastify, opts, next) {
                                             reply.code(200);
                                             reply.sendFile(createdFile.fileName, outputPath);
                                             request.tracker.complete();
+                                            release();
                                         })
                                         .catch((error) => {
                                             reply.code(500).send(error);
                                             request.tracker.error(error);
+                                            release();
                                         });
                                 } else {
                                     reply.code(204).send();
                                     request.tracker.complete();
+                                    release();
                                 }
                             })
                             .catch((error) => {
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
-                            })
-                            .then(() => {
-                                client.end();
+                                release();
                             });
                     })
                     .catch((error) => {
                         reply.code(500).send(error);
                         request.tracker.error(error);
+                        release();
                     });
             }
         }

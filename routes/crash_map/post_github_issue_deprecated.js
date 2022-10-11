@@ -1,3 +1,5 @@
+// Deprecated - DO NOT USE
+
 // post_github_issue: submits a user feedback form to the github repository: https://github.com/Greenman-Pedersen-Inc/voyager-bug-tracker/issues
 const { Octokit } = require('octokit');
 const githubName = 'snopachinda-gpi';

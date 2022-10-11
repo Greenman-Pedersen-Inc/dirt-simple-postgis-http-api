@@ -3,6 +3,7 @@ const reportHelper = require('../../helper_functions/report_maker/predictive_rep
 const fs = require('fs');
 const fastifyStatic = require('fastify-static');
 const path = require('path');
+const { release } = require('os');
 const folderName = 'sunglare';
 const outputPath = path.join(__dirname, '../../output', folderName);
 const customTimeout = 20000;
@@ -99,7 +100,8 @@ module.exports = function (fastify, opts, next) {
                 request.headers.credentials,
                 'sunglare',
                 'report',
-                JSON.stringify(request.query)
+                JSON.stringify(request.query),
+                reply
             );
 
             // remove all reports older than 10 minutes from output directory
@@ -195,21 +197,24 @@ module.exports = function (fastify, opts, next) {
                                         reply.code(200);
                                         reply.sendFile(createdFile.fileName, outputPath);
                                         request.tracker.complete();
+                                        release();
                                     })
                                     .catch((error) => {
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
+                                        release();
                                     });
                             })
                             .catch((error) => {
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
+                                release();
                             })
-                            .then(() => client.end());
                     })
                     .catch((error) => {
                         reply.code(500).send(error);
                         request.tracker.error(error);
+                        release();
                     });
             }
         }

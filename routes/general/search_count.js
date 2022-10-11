@@ -209,13 +209,21 @@ module.exports = function (fastify, opts, next) {
                                 resultsCount++;
                             });
                         });
+                        release();
                         reply.send(err || { SearchResults: [{ count: resultsCount }] });
                     });
                 } else {
-                    client.query(sql(request.query), function onResult(err, result) {
+                    try {
+                        client.query(sql(request.query), function onResult(err, result) {
+                            release();
+                            reply.send(err || { SearchResults: result.rows });
+                        });
+                    }
+                    catch (err) {
                         release();
-                        reply.send(err || { SearchResults: result.rows });
-                    });
+                        reply.code(500).send(err);
+                        request.tracker.error(err);
+                    }
                 }
             }
         }

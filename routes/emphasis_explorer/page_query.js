@@ -73,22 +73,50 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'emphasis_explorer',
+                'page_query',
+                JSON.stringify(request.query),
+                reply
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
                 client.connectionParameters.query_timeout = customTimeout;
+                request.tracker.start();
 
-                if (err)
-                    return reply.send({
+                if (err) {
+                    request.tracker.error(err);
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-
-                client.query(sql(request.params, request.query), function onResult(err, result) {
-                    release();
-                    reply.send(err || result.rows[0]);
-                });
+                }
+                else {
+                    try {
+                        client.query(sql(request.params, request.query), function onResult(err, result) {
+                            if (err) {
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
+                            }
+                            else {
+                                request.tracker.complete();
+                                reply.send(result.rows[0]);                                
+                                release();
+                            }
+                        });
+                    }
+                    catch (error) {
+                        reply.code(500).send(error);
+                        request.tracker.error(error);
+                        release();
+                    }
+                }
             }
         }
     });

@@ -103,9 +103,18 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/crash-map/export-records',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'export_records',
+                JSON.stringify(request.query),
+                reply
+            );
+
             const queryArgs = request.query;
+            request.tracker.start();
 
             // remove all reports older than 10 minutes from output directory
             fs.readdir(outputPath, function (error, files) {
@@ -136,16 +145,16 @@ module.exports = function (fastify, opts, next) {
                 client.connectionParameters.query_timeout = customTimeout;
 
                 if (err) {
+                    request.tracker.error(err);
                     release();
-
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
                 } else if (queryArgs.crashFilter === undefined) {
+                    request.tracker.error('missing crashFilter');
                     release();
-
                     reply.send({
                         statusCode: 400,
                         error: 'Bad request',
@@ -154,7 +163,6 @@ module.exports = function (fastify, opts, next) {
                 } else {
                     try {
                         client.query(sql(queryArgs), function onResult(err, result) {
-                            release();
                             let returnRows = [];
                             if (result) {
                                 const fileName = `Voyager_Crash_Record_Export_${Date.now()}_${Math.floor(
@@ -199,7 +207,7 @@ module.exports = function (fastify, opts, next) {
                                 }
 
                                 const csvFromArrayOfObjects = convertArrayToCSV(returnRows, {
-                                    seperator: ';'
+                                    separator: ';'
                                 });
 
                                 const AdmZip = require('adm-zip');
@@ -213,11 +221,13 @@ module.exports = function (fastify, opts, next) {
                                             console.log(
                                                 'Some error occurred - file either not saved or corrupted file saved.'
                                             );
+                                            request.tracker.error('Some error occurred - file either not saved or corrupted file saved.');
                                             reply.send({
                                                 statusCode: 400,
                                                 error: 'Unable to zip',
                                                 message: err
                                             });
+                                            release();
                                         } else {
                                             const zip = new AdmZip();
                                             const outputFile = path.join(outputPath, zipFileName);
@@ -226,18 +236,21 @@ module.exports = function (fastify, opts, next) {
                                             console.log(`Created ${outputFile} successfully`);
                                             reply.code(200);
                                             reply.header('exportCount', result.rows.length);
-                                            reply.sendFile(zipFileName, outputPath)
+                                            reply.sendFile(zipFileName, outputPath);
+                                            request.tracker.complete();
+                                            release();
                                         }
                                     }
                                 );
                             } else {
                                 reply.code(204);
                                 reply.send(result);
+                                release();
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(err);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,

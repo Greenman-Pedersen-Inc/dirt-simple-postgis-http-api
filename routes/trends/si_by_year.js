@@ -66,27 +66,43 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'trends',
+                'si_by_year',
+                JSON.stringify(request.query),
+                reply
+            );
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
+                request.tracker.start();
+
+                if (err) {
+                    client.release();
+                    request.tracker.error(err);
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
+                    client.release();
+                    request.tracker.error('need start year');
                     return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need startyear'
-                    });
-                } else if (queryArgs.endYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need start year'
+                    });
+                } else if (queryArgs.endYear == undefined) {
+                    client.release();
+                    request.tracker.error('need end year');
+                    return reply.send({
+                        statusCode: 400,
+                        error: 'Internal Server Error',
+                        message: 'need end year'
                     });
                 }
 
@@ -99,12 +115,9 @@ module.exports = function (fastify, opts, next) {
                     if (reportQueries.hasOwnProperty(key)) {
                         const promise = new Promise((resolve, reject) => {
                             try {
-                                // console.log(reportQueries[key].query)
                                 const res = client.query(reportQueries[key].query);
                                 return resolve(res);
                             } catch (err) {
-                                // console.log(err.stack);
-                                // console.log(reportQueries[key].query);
                                 return reject(error);
                             }
                         });
@@ -114,16 +127,17 @@ module.exports = function (fastify, opts, next) {
 
                 Promise.all(promises)
                     .then((reportDataArray) => {
-                        release();
                         for (let i = 0; i < reportDataArray.length; i++) {
                             var data = reportDataArray[i].rows;
                             var category = Object.keys(reportQueries)[i];
                             returnData[category] = data;
                         }
-
+                        request.tracker.complete();
+                        release();
                         reply.send({ GraphData: returnData });
                     })
                     .catch((error) => {
+                        request.tracker.error(error);
                         release();
                         reply.send({
                             statusCode: 500,

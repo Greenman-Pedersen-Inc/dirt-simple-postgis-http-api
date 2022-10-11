@@ -91,38 +91,61 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'signals',
+                'get_signal_data',
+                JSON.stringify(request.query),
+                reply
+            );
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                } {
+                }
+                else if (request.query.signalId == undefined) {
+                    reply.code(400).send('need signal ID');
+                    release();
+                    request.tracker.error('need signal ID');
+                } 
+                else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
-                            release();
-
                             if (err) {
-                                reply.send(err);
-                            } else if (result && result.rows) {
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
+                            }
+                            else if (result && result.rows) {
+                                request.tracker.complete();
                                 reply.send(result.rows);
-                            } else {
+                                release();
+                            }
+                            else {
                                 reply.code(204);
+                                release();
                             }
                         });
-                    } catch (error) {
-                        release();
-
+                    } 
+                    catch (error) {
+                        request.tracker.error(error);
                         reply.send({
                             statusCode: 500,
                             error: error,
                             message: request
                         });
+                        release();
                     }
                 }
+
             }
 
             fastify.pg.connect(onConnect);

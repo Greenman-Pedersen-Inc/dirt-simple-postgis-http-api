@@ -161,31 +161,34 @@ module.exports = function (fastify, opts, next) {
         handler: function (request, reply) {
             request.tracker = new fastify.RequestTracker(
                 request.headers,
-                'crash_map',
+                'emphasis_explorer',
                 'mvt_cluster',
-                JSON.stringify(Object.assign(request.query, request.params))
+                JSON.stringify(Object.assign(request.query, request.params)),
+                reply
             );
 
             function onConnect(err, client, release) {
+                request.tracker.start();
                 if (err) {
+                    reply.code(500).send(err);
+                    request.tracker.error(err);
                     release();
-                    reply.code(500).send(error);
-                    request.tracker.error(error);
-                } else {
+                } 
+                else {
                     if (request.query.filter == undefined) {
-                        release();
-
                         reply.code(400).send('no crash filter submitted');
                         request.tracker.error('no crash filter submitted');
-                    } else {
+                        release();
+                    } 
+                    else {
                         try {
                             client.query(sql(request.params, request.query), function onResult(err, result) {
-                                release();
-
                                 if (err) {
                                     reply.code(500).send(err);
                                     request.tracker.error(err);
-                                } else {
+                                    release();
+                                } 
+                                else {
                                     if (result) {
                                         if (result.rows && result.rows.length > 0) {
                                             if (result.rows[0].mvt) {
@@ -197,25 +200,28 @@ module.exports = function (fastify, opts, next) {
 
                                                 reply.header('Content-Type', 'application/x-protobuf').send(mvt);
                                                 request.tracker.complete();
+                                                release();
                                             } else {
-                                                reply.code(500).send(error);
-                                                request.tracker.error(error);
+                                                reply.code(500).send(err);
+                                                request.tracker.error(err);
+
                                             }
                                         } else {
-                                            reply.code(500).send(error);
-                                            request.tracker.error(error);
+                                            reply.code(500).send('no data returned');
+                                            request.tracker.error('no data returned');
+                                            release();
                                         }
                                     } else {
-                                        reply.code(500).send(error);
-                                        request.tracker.error(error);
+                                        reply.code(500).send('no data returned');
+                                        request.tracker.error('no data returned');
+                                        release();
                                     }
                                 }
                             });
                         } catch (error) {
-                            release();
-
                             reply.code(500).send(error);
                             request.tracker.error(error);
+                            release();
                         }
                     }
                 }

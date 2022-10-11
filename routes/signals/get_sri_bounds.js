@@ -38,10 +38,19 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'signals',
+                'get_sri_bounds',
+                JSON.stringify(request.query),
+                reply
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
                 if (err) {
+                    request.tracker.error(err);
                     release();
                     reply.send({
                         statusCode: 500,
@@ -49,27 +58,39 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 } else if (request.query.sri == undefined) {
+                    request.tracker.error('SRI code not submitted');
                     release();
                     reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'SRI code not submitted'
                     });
                 } else {
                     try {
+                        request.tracker.start();
+
                         const query = sql();
                         client.query(query, [request.query.sri], function onResult(err, result) {
-                            release();
-
                             if (err) {
-                                reply.send(err);
-                            } else if (result.rows && result.rows.length > 0) {
+                                request.tracker.error(err);
+                                release();
+                                reply.send({
+                                    statusCode: 500,
+                                    error: err
+                                });
+                            }
+                            else if (result.rows && result.rows.length > 0) {
+                                request.tracker.complete();
+                                release();
                                 reply.send(result.rows);
-                            } else {
+                            } 
+                            else {
+                                release();
                                 reply.code(204);
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(error);
                         release();
                         reply.send({
                             statusCode: 500,

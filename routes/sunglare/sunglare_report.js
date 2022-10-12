@@ -203,13 +203,15 @@ module.exports = function (fastify, opts, next) {
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
                                         release();
-                                    });
+                                    })
+                                    .then(() => client.end());
                             })
                             .catch((error) => {
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
                                 release();
                             })
+                            .then(() => client.end());
                     })
                     .catch((error) => {
                         reply.code(500).send(error);

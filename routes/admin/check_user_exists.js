@@ -31,43 +31,63 @@ module.exports = function (fastify, opts, next) {
         },
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'admin',
+                'check_user_exists',
+                JSON.stringify(request.params)
+            );
+
+            fastify.pg.connect(onConnect);
+
             function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
+                request.tracker.start();
+                if (err) {
+                    request.tracker.error(err);
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server: ' + err
                     });
+                }
 
                 const queryParameters = getQuery(request.query);
                 if (request.query.username == undefined) {
-                    return reply.send({
+                    request.tracker.error('need username');
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need username'
                     });
                 }
+                else {
+                    client.query(queryParameters.query, queryParameters.values, function onResult(err, result) {
+                        if (err) {
+                            request.tracker.error(err);
+                            release();
+                            reply.send({
+                                statusCode: 500,
+                                error: 'Internal Server Error',
+                                message: 'unable to perform database operation: ' + err
+                            });                        
+                        }
+                        else {
+                            request.tracker.complete();
+                            release();
+                            if (result.rows.length === 0) {
+                                reply.send({ exists: false });
+                            } else {
+                                if (result.rows[0].count > 0) reply.send({ exists: true });
+                                else reply.send({ exists: false });
+                            }                        
+                        }
+                    });
 
-                client.query(queryParameters.query, queryParameters.values, function onResult(err, result) {
-                    release();
+                }
 
-                    if (err)
-                        return reply.send({
-                            statusCode: 500,
-                            error: 'Internal Server Error',
-                            message: 'unable to perform database operation: ' + err
-                        });
-
-                    if (result.rows.length === 0) {
-                        reply.send({ exists: false });
-                    } else {
-                        if (result.rows[0].count > 0) reply.send({ exists: true });
-                        else reply.send({ exists: false });
-                    }
-                });
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
 

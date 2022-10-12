@@ -122,8 +122,6 @@ module.exports = function (fastify, opts, next) {
                     request.tracker.start();
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
-                            release();
-
                             if (error) {
                                 reply.code(500).send(error);
                                 request.tracker.error(error);

@@ -3,6 +3,7 @@ get_sri_breakdown: Gets a list of number of crashes grouped by crash attribute c
 */
 
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
+const customTimeout = 15000;
 
 // *---------------*
 // route query
@@ -77,6 +78,7 @@ module.exports = function (fastify, opts, next) {
 
             function onConnect(err, client, release) {
                 request.tracker.start();
+                client.connectionParameters.query_timeout = customTimeout;
 
                 if (err) {
                     request.tracker.error(err);

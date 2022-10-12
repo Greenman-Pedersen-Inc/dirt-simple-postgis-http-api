@@ -5,6 +5,7 @@ const fastifyStatic = require('fastify-static');
 
 const outputPath = path.join(__dirname, '../../output', 'jurisdiction');
 const juriHelper = require('../../helper_functions/jurisdiction_report_helper');
+const { release } = require('os');
 const customTimeout = 30000;
 const schema = {
     description: 'generates a jurisdiction report pdf.',
@@ -54,7 +55,7 @@ module.exports = function (fastify, opts, next) {
             const categories = [];
             request.tracker = new fastify.RequestTracker(
                 request.headers.credentials,
-                'jurisidiction',
+                'jurisdiction',
                 'report',
                 JSON.stringify(request.params),
                 reply
@@ -144,13 +145,18 @@ module.exports = function (fastify, opts, next) {
                                 // create report pdf
                                 const fileInfo = juriHelper.makeJurisdictionReport(request.query, reportData);
 
-                                return fileInfo
+                                fileInfo
                                     .then((createdFile) => {
                                         reply.code(200);
                                         reply.sendFile(createdFile.fileName, outputPath);
+                                        request.tracker.complete();
+                                        release();
                                     })
                                     .catch((error) => {
                                         console.error(error);
+                                    })
+                                    .then(() => {
+                                        client.end();
                                     });
                             })
                             .catch((error) => {

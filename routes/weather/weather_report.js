@@ -182,7 +182,7 @@ module.exports = function (fastify, opts, next) {
                                     'weather'
                                 );
 
-                                return fileInfo
+                                fileInfo
                                     .then((createdFile) => {
                                         release();
                                         reply.code(200);
@@ -193,13 +193,15 @@ module.exports = function (fastify, opts, next) {
                                         release();
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
-                                    });
+                                    })
+                                    .then(() => client.end());
                             })
                             .catch((error) => {
                                 release();
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
-                            });
+                            })
+                            .then(() => client.end());
                     })
                     .catch((error) => {
                         reply.code(500).send(error);

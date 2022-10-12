@@ -168,34 +168,31 @@ module.exports = function (fastify, opts, next) {
 
                                     const fileInfo = maintenanceHelper.fileExport(request.query, data);
 
-                                    return fileInfo
+                                    fileInfo
                                         .then((createdFile) => {
                                             reply.code(200);
                                             reply.sendFile(createdFile.fileName, outputPath);
                                             request.tracker.complete();
-                                            release();
                                         })
                                         .catch((error) => {
                                             reply.code(500).send(error);
                                             request.tracker.error(error);
-                                            release();
-                                        });
+                                        })
+                                        .then(() => client.end());
                                 } else {
                                     reply.code(204).send();
                                     request.tracker.complete();
-                                    release();
                                 }
                             })
                             .catch((error) => {
                                 reply.code(500).send(error);
                                 request.tracker.error(error);
-                                release();
-                            });
+                            })
+                            .then(() => client.end());
                     })
                     .catch((error) => {
                         reply.code(500).send(error);
                         request.tracker.error(error);
-                        release();
                     });
             }
         }

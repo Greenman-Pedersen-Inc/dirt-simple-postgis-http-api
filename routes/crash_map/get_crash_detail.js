@@ -2,6 +2,7 @@
 
 const { transcribeKeys, transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const { viewableAttributes } = require('../../helper_functions/code_translations/accidents');
+const customTimeout = 10000;
 
 // *---------------*
 // route query
@@ -98,6 +99,8 @@ module.exports = function (fastify, opts, next) {
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                client.connectionParameters.query_timeout = customTimeout;
+
                 request.tracker.start();
 
                 if (err) {

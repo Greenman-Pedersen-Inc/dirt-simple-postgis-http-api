@@ -1,3 +1,5 @@
+const customTimeout = 10000;
+
 // route query
 const sql = (params, query) => {
   let queryText = `
@@ -100,6 +102,8 @@ module.exports = function (fastify, opts, next) {
 
       function onConnect(err, client, release) {
         request.tracker.start();
+        client.connectionParameters.query_timeout = customTimeout;
+
         if (err) {
           request.tracker.error(err);
           release();

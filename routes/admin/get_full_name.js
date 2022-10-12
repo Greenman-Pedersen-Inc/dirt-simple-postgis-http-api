@@ -32,38 +32,59 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'admin',
+                'get_full_name',
+                JSON.stringify(request.params)
+            );
+
+            fastify.pg.connect(onConnect);
+
             function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
+                request.tracker.start();
+                if (err) {
+                    request.tracker.error(err);
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server: ' + err
                     });
+                }
                 else if (request.query.User === undefined || request.query.User === '' || request.query.User === null) {
-                    return reply.send({
+                    request.tracker.error('No username specified');
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Missing User attribute',
                         message: 'No username specified'
                     });
                 }
+                else {
+                    const queryParameters = getQuery(request.query);
+    
+                    client.query(queryParameters.query, queryParameters.values, function onResult(err, result) {
+                        if (err) {
+                            request.tracker.error(err);
+                            release();
+                            reply.send({
+                                statusCode: 500,
+                                error: 'Internal Server Error',
+                                message: 'unable to perform database operation: ' + err
+                            });
+                        }
+                        else {
+                            request.tracker.complete();
+                            if (result.rows.length <= 0) reply.send(null);
+                            else reply.send(result.rows[0]);  
+                            release();                      
+                        }
+                    });
 
-                const queryParameters = getQuery(request.query);
+                }
 
-                client.query(queryParameters.query, queryParameters.values, function onResult(err, result) {
-                    release();
-
-                    if (err)
-                        return reply.send({
-                            statusCode: 500,
-                            error: 'Internal Server Error',
-                            message: 'unable to perform database operation: ' + err
-                        });
-                    if (result.rows.length <= 0) reply.send(null);
-                    else reply.send(result.rows[0]);
-                });
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
 

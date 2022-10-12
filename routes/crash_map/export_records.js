@@ -206,9 +206,7 @@ module.exports = function (fastify, opts, next) {
                                     returnRows = transcribeKeysArray(result.rows);
                                 }
 
-                                const csvFromArrayOfObjects = convertArrayToCSV(returnRows, {
-                                    separator: ';'
-                                });
+                                const csvFromArrayOfObjects = convertArrayToCSV(returnRows);
 
                                 const AdmZip = require('adm-zip');
 

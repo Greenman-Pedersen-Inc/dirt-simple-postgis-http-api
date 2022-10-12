@@ -2,7 +2,6 @@
 get_sri_breakdown: Gets a list of number of crashes grouped by crash attribute code
 */
 
-const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 const allowedFields = [
     'crash_type',

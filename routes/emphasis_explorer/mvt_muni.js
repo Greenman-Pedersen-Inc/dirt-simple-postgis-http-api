@@ -1,6 +1,8 @@
 // route query
 // geom_column: wkb_geometry
 // filter: (year >= 2017 AND year <= 2021)  GROUP BY muni_data.mun, muni_data.mun_mu, muni_data.county, muni_data.mun_cty_co, crash_data.wkb_geometry
+const customTimeout = 10000;
+
 const sql = (params, query) => {
     let queryText = `
      WITH mvtgeom as (
@@ -96,6 +98,7 @@ const sql = (params, query) => {
   
         function onConnect(err, client, release) {
           request.tracker.start();
+        client.connectionParameters.query_timeout = customTimeout;
 
           if (err) {
             request.tracker.error(err);

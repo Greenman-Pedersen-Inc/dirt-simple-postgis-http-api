@@ -24,7 +24,23 @@ function getQueries(queryArgs) {
 }
 
 function getWhereClause(queryArgs, table) {
-    if (queryArgs.crashid) return `crashid = '${queryArgs.crashid}'`;
+    if (queryArgs.crashid) { 
+        var queryString =  `crashid = '${queryArgs.crashid}'`;
+        if (queryArgs.year) {
+            if (table === 'accidents') {
+                queryString += ` and year ='${queryArgs.year}'`;
+            }
+            else if (table === 'vehicles' || table === 'pedestrians') {
+                queryString += ` and acc_year ='${queryArgs.year}'`;
+            }
+            else if (table === 'occupants') {
+                queryString += ` and veh_acc_year ='${queryArgs.year}'`;
+            }
+        }
+        return queryString;
+        
+    }
+    
     if (table === 'accidents') {
         return `mun_cty_co = '${queryArgs.county}' and mun_mu = '${queryArgs.municipality}' and acc_case = '${queryArgs.caseNumber}' and year ='${queryArgs.year}'`;
     } else if (table === 'vehicles' || table === 'pedestrians') {
@@ -66,7 +82,7 @@ const schema = {
         },
         year: {
             type: 'string',
-            description: 'year the crash occured',
+            description: 'year the crash occurred',
             example: '2020'
         },
         crashid: {

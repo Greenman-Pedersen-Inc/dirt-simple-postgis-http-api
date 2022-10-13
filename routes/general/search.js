@@ -71,6 +71,7 @@ const makeSeachQueries = (params) => {
         'CASE' AS "ResultType",
         CONCAT(acc_case, ' ', muni_name) AS "ResultText",
         crashid AS "ResultID",
+        year AS "ResultYear",
         calc_longitude AS "Longitude",
         calc_latitude AS "Latitude"
         FROM public.ard_accidents_geom_partition

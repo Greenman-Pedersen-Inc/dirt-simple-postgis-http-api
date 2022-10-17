@@ -1,4 +1,4 @@
-const customTimeout = 10000;
+const customTimeout = 15000;
 
 // route query
 const sql = (params, query) => {

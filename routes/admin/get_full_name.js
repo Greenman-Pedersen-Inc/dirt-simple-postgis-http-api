@@ -18,8 +18,7 @@ const schema = {
     querystring: {
         User: {
             type: 'string',
-            description: 'username',
-            example: 'mcollins'
+            description: 'username'
         }
     }
 };

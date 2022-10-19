@@ -5,6 +5,7 @@ FROM pg_indexes
 WHERE schemaname = 'public'
     and tablename = 'ard_vehicles_partition' create index on ard_occupants (veh_acc_year, crashid);
 create index on ard_occupants (veh_acc_year);
+create index on ard_occupants (veh_acc_year, crashid);
 create index on ard_occupants (veh_acc_year, veh_acc_mun_cty_co);
 create index on ard_occupants (veh_acc_year, veh_acc_mun_cty_co, veh_acc_mun_mu);
 create index on ard_occupants (veh_acc_year, veh_acc_acc_case);
@@ -30,6 +31,7 @@ create index on ard_occupants (veh_acc_year, di_crash_date);
 create index on ard_occupants (veh_acc_year, dte_death);
 create index on ard_occupants (veh_acc_year, tme_death);
 create index on ard_occupants (veh_acc_year, cde_fatality);
+
 drop index ard_occupants_partition_veh_acc_year_crashid_idx;
 drop index ard_occupants_partition_veh_acc_year_safety_used_code_idx;
 drop index ard_occupants_partition_safety_used_code_idx;

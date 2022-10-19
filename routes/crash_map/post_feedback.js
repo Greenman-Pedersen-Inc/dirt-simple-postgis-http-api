@@ -36,7 +36,7 @@ const getQuery = (queryArgs) => {
         'Not Started'
     ];
 
-    if (queryArgs.hasImage) { 
+    if (queryArgs.hasImage) {
         const valuesParamLength = valuesParams.length;
         params.push('image_byte_array_string');
         valuesParams.push('$' + (valuesParamLength + 1));
@@ -71,50 +71,50 @@ const schema = {
             imageUri: { type: 'string' },
             username: {
                 type: 'string',
-                description: 'User email to log into SV',
-                example: 'snopachinda@gpinet.com'
+                description: 'User email to log into SV'
+                // example: 'snopachinda@gpinet.com'
             },
             label: {
                 type: 'string',
-                description: 'Category tag: bug, wrong location, help wanted, question, enchancement, other',
-                example: 'bug'
+                description: 'Category tag: bug, wrong location, help wanted, question, enchancement, other'
+                // example: 'bug'
             },
             title: {
                 type: 'string',
-                description: 'Title of the feedback form',
-                example: 'Incorrect location in NJTR-1 form data'
+                description: 'Title of the feedback form'
+                // example: 'Incorrect location in NJTR-1 form data'
             },
             open_location: {
                 type: 'string',
-                description: 'Location where the user opened the feedback form',
-                example: 'Crash Map'
+                description: 'Location where the user opened the feedback form'
+                // example: 'Crash Map'
             },
             description: {
                 type: 'string',
-                description: 'Detailed description of the feedback or bug',
-                example: 'The county should be Atlantic, not burlington.'
+                description: 'Detailed description of the feedback or bug'
+                // example: 'The county should be Atlantic, not burlington.'
             },
             crash_description: {
                 type: 'string',
-                description: 'list of crash IDs',
-                example: '13-19-2021-21-39253-AC, ...'
+                description: 'list of crash IDs'
+                // example: '13-19-2021-21-39253-AC, ...'
             },
             filter_description: {
                 type: 'string',
-                description: 'human readable string of applied filters',
-                example: 'Date: (2017,2018,2019,2020,2021)'
+                description: 'human readable string of applied filters'
+                // example: 'Date: (2017,2018,2019,2020,2021)'
             },
             crash_filter: {
                 type: 'string',
                 description:
-                    'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}',
-                example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+                    'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+                // example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
             },
             hasImage: {
                 type: 'boolean',
                 description: 'a screenshot is attached',
                 default: false
-            },
+            }
             // image_type: {
             //     type: 'string',
             //     description: 'header when getting the image base64 value',
@@ -144,15 +144,13 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                }
-                else if (queryArgs.username == undefined) {
+                } else if (queryArgs.username == undefined) {
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need user name'
                     });
-                }
-                else {
+                } else {
                     try {
                         const queryParams = getQuery(queryArgs);
                         client.query(queryParams.query, queryParams.values, function onResult(err, result) {
@@ -161,8 +159,7 @@ module.exports = function (fastify, opts, next) {
                             if (err) resultParams = { success: false, error: err };
                             else if (result.rowCount > 0) {
                                 resultParams = { success: true };
-                            }
-                            else resultParams = { success: false};
+                            } else resultParams = { success: false };
                             reply.send(err || resultParams);
                         });
                     } catch (error) {

@@ -11,27 +11,27 @@ const schema = {
     querystring: {
         user: {
             type: 'string',
-            description: 'The user name.',
+            description: 'The user name.'
         },
         startYear: {
             type: 'string',
-            description: 'The start year for crashes.',
-            example: '2015'
+            description: 'The start year for crashes.'
+            // example'2015'
         },
         endYear: {
             type: 'string',
-            description: 'The end year for crashes.',
-            example: '2020'
+            description: 'The end year for crashes.'
+            // example'2020'
         },
         jurisdictionLevel: {
             type: 'string',
-            description: 'state, mpo, county, municipality',
-            example: 'municipality'
+            description: 'state, mpo, county, municipality'
+            // example'municipality'
         },
         jurisdictionValue: {
             type: 'string',
-            description: 'nj for state, njtpa for mpo, 2 digit for county, 4 digit for muni',
-            example: '1330'
+            description: 'nj for state, njtpa for mpo, 2 digit for county, 4 digit for muni'
+            // example'1330'
         },
         startTime: {
             type: 'string',
@@ -45,13 +45,13 @@ const schema = {
         },
         crashType: {
             type: 'string',
-            description: 'crash type code based on the NJTR-1 form',
-            example: '01'
+            description: 'crash type code based on the NJTR-1 form'
+            // example'01'
         },
         attribute: {
             type: 'string',
-            description: 'cellphones, intersections',
-            example: 'cellphones'
+            description: 'cellphones, intersections'
+            // example'cellphones'
         }
     }
 };

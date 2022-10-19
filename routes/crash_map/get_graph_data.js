@@ -65,33 +65,33 @@ const schema = {
     querystring: {
         selected_filters: {
             type: 'string',
-            description: 'stringified JSON of crash filter object',
-            example: '{"year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+            description: 'stringified JSON of crash filter object'
+            // example: '{"year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
         },
         dataType: {
             type: 'string',
-            description: 'type of data results that should be exported: Temporal, Speed',
-            example: 'Temporal'
+            description: 'type of data results that should be exported: Temporal, Speed'
+            // example: 'Temporal'
         },
         boundingBoxMinX: {
             type: 'number',
-            description: 'left point of the map extent',
-            example: -75.18347186057379
+            description: 'left point of the map extent'
+            // example: -75.18347186057379
         },
         boundingBoxMinY: {
             type: 'number',
-            description: 'bottom point of the map extent',
-            example: 39.89214724158961
+            description: 'bottom point of the map extent'
+            // example: 39.89214724158961
         },
         boundingBoxMaxX: {
             type: 'number',
-            description: 'right point of the map extent',
-            example: -74.99457847510519
+            description: 'right point of the map extent'
+            // example: -74.99457847510519
         },
         boundingBoxMaxY: {
             type: 'number',
-            description: 'top point of the map extent',
-            example: -39.93906091093021
+            description: 'top point of the map extent'
+            // example: -39.93906091093021
         }
     }
 };

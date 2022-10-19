@@ -16,17 +16,17 @@ const schema = {
         startYear: {
             type: 'integer',
             description: 'unique start year',
-            example: '2015'
+            // example'2015'
         },
         endYear: {
             type: 'integer',
             description: 'unique end year',
-            example: '2019'
+            // example'2019'
         },
         jurisdictionCode: {
             type: 'string',
             description: 'county code and muni code together',
-            example: '1102'
+            // example'1102'
         }
     }
 };

@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const fastifyStatic = require('fastify-static');
+const fastifyStatic = require('@fastify/static');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');

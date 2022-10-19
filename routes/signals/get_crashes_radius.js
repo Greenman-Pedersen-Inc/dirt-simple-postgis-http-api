@@ -31,9 +31,9 @@ const sql = (params, query) => {
 // route schema
 // *---------------*
 const schema = {
-    description: "gets crashes within a user-specified radius (in feet) of a signal based on signal id",
+    description: 'gets crashes within a user-specified radius (in feet) of a signal based on signal id',
     tags: ['signals'],
-    summary: "gets crashes within a user-specified radius (in feet) of a signal based on signal id",
+    summary: 'gets crashes within a user-specified radius (in feet) of a signal based on signal id',
     // body: {
     //     type: 'object',
     //     properties: {
@@ -44,19 +44,19 @@ const schema = {
     querystring: {
         signalId: {
             type: 'string',
-            description: 'signal idr',
-            example: '3213'
+            description: 'signal idr'
+            // example'3213'
         },
         radius: {
             type: 'string',
-            description: 'radius applies around the signal; in feet',
-            example: '250, 500'
+            description: 'radius applies around the signal; in feet'
+            // example'250, 500'
         },
         selected_filters: {
             type: 'string',
-            description: 'stringified JSON of crash filter object',
-            example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
-        },
+            description: 'stringified JSON of crash filter object'
+            // example'{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+        }
         // isExport: {
         //     type: 'boolean',
         //     description: 'if this request requires crash data to be exported as a CSV',
@@ -75,7 +75,6 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-
             function onConnect(err, client, release) {
                 if (err) {
                     release();
@@ -84,24 +83,21 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                } 
-                else if (request.query.signalId == undefined) {
+                } else if (request.query.signalId == undefined) {
                     release();
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need signal id'
                     });
-                } 
-                else if (request.query.radius == undefined) {
+                } else if (request.query.radius == undefined) {
                     release();
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need radius (ft)'
                     });
-                } 
-                else {
+                } else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             release();

@@ -1,7 +1,7 @@
 // readMaintenanceData: queries accident data between a time frame for NJDOT Maintenance for insurance claims
 const fs = require('fs');
 const path = require('path');
-const fastifyStatic = require('fastify-static');
+const fastifyStatic = require('@fastify/static');
 const outputPath = path.join(__dirname, '../../output', 'maintenance');
 const maintenanceHelper = require('../../helper_functions/maintenance_helper');
 const codeTranslator = require('../../helper_functions/code_translator');

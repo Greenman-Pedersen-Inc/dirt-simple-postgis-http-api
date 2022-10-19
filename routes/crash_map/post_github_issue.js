@@ -23,44 +23,44 @@ const schema = {
     querystring: {
         userName: {
             type: 'string',
-            description: 'User email to log into SV',
-            example: 'snopachinda@gpinet.com'
+            description: 'User email to log into SV'
+            // example: 'snopachinda@gpinet.com'
         },
         label: {
             type: 'string',
-            description: 'Github category tag: bug, wrong location, help wanted, question, enchancement, other',
-            example: 'bug'
+            description: 'Github category tag: bug, wrong location, help wanted, question, enchancement, other'
+            // example: 'bug'
         },
         title: {
             type: 'string',
-            description: 'Title of the feedback form',
-            example: 'Incorrect location in NJTR-1 form data'
+            description: 'Title of the feedback form'
+            // example: 'Incorrect location in NJTR-1 form data'
         },
         openLocation: {
             type: 'string',
-            description: 'Location where the user opened the feedback form',
-            example: 'Crash Map'
+            description: 'Location where the user opened the feedback form'
+            // example: 'Crash Map'
         },
         description: {
             type: 'string',
-            description: 'Detailed description of the feedback or bug',
-            example: 'The county should be Atlantic, not burlington.'
+            description: 'Detailed description of the feedback or bug'
+            // example: 'The county should be Atlantic, not burlington.'
         },
         crashDescription: {
             type: 'string',
-            description: 'list of crash IDs',
-            example: '13-19-2021-21-39253-AC, ...'
+            description: 'list of crash IDs'
+            // example: '13-19-2021-21-39253-AC, ...'
         },
         filterDescription: {
             type: 'string',
-            description: 'human readable string of applied filters',
-            example: 'Date: (2017,2018,2019,2020,2021)'
+            description: 'human readable string of applied filters'
+            // example: 'Date: (2017,2018,2019,2020,2021)'
         },
         crashFilter: {
             type: 'string',
             description:
-                'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}',
-            example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+                'stringified JSON of crash filter object. ex: {"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+            // example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
         },
         hasImage: {
             type: 'boolean',

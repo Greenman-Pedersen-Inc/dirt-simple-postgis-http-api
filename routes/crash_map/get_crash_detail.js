@@ -8,7 +8,9 @@ const { viewableAttributes } = require('../../helper_functions/code_translations
 // *---------------*
 function getQueries(queryArgs) {
     var queries = {};
-    queries.accidents = `SELECT ${viewableAttributes.join(', ')} FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, 'accidents')}`; // ACCIDENTS query
+    queries.accidents = `SELECT ${viewableAttributes.join(
+        ', '
+    )} FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, 'accidents')}`; // ACCIDENTS query
     queries.vehicles = `SELECT ${getColumns('vehicles')} FROM ard_vehicles_partition where ${getWhereClause(
         queryArgs,
         'vehicles'
@@ -50,28 +52,28 @@ const schema = {
     querystring: {
         caseNumber: {
             type: 'string',
-            description: 'case number',
-            example: '20-21104-AC'
+            description: 'case number'
+            // example: '20-21104-AC'
         },
         county: {
             type: 'string',
-            description: 'county code',
-            example: '11'
+            description: 'county code'
+            // example: '11'
         },
         municipality: {
             type: 'string',
-            description: 'municipality code',
-            example: '07'
+            description: 'municipality code'
+            // example: '07'
         },
         year: {
             type: 'string',
-            description: 'year the crash occured',
-            example: '2020'
+            description: 'year the crash occured'
+            // example: '2020'
         },
         crashid: {
             type: 'string',
-            description: 'crashid of the case',
-            example: '11-07-2020-20-21104-AC'
+            description: 'crashid of the case'
+            // example: '11-07-2020-20-21104-AC'
         }
     }
 };

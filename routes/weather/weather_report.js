@@ -1,7 +1,7 @@
 // weather_report: generates the weather report
 const fs = require('fs');
 const path = require('path');
-const fastifyStatic = require('fastify-static');
+const fastifyStatic = require('@fastify/static');
 const outputPath = path.join(__dirname, '../../output', 'weather');
 const reportHelper = require('../../helper_functions/report_maker/predictive_report_layout');
 const customTimeout = 30000;

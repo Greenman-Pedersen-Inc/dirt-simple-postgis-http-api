@@ -19,8 +19,8 @@ const schema = {
     querystring: {
         username: {
             type: 'string',
-            description: 'text to search on',
-            example: 'mcollins'
+            description: 'text to search on'
+            // example: 'mcollins'
         }
     }
 };

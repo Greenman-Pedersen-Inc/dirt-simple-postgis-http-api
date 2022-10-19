@@ -189,38 +189,38 @@ fastify.decorate('RequestTracker', RequestTracker);
 fastify.decorate('verifyToken', verifyToken);
 fastify.decorate('requestTimeout', requestTimeout);
 
-fastify.register(require('fastify-auth'));
+fastify.register(require('@fastify/auth'));
 
 // postgres connection
-fastify.register(require('fastify-postgres'), {
+fastify.register(require('@fastify/postgres'), {
     connectionString: config.db,
     query_timeout: 5000
 });
 
 // compression - add x-protobuf
-fastify.register(require('fastify-compress'), {
+fastify.register(require('@fastify/compress'), {
     customTypes: /^text\/|\+json$|\+text$|\+xml|x-protobuf$/
 });
 
 // cache
-fastify.register(require('fastify-caching'), {
+fastify.register(require('@fastify/caching'), {
     privacy: 'private',
     expiresIn: config.cache
 });
 
 // CORS
-fastify.register(require('fastify-cors'), {
+fastify.register(require('@fastify/cors'), {
     exposedHeaders: 'exportCount'
 });
 
 // swagger
-fastify.register(require('fastify-swagger'), {
+fastify.register(require('@fastify/swagger'), {
     exposeRoute: true,
     swagger: config.swagger
 });
 
 // routes
-fastify.register(require('fastify-autoload'), {
+fastify.register(require('@fastify/autoload'), {
     dir: path.join(__dirname, 'routes')
 });
 
@@ -247,7 +247,8 @@ fastify.route({
 });
 
 // Launch server
-fastify.listen(config.port, config.host || '127.0.0.1', function (err, address) {
+
+fastify.listen({ port: config.port || 3000, host: config.host || '127.0.0.1' }, function (err, address) {
     if (err) {
         console.log(err);
         process.exit(1);

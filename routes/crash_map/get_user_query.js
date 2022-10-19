@@ -20,8 +20,8 @@ const schema = {
     querystring: {
         userName: {
             type: 'string',
-            description: 'User email to log into SV',
-            example: 'example@somewhere.org'
+            description: 'User email to log into SV'
+            // example: 'example@somewhere.org'
         }
     }
 };

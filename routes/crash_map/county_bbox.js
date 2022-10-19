@@ -18,7 +18,7 @@ const schema = {
     querystring: {
         county_list: {
             type: 'string',
-            description: 'county or counties to find a bounding box for. Example: (string) "01,02,03"'
+            description: 'county or counties to find a bounding box for. // example(string) "01,02,03"'
         }
     }
 };

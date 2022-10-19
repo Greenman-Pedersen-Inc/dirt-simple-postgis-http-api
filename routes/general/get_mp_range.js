@@ -26,14 +26,14 @@ const sql = () => {
 // route schema
 // *---------------*
 const schema = {
-    description: "gets the max and min MP range for an SRI",
+    description: 'gets the max and min MP range for an SRI',
     tags: ['general'],
-    summary: "gets the max and min MP range for an SRI",
+    summary: 'gets the max and min MP range for an SRI',
     querystring: {
         sri: {
             type: 'string',
-            description: 'an SRI code',
-            example: '12000684__'
+            description: 'an SRI code'
+            // example'12000684__'
         }
     }
 };

@@ -11,14 +11,6 @@ routes/crash_map/post_github_issue.js
 output
 install.js
 uninstall.js
-daemon/voyagerdataservices.err.log
-daemon/voyagerdataservices.exe
-daemon/voyagerdataservices.exe.config
-daemon/voyagerdataservices.out.log
-daemon/voyagerdataservices.wrapper.log
-daemon/voyagerdataservices.xml
-daemon/voyagerdataservices.0.out.log
-daemon/voyagerdataservices.1.out.log
-daemon/voyagerdataservices.2.out.log
-daemon/voyagerdataservices.3.out.log
-daemon/voyagerdataservices.4.out.log
+daemon
+*.out.log
+

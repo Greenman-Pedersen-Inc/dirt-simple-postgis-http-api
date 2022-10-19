@@ -1,7 +1,14 @@
+// This line must come before importing any instrumented module.
+const tracer = require('dd-trace').init({
+    env: 'prod',
+    logInjection: true,
+    profiling: true,
+    'appsec.enabled': true
+});
+
 const path = require('path');
 const config = require('./config');
 const fastify = require('fastify')({
-    // connectionTimeout: 5000,
     logger: true
 });
 
@@ -15,7 +22,7 @@ const globalTimeout = 5000;
  * @param {*} reply
  * @param {*} done
  */
-function RequestTracker(credentials, module, end_point, user_query) {
+function RequestTracker(credentials, module, end_point, user_query, reply) {
     const self = this;
 
     this.start = function () {
@@ -59,6 +66,7 @@ function RequestTracker(credentials, module, end_point, user_query) {
     };
 
     function onConnect(error, client, release, queryString) {
+        //console.log(queryString);
         if (error) {
             release();
 

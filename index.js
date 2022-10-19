@@ -1,3 +1,11 @@
+// This line must come before importing any instrumented module.
+const tracer = require('dd-trace').init({
+    env: 'stability-update',
+    logInjection: true,
+    profiling: true,
+    'appsec.enabled': true
+});
+
 const path = require('path');
 const config = require('./config');
 const fastify = require('fastify')({
@@ -59,7 +67,7 @@ function RequestTracker(credentials, module, end_point, user_query, reply) {
     };
 
     function onConnect(error, client, release, queryString) {
-        console.log(queryString);
+        // console.log(queryString);
         if (error) {
             release();
 

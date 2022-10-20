@@ -54,38 +54,38 @@ const schema = {
     querystring: {
         startYear: {
             type: 'string',
-            description: 'starting year',
-            example: '2016'
+            description: 'starting year'
+            // example: '2016'
         },
         endYear: {
             type: 'string',
-            description: 'ending year',
-            example: '2020'
+            description: 'ending year'
+            // example: '2020'
         },
         mun_cty_co: {
             type: 'string',
-            description: 'county code',
-            example: '01'
+            description: 'county code'
+            // example: '01'
         },
         mun_mu: {
             type: 'string',
-            description: 'municipality code',
-            example: '02'
+            description: 'municipality code'
+            // example: '02'
         },
         sri: {
             type: 'string',
-            description: 'sri code',
-            example: '00000056__'
+            description: 'sri code'
+            // example: '00000056__'
         },
         start_mp: {
             type: 'string',
-            description: 'start milepost',
-            example: '0.1'
+            description: 'start milepost'
+            // example: '0.1'
         },
         end_mp: {
             type: 'string',
-            description: 'end milepost',
-            example: '7.2'
+            description: 'end milepost'
+            // example: '7.2'
         }
     }
 };

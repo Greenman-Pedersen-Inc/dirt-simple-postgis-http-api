@@ -18,8 +18,8 @@ const schema = {
     querystring: {
         User: {
             type: 'string',
-            description: 'username',
-            example: 'mcollins'
+            description: 'username'
+            // example: 'mcollins'
         }
     }
 };
@@ -51,8 +51,11 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server: ' + err
                     });
-                }
-                else if (request.query.User === undefined || request.query.User === '' || request.query.User === null) {
+                } else if (
+                    request.query.User === undefined ||
+                    request.query.User === '' ||
+                    request.query.User === null
+                ) {
                     request.tracker.error('No username specified');
                     release();
                     reply.send({
@@ -60,10 +63,9 @@ module.exports = function (fastify, opts, next) {
                         error: 'Missing User attribute',
                         message: 'No username specified'
                     });
-                }
-                else {
+                } else {
                     const queryParameters = getQuery(request.query);
-    
+
                     client.query(queryParameters.query, queryParameters.values, function onResult(err, result) {
                         if (err) {
                             request.tracker.error(err);
@@ -73,17 +75,14 @@ module.exports = function (fastify, opts, next) {
                                 error: 'Internal Server Error',
                                 message: 'unable to perform database operation: ' + err
                             });
-                        }
-                        else {
+                        } else {
                             request.tracker.complete();
                             if (result.rows.length <= 0) reply.send(null);
-                            else reply.send(result.rows[0]);  
-                            release();                      
+                            else reply.send(result.rows[0]);
+                            release();
                         }
                     });
-
                 }
-
             }
         }
     });

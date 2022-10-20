@@ -31,25 +31,25 @@ const sql = (params, query) => {
 // route schema
 // *---------------*
 const schema = {
-    description: "gets crashes within a user-specified radius (in feet) of a signal based on signal id",
+    description: 'gets crashes within a user-specified radius (in feet) of a signal based on signal id',
     tags: ['signals'],
-    summary: "gets crashes within a user-specified radius (in feet) of a signal based on signal id",
+    summary: 'gets crashes within a user-specified radius (in feet) of a signal based on signal id',
     params: {},
     querystring: {
         signalId: {
             type: 'string',
-            description: 'signal idr',
-            example: '3213'
+            description: 'signal idr'
+            // example: '3213'
         },
         radius: {
             type: 'string',
-            description: 'radius applies around the signal; in feet',
-            example: '250, 500'
+            description: 'radius applies around the signal; in feet'
+            // example: '250, 500'
         },
         selected_filters: {
             type: 'string',
-            description: 'stringified JSON of crash filter object',
-            example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+            description: 'stringified JSON of crash filter object'
+            // example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
         }
     }
 };
@@ -85,18 +85,15 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                }
-                else if (request.query.signalId == undefined) {
+                } else if (request.query.signalId == undefined) {
                     reply.code(400).send('need signal ID');
                     request.tracker.error('need signal ID');
                     release();
-                } 
-                else if (request.query.radius == undefined) {
+                } else if (request.query.radius == undefined) {
                     reply.code(400).send('need radius');
                     request.tracker.error('need radius');
                     release();
-                } 
-                else {
+                } else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             if (err) {
@@ -113,8 +110,7 @@ module.exports = function (fastify, opts, next) {
                                 release();
                             }
                         });
-                    } 
-                    catch (error) {
+                    } catch (error) {
                         request.tracker.error(error);
                         release();
                         reply.send({

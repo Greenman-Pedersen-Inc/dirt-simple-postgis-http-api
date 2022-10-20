@@ -26,14 +26,14 @@ const sql = () => {
 // route schema
 // *---------------*
 const schema = {
-    description: "gets the max and min MP range for an SRI",
+    description: 'gets the max and min MP range for an SRI',
     tags: ['general'],
-    summary: "gets the max and min MP range for an SRI",
+    summary: 'gets the max and min MP range for an SRI',
     querystring: {
         sri: {
             type: 'string',
-            description: 'an SRI code',
-            example: '12000684__'
+            description: 'an SRI code'
+            // example: '12000684__'
         }
     }
 };
@@ -65,8 +65,7 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'need DLN'
                     });
-                }
-                else {
+                } else {
                     try {
                         client.query(sql(), [queryArgs.sri], function onResult(err, result) {
                             release();
@@ -78,8 +77,7 @@ module.exports = function (fastify, opts, next) {
                                 reply.code(204);
                             }
                         });
-                    }
-                    catch (err) {
+                    } catch (err) {
                         release();
                         reply.code(500).send(err);
                     }

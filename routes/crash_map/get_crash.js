@@ -40,6 +40,7 @@ const sql = (body) => {
                 -- END AS URL
             FROM ard_accidents_geom_partition
             WHERE crashid in (${crashValues})
+            ${body.year ? `and year in (${body.year})` : ''}
         `;
 
     // console.log(sql);
@@ -106,13 +107,11 @@ module.exports = function (fastify, opts, next) {
                                 reply.code(500).send(err);
                                 request.tracker.error(err);
                                 release();
-                            }
-                            else if (result && result.rows) {
+                            } else if (result && result.rows) {
                                 request.tracker.complete();
                                 release();
                                 reply.send(result.rows);
-                            } 
-                            else {
+                            } else {
                                 reply.code(204);
                                 release();
                             }

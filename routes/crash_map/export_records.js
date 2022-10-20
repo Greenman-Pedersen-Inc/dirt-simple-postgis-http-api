@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const JSZip = require('jszip');
-const fastifyStatic = require('fastify-static');
+const fastifyStatic = require('@fastify/static');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
@@ -51,33 +51,33 @@ const schema = {
     querystring: {
         crashids: {
             type: 'string',
-            description: 'list of crashid seperated by comma',
-            example: '15-23-2017-17PM02259,13-51-2019-C060-2019-02007A,15-23-2016-I-2016-004176'
+            description: 'list of crashid seperated by comma'
+            // example: '15-23-2017-17PM02259,13-51-2019-C060-2019-02007A,15-23-2016-I-2016-004176'
         },
         crashFilter: {
             type: 'string',
-            description: 'stringified JSON of crash filter object',
-            example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
+            description: 'stringified JSON of crash filter object'
+            // example: '{"mp_start": "0", "mp_end": "11.6", "year": "2017,2018,2019", "contr_circum_code_vehicles": "01"}'
         },
         boundingBoxMinX: {
             type: 'number',
-            description: 'left point of the map extent',
-            example: -75.18347186057379
+            description: 'left point of the map extent'
+            // example: -75.18347186057379
         },
         boundingBoxMinY: {
             type: 'number',
-            description: 'bottom point of the map extent',
-            example: 39.89214724158961
+            description: 'bottom point of the map extent'
+            // example: 39.89214724158961
         },
         boundingBoxMaxX: {
             type: 'number',
-            description: 'right point of the map extent',
-            example: -74.99457847510519
+            description: 'right point of the map extent'
+            // example: -74.99457847510519
         },
         boundingBoxMaxY: {
             type: 'number',
-            description: 'top point of the map extent',
-            example: -39.93906091093021
+            description: 'top point of the map extent'
+            // example: -39.93906091093021
         }
     }
 };
@@ -96,7 +96,7 @@ module.exports = function (fastify, opts, next) {
     fastify.register(fastifyStatic, {
         root: outputPath,
         prefix: '/' + folderName + '/', // optional: default '/'
-        decorateReply: true, // the reply decorator has been added by the first plugin registration
+        decorateReply: true // the reply decorator has been added by the first plugin registration
     });
 
     fastify.route({
@@ -219,7 +219,9 @@ module.exports = function (fastify, opts, next) {
                                             console.log(
                                                 'Some error occurred - file either not saved or corrupted file saved.'
                                             );
-                                            request.tracker.error('Some error occurred - file either not saved or corrupted file saved.');
+                                            request.tracker.error(
+                                                'Some error occurred - file either not saved or corrupted file saved.'
+                                            );
                                             reply.send({
                                                 statusCode: 400,
                                                 error: 'Unable to zip',

@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const fastifyStatic = require('fastify-static');
+const fastifyStatic = require('@fastify/static');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
@@ -20,8 +20,9 @@ const outputPath = path.join(__dirname, '../../output', folderName);
 // route query
 // *---------------*
 const sql = (queryArgs) => {
-
-    const query = `SELECT ${viewableAttributes.join(', ')} FROM public.ard_accidents_geom_partition WHERE ${queryArgs.whereClause}`;
+    const query = `SELECT ${viewableAttributes.join(', ')} FROM public.ard_accidents_geom_partition WHERE ${
+        queryArgs.whereClause
+    }`;
 
     //console.log(query)
     return query;
@@ -37,11 +38,11 @@ const schema = {
     querystring: {
         whereClause: {
             type: 'string',
-            description: 'SQL where clause',
+            description: 'SQL where clause'
         },
-        fileName : {
+        fileName: {
             type: 'string',
-            description: 'name of the file to be exported',
+            description: 'name of the file to be exported'
         }
     }
 };
@@ -60,7 +61,7 @@ module.exports = function (fastify, opts, next) {
     fastify.register(fastifyStatic, {
         root: outputPath,
         prefix: '/' + folderName + '/', // optional: default '/'
-        decorateReply: true, // the reply decorator has been added by the first plugin registration
+        decorateReply: true // the reply decorator has been added by the first plugin registration
     });
 
     fastify.route({
@@ -107,8 +108,7 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                }
-                else if (queryArgs.whereClause === undefined) {
+                } else if (queryArgs.whereClause === undefined) {
                     release();
 
                     reply.send({
@@ -116,8 +116,7 @@ module.exports = function (fastify, opts, next) {
                         error: 'Bad request',
                         message: 'missing where clause'
                     });
-                }
-                else {
+                } else {
                     try {
                         client.query(sql(queryArgs), function onResult(err, result) {
                             release();
@@ -190,7 +189,7 @@ module.exports = function (fastify, opts, next) {
                                             // console.log(`Created ${outputFile} successfully`);
                                             reply.code(200);
                                             reply.header('exportCount', result.rows.length);
-                                            reply.sendFile(queryArgs.fileName, outputPath)
+                                            reply.sendFile(queryArgs.fileName, outputPath);
                                         }
                                     }
                                 );

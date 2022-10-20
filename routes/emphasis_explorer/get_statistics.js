@@ -39,30 +39,29 @@ const schema = {
     querystring: {
         category: {
             type: 'string',
-            description: 'Emphasis Area category',
-            example: 'lane_departure, ped_cyclist, intersection, driver_behavior, road_users'
+            description: 'Emphasis Area category'
+            // example: 'lane_departure, ped_cyclist, intersection, driver_behavior, road_users'
         },
         subCategory: {
             type: 'string',
-            description: 'Emphasis Area subcategory',
-            example:
-                'aggressive, drowsy_distracted, impaired, unlicensed, unbelted, heavy_vehicle, mature, younger, motorcyclist, work_zone'
+            description: 'Emphasis Area subcategory'
+            // example:
+            //     'aggressive, drowsy_distracted, impaired, unlicensed, unbelted, heavy_vehicle, mature, younger, motorcyclist, work_zone'
         },
         chartType: {
             type: 'string',
-            description: 'chart type',
-            example:
-                'annual_bodies, annual_bodies_rolling_average, crash_type, related_behavior, null'
+            description: 'chart type'
+            // example: 'annual_bodies, annual_bodies_rolling_average, crash_type, related_behavior, null'
         },
         startYear: {
             type: 'string',
-            description: 'The start year.',
-            example: '2016'
+            description: 'The start year.'
+            // example: '2016'
         },
         endYear: {
             type: 'string',
-            description: 'The end year.',
-            example: '2020'
+            description: 'The end year.'
+            // example: '2020'
         },
         sri: {
             type: 'string',
@@ -70,13 +69,13 @@ const schema = {
         },
         mun_cty_co: {
             type: 'string',
-            description: 'County Code.',
-            example: '02'
+            description: 'County Code.'
+            // example: '02'
         },
         mun_mu: {
             type: 'string',
-            description: 'Municipality code.',
-            example: '13'
+            description: 'Municipality code.'
+            // example: '13'
         }
     }
 };
@@ -135,8 +134,7 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'need category'
                     });
-                }
-                else {
+                } else {
                     request.tracker.start();
 
                     let filterJson = JSON.parse(JSON.stringify(queryArgs));
@@ -173,8 +171,7 @@ module.exports = function (fastify, opts, next) {
 
                                 promises.push(promise);
                             }
-                        }
-                        else {
+                        } else {
                             const promise = new Promise((resolve, reject) => {
                                 try {
                                     const queryString = queriesObject.queries.query();
@@ -206,8 +203,7 @@ module.exports = function (fastify, opts, next) {
                                         if (table === 'related_behavior') {
                                             let relatedBehaviorTable = Object.keys(queriesObject.queries)[i];
                                             crashData[relatedBehaviorTable] = data;
-                                        }
-                                        else {
+                                        } else {
                                             if (data && data.length > 0) {
                                                 if (table && table === 'annual_bodies_rolling_average') {
                                                     const rollingAvgData = calculateRollingAverage(

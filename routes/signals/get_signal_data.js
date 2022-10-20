@@ -69,14 +69,14 @@ const sql = (params, query) => {
 // route schema
 // *---------------*
 const schema = {
-    description: "gets signal data based on internal ID",
+    description: 'gets signal data based on internal ID',
     tags: ['signals'],
-    summary: "gets signal data based on internal ID",
+    summary: 'gets signal data based on internal ID',
     querystring: {
         signalId: {
             type: 'string',
-            description: 'Internal ID of a signal',
-            example: '763'
+            description: 'Internal ID of a signal'
+            // example: '763'
         }
     }
 };
@@ -110,32 +110,27 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                }
-                else if (request.query.signalId == undefined) {
+                } else if (request.query.signalId == undefined) {
                     reply.code(400).send('need signal ID');
                     release();
                     request.tracker.error('need signal ID');
-                } 
-                else {
+                } else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
                             if (err) {
                                 reply.code(500).send(err);
                                 request.tracker.error(err);
                                 release();
-                            }
-                            else if (result && result.rows) {
+                            } else if (result && result.rows) {
                                 request.tracker.complete();
                                 reply.send(result.rows);
                                 release();
-                            }
-                            else {
+                            } else {
                                 reply.code(204);
                                 release();
                             }
                         });
-                    } 
-                    catch (error) {
+                    } catch (error) {
                         request.tracker.error(error);
                         reply.send({
                             statusCode: 500,
@@ -145,7 +140,6 @@ module.exports = function (fastify, opts, next) {
                         release();
                     }
                 }
-
             }
 
             fastify.pg.connect(onConnect);

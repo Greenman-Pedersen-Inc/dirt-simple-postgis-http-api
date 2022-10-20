@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const fastifyStatic = require('fastify-static');
+const fastifyStatic = require('@fastify/static');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
@@ -44,7 +44,7 @@ const schema = {
     querystring: {
         columns: {
             type: 'string',
-            description: 'Columns to return.',
+            description: 'Columns to return.'
         },
         filter: {
             type: 'string',
@@ -52,7 +52,7 @@ const schema = {
         },
         limit: {
             type: 'integer',
-            description: 'Optional limit to the number of output features.',
+            description: 'Optional limit to the number of output features.'
         },
         group: {
             type: 'string',
@@ -79,7 +79,7 @@ module.exports = function (fastify, opts, next) {
     fastify.register(fastifyStatic, {
         root: outputPath,
         prefix: '/' + folderName + '/', // optional: default '/'
-        decorateReply: true, // the reply decorator has been added by the first plugin registration
+        decorateReply: true // the reply decorator has been added by the first plugin registration
     });
 
     fastify.route({
@@ -134,32 +134,28 @@ module.exports = function (fastify, opts, next) {
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                } 
-                else if (queryArgs.columns === undefined) {
+                } else if (queryArgs.columns === undefined) {
                     release();
                     reply.send({
                         statusCode: 400,
                         error: 'Bad request',
                         message: 'missing columns'
                     });
-                } 
-                else if (request.params.table === undefined) {
+                } else if (request.params.table === undefined) {
                     release();
                     reply.send({
                         statusCode: 400,
                         error: 'Bad request',
                         message: 'missing table name'
                     });
-                } 
-                else if (queryArgs.exportType === undefined) {
+                } else if (queryArgs.exportType === undefined) {
                     release();
                     reply.send({
                         statusCode: 400,
                         error: 'Bad request',
                         message: 'missing exportType'
                     });
-                } 
-                else {
+                } else {
                     try {
                         request.tracker.start();
                         client.query(sql(request.params, queryArgs), function onResult(err, result) {

@@ -9,7 +9,9 @@ const customTimeout = 10000;
 // *---------------*
 function getQueries(queryArgs) {
     var queries = {};
-    queries.accidents = `SELECT ${viewableAttributes.join(', ')} FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, 'accidents')}`; // ACCIDENTS query
+    queries.accidents = `SELECT ${viewableAttributes.join(
+        ', '
+    )} FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, 'accidents')}`; // ACCIDENTS query
     queries.vehicles = `SELECT ${getColumns('vehicles')} FROM ard_vehicles_partition where ${getWhereClause(
         queryArgs,
         'vehicles'
@@ -24,23 +26,20 @@ function getQueries(queryArgs) {
 }
 
 function getWhereClause(queryArgs, table) {
-    if (queryArgs.crashid) { 
-        var queryString =  `crashid = '${queryArgs.crashid}'`;
+    if (queryArgs.crashid) {
+        var queryString = `crashid = '${queryArgs.crashid}'`;
         if (queryArgs.year) {
             if (table === 'accidents') {
                 queryString += ` and year ='${queryArgs.year}'`;
-            }
-            else if (table === 'vehicles' || table === 'pedestrians') {
+            } else if (table === 'vehicles' || table === 'pedestrians') {
                 queryString += ` and acc_year ='${queryArgs.year}'`;
-            }
-            else if (table === 'occupants') {
+            } else if (table === 'occupants') {
                 queryString += ` and veh_acc_year ='${queryArgs.year}'`;
             }
         }
         return queryString;
-        
     }
-    
+
     if (table === 'accidents') {
         return `mun_cty_co = '${queryArgs.county}' and mun_mu = '${queryArgs.municipality}' and acc_case = '${queryArgs.caseNumber}' and year ='${queryArgs.year}'`;
     } else if (table === 'vehicles' || table === 'pedestrians') {
@@ -67,28 +66,28 @@ const schema = {
     querystring: {
         caseNumber: {
             type: 'string',
-            description: 'case number',
-            example: '20-21104-AC'
+            description: 'case number'
+            // example: '20-21104-AC'
         },
         county: {
             type: 'string',
-            description: 'county code',
-            example: '11'
+            description: 'county code'
+            // example: '11'
         },
         municipality: {
             type: 'string',
-            description: 'municipality code',
-            example: '07'
+            description: 'municipality code'
+            // example: '07'
         },
         year: {
             type: 'string',
-            description: 'year the crash occurred',
-            example: '2020'
+            description: 'year the crash occurred'
+            // example: '2020'
         },
         crashid: {
             type: 'string',
-            description: 'crashid of the case',
-            example: '11-07-2020-20-21104-AC'
+            description: 'crashid of the case'
+            // example: '11-07-2020-20-21104-AC'
         }
     }
 };

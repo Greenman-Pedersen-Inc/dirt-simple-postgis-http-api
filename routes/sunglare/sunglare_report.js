@@ -1,7 +1,7 @@
 // sunglare_report: generates the sunglare report
 const reportHelper = require('../../helper_functions/report_maker/predictive_report_layout');
 const fs = require('fs');
-const fastifyStatic = require('fastify-static');
+const fastifyStatic = require('@fastify/static');
 const path = require('path');
 const { release } = require('os');
 const folderName = 'sunglare';
@@ -15,8 +15,8 @@ const schema = {
     querystring: {
         user: {
             type: 'string',
-            description: 'The user name.',
-            example: 'mcollins'
+            description: 'The user name.'
+            // example: 'mcollins'
         },
         moduleType: {
             type: 'string',
@@ -40,8 +40,8 @@ const schema = {
         },
         crashAttributes: {
             type: 'string',
-            description: 'Comma seperated list of Crash Attribute codes based on the NJTR-1 form.',
-            example: 'surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code'
+            description: 'Comma seperated list of Crash Attribute codes based on the NJTR-1 form.'
+            // example: 'surf_cond_code,road_surf_code,road_horiz_align_code,road_grade_code'
         },
         travelDirectionCodes: {
             type: 'string',
@@ -57,18 +57,18 @@ const schema = {
         },
         sri: {
             type: 'string',
-            description: 'SRI code.',
-            example: '00000010__'
+            description: 'SRI code.'
+            // example: '00000010__'
         },
         countyCode: {
             type: 'string',
-            description: 'County Code.',
-            example: '01'
+            description: 'County Code.'
+            // example: '01'
         },
         muniCode: {
             type: 'string',
-            description: 'Municipality code.',
-            example: '13'
+            description: 'Municipality code.'
+            // example: '13'
         }
     }
 };

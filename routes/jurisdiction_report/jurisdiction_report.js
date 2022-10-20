@@ -1,7 +1,7 @@
 // jurisdiction_report: generates the jurisdiction report pdf based on county, muni, start year, and end year inputs
 const fs = require('fs');
 const path = require('path');
-const fastifyStatic = require('fastify-static');
+const fastifyStatic = require('@fastify/static');
 
 const outputPath = path.join(__dirname, '../../output', 'jurisdiction');
 const juriHelper = require('../../helper_functions/jurisdiction_report_helper');
@@ -14,18 +14,18 @@ const schema = {
     querystring: {
         startYear: {
             type: 'integer',
-            description: 'unique start year',
-            example: '2015'
+            description: 'unique start year'
+            // example: '2015'
         },
         endYear: {
             type: 'integer',
-            description: 'unique end year',
-            example: '2019'
+            description: 'unique end year'
+            // example: '2019'
         },
         jurisdictionCode: {
             type: 'string',
-            description: 'county code and muni code together',
-            example: '1102'
+            description: 'county code and muni code together'
+            // example: '1102'
         }
     }
 };

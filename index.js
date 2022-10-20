@@ -9,12 +9,11 @@ const tracer = require('dd-trace').init({
 const path = require('path');
 const config = require('./config');
 const fastify = require('fastify')({
-    // connectionTimeout: 5000,
     logger: true
 });
 
 const { maxHeaderSize } = require('http');
-const globalTimeout = 5000;
+const globalTimeout = 7500;
 
 /**
  * Log requests made to the server in an administrative database for further analysis.

@@ -1,3 +1,5 @@
+const customTimeout = 10000;
+
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 const metersPerPixel = function (zoomLevel) {
@@ -169,6 +171,7 @@ module.exports = function (fastify, opts, next) {
 
             function onConnect(error, client, release) {
                 request.tracker.start();
+                client.connectionParameters.query_timeout = customTimeout;
 
                 if (error) {
                     reply.code(500).send(error);

@@ -1,3 +1,5 @@
+const customTimeout = 10000;
+
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 
 // route query
@@ -106,6 +108,7 @@ module.exports = function (fastify, opts, next) {
             fastify.pg.connect(onConnect);
 
             function onConnect(error, client, release) {
+                client.connectionParameters.query_timeout = customTimeout;
                 request.tracker.start();
 
                 if (error) {

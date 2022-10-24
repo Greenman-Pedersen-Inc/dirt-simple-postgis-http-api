@@ -153,7 +153,6 @@ module.exports = function (fastify, opts, next) {
 
                                                 if (mvt.length === 0) {
                                                     reply.code(204);
-                                                    release();
                                                 }
 
                                                 reply.header('Content-Type', 'application/x-protobuf').send(mvt);

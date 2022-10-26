@@ -8,7 +8,6 @@ const fastifyStatic = require('fastify-static');
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
-const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
 const { viewableAttributes } = require('../../helper_functions/code_translations/accidents');
 
 const customTimeout = 30000;
@@ -21,7 +20,7 @@ const outputPath = path.join(__dirname, '../../output', folderName);
 // *---------------*
 const sql = (queryArgs) => {
 
-    const query = `SELECT ${viewableAttributes.join(', ')} FROM public.ard_accidents_geom_partition WHERE ${queryArgs.whereClause}`;
+    const query = `SELECT ${queryArgs.table.includes('accidents') ? viewableAttributes.join(', ') : '*'} FROM ${queryArgs.table} WHERE ${queryArgs.whereClause}`;
 
     //console.log(query)
     return query;
@@ -42,6 +41,10 @@ const schema = {
         fileName : {
             type: 'string',
             description: 'name of the file to be exported',
+        },
+        table : {
+            type: 'string',
+            description: 'table to query on',
         }
     }
 };
@@ -70,32 +73,6 @@ module.exports = function (fastify, opts, next) {
         // preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             const queryArgs = request.query;
-
-            // // remove all reports older than 10 minutes from output directory
-            // fs.readdir(outputPath, function (error, files) {
-            //     if (error) {
-            //         reply.code(500).send(error);
-            //         request.tracker.error(error);
-            //     }
-            //     files.forEach(function (file) {
-            //         fs.stat(path.join(outputPath, file), function (error, stat) {
-            //             let now = new Date().getTime();
-            //             let endTime = new Date(stat.ctime).getTime() + 600000;
-
-            //             if (error) {
-            //                 reply.code(500).send(error);
-            //                 request.tracker.error(error);
-            //             } else {
-            //                 if (now > endTime) {
-            //                     fs.unlink(path.join(outputPath, file), function (response) {
-            //                         console.log(`${file} deleted!`);
-            //                     });
-            //                 }
-            //             }
-            //         });
-            //     });
-            // });
-
             function onConnect(err, client, release) {
                 client.connectionParameters.query_timeout = customTimeout;
 
@@ -136,37 +113,12 @@ module.exports = function (fastify, opts, next) {
                                         console.log(error);
                                     }
                                 }
-                                // // remove all reports older than 10 minutes from output directory
-                                // fs.readdir(outputPath, function (err, files) {
-                                //     //handling error
-                                //     if (err) {
-                                //         return console.log('Unable to scan directory: ' + err);
-                                //     }
-                                //     //listing all files using forEach
-                                //     // files.forEach(function (file) {
-                                //     //     fs.stat(path.join(outputPath, file), function (err, stat) {
-                                //     //         let now = new Date().getTime();
-                                //     //         let endTime = new Date(stat.ctime).getTime() + 600000;
-                                //     //         if (err) {
-                                //     //             return console.error(err);
-                                //     //         } else {
-                                //     //             if (now > endTime) {
-                                //     //                 fs.unlink(path.join(outputPath, file), function (response) {
-                                //     //                     console.log(`${file} deleted!`);
-                                //     //                 });
-                                //     //             }
-                                //     //         }
-                                //     //     });
-                                //     // });
-                                // });
 
                                 if (result.hasOwnProperty('rows')) {
                                     returnRows = transcribeKeysArray(result.rows);
                                 }
 
                                 const csvFromArrayOfObjects = convertArrayToCSV(returnRows);
-
-                                const AdmZip = require('adm-zip');
 
                                 fs.writeFile(
                                     path.join(outputPath, queryArgs.fileName + '.csv'),
@@ -183,11 +135,6 @@ module.exports = function (fastify, opts, next) {
                                                 message: err
                                             });
                                         } else {
-                                            // const zip = new AdmZip();
-                                            // const outputFile = path.join(outputPath, zipFileName);
-                                            // zip.addLocalFile(path.join(outputPath, csvFileName));
-                                            // zip.writeZip(outputFile);
-                                            // console.log(`Created ${outputFile} successfully`);
                                             reply.code(200);
                                             reply.header('exportCount', result.rows.length);
                                             reply.sendFile(queryArgs.fileName, outputPath)

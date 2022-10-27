@@ -20,11 +20,11 @@ function makeJurisdictionReport(queryArgs, reportData) {
         try {
             const juriName = getJurisdictionName(queryArgs.jurisdictionCode);
             const filterObject = getFilterObject(queryArgs);
-            const fileName = `${juriName} - Comparision Summary.pdf`;
-            const savePath = path.join(output_folder, fileName);
+            const fileName = `${juriName} - Comparision Summary`;
+            const savePath = path.join(output_folder, fileName + '.pdf');
             const fileInfo = {
                 savePath: savePath,
-                fileName: fileName
+                fileName: fileName + '.pdf'
             };
 
             const doc = reportHelper.generateReportPdf('letter-portrait', filterObject, fileName);

@@ -1,11 +1,7 @@
 // route query
 const customTimeout = 30000;
 
-const sql = (params, query, requestURL) => {
-    // let baseURL = requestURL.split('&limit')[0]
-
-    // console.log(`base`)
-
+const sql = (params, query) => {
     let queryText = `
     select 
       count(*),
@@ -75,26 +71,52 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/emphasis-explorer/page-query/:table',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            // console.log(request.raw.url);
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'emphasis_explorer',
+                'page_query',
+                JSON.stringify(request.query),
+                reply
+            );
 
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
                 client.connectionParameters.query_timeout = customTimeout;
+                request.tracker.start();
 
-                if (err)
-                    return reply.send({
+                if (err) {
+                    request.tracker.error(err);
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-
-                client.query(sql(request.params, request.query, request.raw.url), function onResult(err, result) {
-                    release();
-                    reply.send(err || result.rows[0]);
-                });
+                }
+                else {
+                    try {
+                        client.query(sql(request.params, request.query), function onResult(err, result) {
+                            if (err) {
+                                reply.code(500).send(err);
+                                request.tracker.error(err);
+                                release();
+                            }
+                            else {
+                                request.tracker.complete();
+                                reply.send(result.rows[0]);                                
+                                release();
+                            }
+                        });
+                    }
+                    catch (error) {
+                        reply.code(500).send(error);
+                        request.tracker.error(error);
+                        release();
+                    }
+                }
             }
         }
     });

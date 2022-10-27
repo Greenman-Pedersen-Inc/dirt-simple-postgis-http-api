@@ -139,40 +139,61 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            const queryArgs = request.query;
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'add_user_query',
+                JSON.stringify(request.query),
+                reply
+            );
+
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                request.tracker.start();
+                const queryArgs = request.query;
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
-                    return reply.send({
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-                } else if (queryArgs.userName == undefined) {
-                    return reply.send({
+                } 
+                else if (queryArgs.userName == undefined) {
+                    request.tracker.error('need user name');
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need user name'
                     });
-                } else {
+                } 
+                else {
                     try {
                         const queryParams = getQuery(queryArgs);
                         client.query(queryParams.query, queryParams.values, function onResult(err, result) {
-                            release();
                             var result = {};
-                            if (err) result = { success: false, error: err };
-                            else result = { success: true };
-                            reply.send(err || result);
 
-                            // client.query(sql(queryArgs), function onResult(err, result) {
-                            //     release();
+                            if (err) {
+                                result = { success: false, error: err };
+                                reply.send(result);   
+                                request.tracker.error(err);
+                                release();
+                            }
+                            else {
+                                result = { success: true };
+                                reply.send(result);   
+                                request.tracker.complete();
+                                release();
+                            }
 
-                            //     reply.send(err || result.rows);
                         });
                     } catch (error) {
+                        request.tracker.error(error);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: 'issue with query',
@@ -182,7 +203,6 @@ module.exports = function (fastify, opts, next) {
                 }
             }
 
-            fastify.pg.connect(onConnect);
         }
     });
     next();

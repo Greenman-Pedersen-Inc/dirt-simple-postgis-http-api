@@ -71,29 +71,49 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'geojson',
+                'cluster_geojson',
+                JSON.stringify(request.query),
+                reply
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
+                request.tracker.start();
+
+                if (err) {
+                    request.tracker.error(err);
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
 
                 client.query(sql(request.params, request.query), function onResult(err, result) {
-                    release();
+                    
                     if (err) {
+                        request.tracker.error(err);
                         reply.send(err);
-                    } else {
+                        release();
+                    } 
+                    else {
                         if (!result.rows[0].geojson) {
                             reply.code(204);
+                            request.tracker.error("no data returned");
+                            release();
                         }
                         const json = {
                             type: 'FeatureCollection',
                             features: result.rows.map((el) => JSON.parse(el.geojson))
                         };
                         reply.send(json);
+                        request.tracker.complete();
+                        release();
                     }
                 });
             }

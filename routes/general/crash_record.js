@@ -21,7 +21,6 @@ const schema = {
         dlnNum: {
             type: 'string',
             description: 'The DLN of the crash record.',
-            default: ''
         }
     }
 };
@@ -56,18 +55,24 @@ module.exports = function (fastify, opts, next) {
                 }
 
                 client.query(sql(queryArgs), function onResult(err, result) {
-                    release();
-                    var returnPath = '';
-                    // check if there is a directory
-                    if (result.rows.length > 0) {
-                        const returnRow = result.rows[0];
-                        if (returnRow.directory) {
-                            const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
-                            returnPath = njtr1Root + returnRow.directory + '/' + dlnNum.toUpperCase() + '.PDF';
-                        }
+                    if (err) {
+                        release();
+                        reply.code(500).send(err);
                     }
+                    else {
+                        release();
+                        var returnPath = '';
+                        // check if there is a directory
+                        if (result.rows.length > 0) {
+                            const returnRow = result.rows[0];
+                            if (returnRow.directory) {
+                                const njtr1Root = 'https://voyagernjtr1.s3.amazonaws.com/';
+                                returnPath = njtr1Root + returnRow.directory + '/' + dlnNum.toUpperCase() + '.PDF';
+                            }
+                        }
 
-                    reply.send(err || { url: returnPath });
+                        reply.send(err || { url: returnPath });                        
+                    }
                 });
             }
         }

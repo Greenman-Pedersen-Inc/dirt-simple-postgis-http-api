@@ -75,35 +75,47 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'sunglare',
+                'top_sri',
+                JSON.stringify(request.query),
+                reply
+            );
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
+                if (err) {
+                    release();
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need startyear'
-                    });
+                    release();
+                    reply.code(400).send('need start year');
                 } else if (queryArgs.endYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need start year'
-                    });
+                    release();
+                    reply.code(400).send('need end year');
                 }
 
+                request.tracker.start();
+
                 client.query(sql(queryArgs), function onResult(err, result) {
+                    if (err) {
+                        request.tracker.error(err);
+                        release();
+                        return reply.code(500).send(err);
+                    }
+
+                    request.tracker.complete();
                     release();
                     reply.send(err || { SriData: result.rows });
-                });
+                })
             }
         }
     });

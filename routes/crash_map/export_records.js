@@ -4,15 +4,17 @@
 const fs = require('fs');
 const path = require('path');
 const JSZip = require('jszip');
+const fastifyStatic = require('fastify-static');
 
 // use a converter to make CSV from data rows
 const { convertArrayToCSV } = require('convert-array-to-csv');
 const { transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
 const { makeCrashFilterQuery } = require('../../helper_functions/crash_filter_helper');
+const customTimeout = 30000;
 
 // outputPath to store CSV
-// const outputPath = 'C:/AppDev/NJDOT/voyager.server/api/helper_functions/report_maker/output/';
-const outputPath = path.join(__dirname, '../../output', 'records');
+const folderName = 'records';
+const outputPath = path.join(__dirname, '../../output', folderName);
 // *---------------*
 // route query
 // *---------------*
@@ -38,22 +40,6 @@ const sql = (queryArgs) => {
     //console.log(query)
     return query;
 };
-
-function generateCSV(path, data) {
-    return new Promise((resolve, reject) => {
-        try {
-            fs.writeFileSync(path, data, 'utf8', function (error) {
-                if (error) {
-                    return reject(error);
-                }
-            });
-
-            return resolve(fileInfo);
-        } catch (error) {
-            return reject(error);
-        }
-    });
-}
 
 // *---------------*
 // route schema
@@ -100,26 +86,75 @@ const schema = {
 // create route
 // *---------------*
 module.exports = function (fastify, opts, next) {
+    if (!fs.existsSync(outputPath)) {
+        try {
+            fs.mkdirSync(outputPath, { recursive: true });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    fastify.register(fastifyStatic, {
+        root: outputPath,
+        prefix: '/' + folderName + '/', // optional: default '/'
+        decorateReply: true, // the reply decorator has been added by the first plugin registration
+    });
+
     fastify.route({
         method: 'GET',
         url: '/crash-map/export-records',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'export_records',
+                JSON.stringify(request.query),
+                reply
+            );
+
             const queryArgs = request.query;
+            request.tracker.start();
+
+            // remove all reports older than 10 minutes from output directory
+            fs.readdir(outputPath, function (error, files) {
+                if (error) {
+                    reply.code(500).send(error);
+                    request.tracker.error(error);
+                }
+                files.forEach(function (file) {
+                    fs.stat(path.join(outputPath, file), function (error, stat) {
+                        let now = new Date().getTime();
+                        let endTime = new Date(stat.ctime).getTime() + 600000;
+
+                        if (error) {
+                            reply.code(500).send(error);
+                            request.tracker.error(error);
+                        } else {
+                            if (now > endTime) {
+                                fs.unlink(path.join(outputPath, file), function (response) {
+                                    console.log(`${file} deleted!`);
+                                });
+                            }
+                        }
+                    });
+                });
+            });
 
             function onConnect(err, client, release) {
-                if (err) {
-                    release();
+                client.connectionParameters.query_timeout = customTimeout;
 
+                if (err) {
+                    request.tracker.error(err);
+                    release();
                     reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
                 } else if (queryArgs.crashFilter === undefined) {
+                    request.tracker.error('missing crashFilter');
                     release();
-
                     reply.send({
                         statusCode: 400,
                         error: 'Bad request',
@@ -128,7 +163,6 @@ module.exports = function (fastify, opts, next) {
                 } else {
                     try {
                         client.query(sql(queryArgs), function onResult(err, result) {
-                            release();
                             let returnRows = [];
                             if (result) {
                                 const fileName = `Voyager_Crash_Record_Export_${Date.now()}_${Math.floor(
@@ -172,11 +206,7 @@ module.exports = function (fastify, opts, next) {
                                     returnRows = transcribeKeysArray(result.rows);
                                 }
 
-                                const csvFromArrayOfObjects = convertArrayToCSV(returnRows, {
-                                    seperator: ';'
-                                });
-
-
+                                const csvFromArrayOfObjects = convertArrayToCSV(returnRows);
 
                                 const AdmZip = require('adm-zip');
 
@@ -187,13 +217,15 @@ module.exports = function (fastify, opts, next) {
                                     function (err) {
                                         if (err) {
                                             console.log(
-                                                'Some error occured - file either not saved or corrupted file saved.'
+                                                'Some error occurred - file either not saved or corrupted file saved.'
                                             );
+                                            request.tracker.error('Some error occurred - file either not saved or corrupted file saved.');
                                             reply.send({
                                                 statusCode: 400,
                                                 error: 'Unable to zip',
                                                 message: err
                                             });
+                                            release();
                                         } else {
                                             const zip = new AdmZip();
                                             const outputFile = path.join(outputPath, zipFileName);
@@ -201,19 +233,22 @@ module.exports = function (fastify, opts, next) {
                                             zip.writeZip(outputFile);
                                             console.log(`Created ${outputFile} successfully`);
                                             reply.code(200);
-                                            reply.header("exportCount", result.rows.length.toString());
+                                            reply.header('exportCount', result.rows.length);
                                             reply.sendFile(zipFileName, outputPath);
+                                            request.tracker.complete();
+                                            release();
                                         }
                                     }
                                 );
                             } else {
                                 reply.code(204);
                                 reply.send(result);
+                                release();
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(err);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,

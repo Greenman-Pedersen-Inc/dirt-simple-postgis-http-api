@@ -2,11 +2,11 @@
 
 // route register
 const getQuery = (modules) => {
-// const getQuery = (userName, moduleId) => {
+    // const getQuery = (userName, moduleId) => {
     const sql = `INSERT INTO admin.user_module(user_id, module_id)
 	VALUES ((SELECT internal_id from admin.user_info WHERE user_name = $1), UNNEST(ARRAY[${modules}]))`;
     // const sql = `INSERT INTO admin.user_module(user_id, module_id)
-	// VALUES ((SELECT internal_id from admin.user_info WHERE user_name = $1), $2)`;
+    // VALUES ((SELECT internal_id from admin.user_info WHERE user_name = $1), $2)`;
 
     return sql;
     // return {
@@ -35,62 +35,48 @@ module.exports = function (fastify, opts, next) {
         },
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'admin',
+                'add_user_roles',
+                JSON.stringify(request.params)
+            );
+
+            fastify.pg.connect(onConnect);
+
             function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
+                request.tracker.start();
+                if (err) {
+                    request.tracker.error(err);
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server: ' + err
                     });
-
-                const query = getQuery(request.body.modules); 
-                client.query(query, [request.body.username], function onResult(err, result) {
-                    release();
-
-                    if (err) {
-                        return reply.send({
-                            statusCode: 500,
-                            error: err,
-                            message: 'issue with adding roles for user ' + request.body.username,
-                            success: false
-                        });
-                    }
-
-                    reply.send({ success: true });
-                });
-
-                // var promises = [];
-                // const modulesList = request.body.modules.split(',');
-                // modulesList.forEach((module) => {
-                //     const queryParameters = getQuery(request.body.username, parseInt(module));
-                //     const promise = new Promise((resolve, reject) => {
-                //         try {
-                //             const res = client.query(queryParameters.query, queryParameters.values);
-                //             return resolve(res);
-                //         } catch (err) {
-                //             return reject(error);
-                //         }
-                //     });
-                //     promises.push(promise);
-                // });
-
-                // Promise.all(promises)
-                //     .then((returnData) => {
-                //         release();
-                //         reply.send({ success: true });
-                //     })
-                //     .catch((error) => {
-                //         release();
-                //         return reply.send({
-                //             statusCode: 500,
-                //             error: err,
-                //             message: 'issue with adding roles for user ' + request.body.username,
-                //             success: false
-                //         });
-                //     });
+                }
+                else {
+                    const query = getQuery(request.body.modules);
+                    client.query(query, [request.body.username], function onResult(err, result) {
+                        
+                        if (err) {
+                            request.tracker.error(err);
+                            release();
+                            reply.send({
+                                statusCode: 500,
+                                error: err,
+                                message: 'issue with adding roles for user ' + request.body.username,
+                                success: false
+                            });
+                        }
+                        else {
+                            request.tracker.complete();
+                            release();
+                            reply.send({ success: true });
+                        }
+                    });                    
+                }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
 

@@ -20,9 +20,8 @@ const sql = (queryArgs) => {
         
         FROM 
         sunglare.ard_accidents_sunglare
-        WHERE year BETWEEN ${queryArgs.startYear} AND ${
-        queryArgs.endYear
-    }  AND calc_milepost IS NOT NULL AND acc_time IS NOT NULL
+        WHERE year BETWEEN ${queryArgs.startYear} AND ${queryArgs.endYear
+        }  AND calc_milepost IS NOT NULL AND acc_time IS NOT NULL
         ${locationClause !== '' ? ` AND ${locationClause}` : ''}
         ${filterClause !== '' ? ` AND ${filterClause}` : ''}    
         GROUP BY calc_sri, calc_milepost, crash_hr
@@ -99,35 +98,48 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'sunglare',
+                'top_fatal',
+                JSON.stringify(request.query),
+                reply
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
+                request.tracker.start();
+
+                if (err) {
+                    request.tracker.error(err);
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
 
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need startyear'
-                    });
+                    request.tracker.error('need start year');
+                    reply.code(400).send('need start year');
                 } else if (queryArgs.endYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need start year'
-                    });
+                    request.tracker.error('need end year');
+                    reply.code(400).send('need end year');
                 }
 
                 client.query(sql(queryArgs), function onResult(err, result) {
+                    if (err) {
+                        request.tracker.error(err);
+                        release();
+                        return reply.code(500).send(err);
+                    }
+
+                    request.tracker.complete();
                     release();
                     reply.send(err || { FatalSriData: result.rows });
-                });
+                })
             }
         }
     });

@@ -126,8 +126,21 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'get_cluster_crashes_kmeans',
+                JSON.stringify(request.query),
+                reply
+            );
+
+            fastify.pg.connect(onConnect);
+
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error('unable to connect to database server');
                     release();
                     reply.send({
                         statusCode: 500,
@@ -135,65 +148,73 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 } else if (request.query.z == undefined) {
+                    request.tracker.error('need a z value');
                     release();
                     reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need a z value'
                     });
                 } else if (request.query.x == undefined) {
+                    request.tracker.error('need a x value');
                     release();
                     reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need a x value'
                     });
                 } else if (request.query.y == undefined) {
+                    request.tracker.error('need a y value');
                     release();
                     reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need a y value'
                     });
                 } else if (request.query.numclusters == undefined) {
+                    request.tracker.error('need a number of clusters value');
                     release();
                     reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need a number of clusters value'
                     });
                 } else if (request.query.clusternumber == undefined) {
+                    request.tracker.error('need the cluster identifier');
                     release();
                     reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
-                        message: 'need the cluter identifier'
+                        message: 'need the cluster identifier'
                     });
                 } else if (request.query.selectedfilters == undefined) {
+                    request.tracker.error('need the pertinent filters to apply');
                     release();
                     reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need the pertinent filters to apply'
                     });
                 } else {
                     try {
                         client.query(sql(request.query), function onResult(err, result) {
-                            release();
-
                             if (err) {
+                                request.tracker.error(err);
                                 reply.send(err);
+                                release();
                             } else if (result && result.rows) {
+                                request.tracker.complete();
                                 const transcribedObject = transcribeKeysArray(result.rows);
-
                                 reply.send({ crashes: transcribedObject });
+                                release();
                             } else {
                                 reply.code(204);
+                                release();
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(error);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,
@@ -202,8 +223,6 @@ module.exports = function (fastify, opts, next) {
                     }
                 }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
     next();

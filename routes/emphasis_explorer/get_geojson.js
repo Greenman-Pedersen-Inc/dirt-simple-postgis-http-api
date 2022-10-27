@@ -83,36 +83,61 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'emphasis_explorer',
+                'get_geojson',
+                JSON.stringify(request.params)
+            );
+
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
+                if (err) {
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
+                else {
+                    request.tracker.start();
+                    try {
+                        client.query(sql(request.params, request.query), function onResult(err, result) {
+                            if (err) {
+                                request.tracker.error(err);
+                                release();
+                                reply.send(err);
+                            } 
+                            else {
+                                if (result.rows.length == 0) {
+                                    reply.code(204);
+                                } else if (!result.rows[0]) {
+                                    if (!result.rows[0].geojson) {
+                                        reply.code(204);
+                                    }
+                                }
+                                const json = {
+                                    type: 'FeatureCollection',
+                                    features: result.rows.map((el) => JSON.parse(el.geojson))
+                                };
 
-                client.query(sql(request.params, request.query), function onResult(err, result) {
-                    release();
-                    if (err) {
-                        reply.send(err);
-                    } else {
-                        // console.log(result.rows[0]);
-                        if (result.rows.length == 0) {
-                            reply.code(204);
-                        } else if (!result.rows[0]) {
-                            if (!result.rows[0].geojson) {
-                                reply.code(204);
+                                request.tracker.complete();
+                                release();
+                                reply.send(json);
                             }
-                        }
-                        const json = {
-                            type: 'FeatureCollection',
-                            features: result.rows.map((el) => JSON.parse(el.geojson))
-                        };
-                        reply.send(json);
+                        });
                     }
-                });
+                    catch (error) {
+                        request.tracker.error(error);
+                        reply.send({
+                            statusCode: 500,
+                            error: error,
+                            message: request
+                        });
+                    }
+                }
             }
         }
     });

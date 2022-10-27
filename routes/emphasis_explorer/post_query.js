@@ -67,9 +67,14 @@ module.exports = function (fastify, opts, next) {
         method: 'POST',
         url: '/emphasis-explorer/post-query/:table',
         schema: schema,
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            // console.log(request.body)
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'emphasis_explorer',
+                'post_query',
+                JSON.stringify(Object.assign(request.query, request.params))
+            );
 
             if (request.query.filter) {
                 request.query.filter += `and crashid IN ('${request.body.join(`','`)}')`;
@@ -80,17 +85,38 @@ module.exports = function (fastify, opts, next) {
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
-                    return reply.send({
+                request.tracker.start();
+
+                if (err) {
+                    request.tracker.error(err);
+                    release();
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
-
-                client.query(sql(request.params, request.query), function onResult(err, result) {
-                    release();
-                    reply.send(err || result.rows);
-                });
+                }
+                else {
+                    try {
+                        client.query(sql(request.params, request.query), function onResult(err, result) {
+                            if (err) {
+                                request.tracker.error(err);
+                                release();
+                                reply.code(500).send(err);
+                            }
+                            else {
+                                request.tracker.complete();
+                                release();
+                                reply.send(result.rows);                                
+                            }
+                        });
+                    }
+                    catch (error) {
+                        reply.code(500).send(error);
+                        request.tracker.error(error);
+                        release();
+                    }
+                }
             }
         }
     });

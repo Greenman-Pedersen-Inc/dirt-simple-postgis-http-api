@@ -1,12 +1,19 @@
+// This line must come before importing any instrumented module.
+const tracer = require('dd-trace').init({
+    env: 'stability-update',
+    logInjection: true,
+    profiling: true,
+    'appsec.enabled': true
+});
+
 const path = require('path');
 const config = require('./config');
 const fastify = require('fastify')({
-    // connectionTimeout: 5000,
     logger: true
 });
 
 const { maxHeaderSize } = require('http');
-const globalTimeout = 5000;
+const globalTimeout = 7500;
 
 /**
  * Log requests made to the server in an administrative database for further analysis.
@@ -15,7 +22,7 @@ const globalTimeout = 5000;
  * @param {*} reply
  * @param {*} done
  */
-function RequestTracker(credentials, module, end_point, user_query) {
+function RequestTracker(credentials, module, end_point, user_query, reply) {
     const self = this;
 
     this.start = function () {
@@ -59,6 +66,7 @@ function RequestTracker(credentials, module, end_point, user_query) {
     };
 
     function onConnect(error, client, release, queryString) {
+        // console.log(queryString);
         if (error) {
             release();
 
@@ -160,7 +168,6 @@ function requestTimeout(client, reply, requestTracker, timeout = globalTimeout) 
     return new Promise((resolve, reject) => {
         setTimeout(() => {
             client
-                .end()
                 .then(() => {
                     let error = new Error('Server Timeout');
                     reply.send(error);
@@ -171,7 +178,8 @@ function requestTimeout(client, reply, requestTracker, timeout = globalTimeout) 
                     reply.send(new Error(error.stack));
                     reply.send = (payload) => reply;
                     requestTracker.error(error);
-                });
+                })
+                .end();
         }, timeout);
     });
 }
@@ -201,7 +209,9 @@ fastify.register(require('fastify-caching'), {
 });
 
 // CORS
-fastify.register(require('fastify-cors'));
+fastify.register(require('fastify-cors'), {
+    exposedHeaders: 'exportCount'
+});
 
 // swagger
 fastify.register(require('fastify-swagger'), {

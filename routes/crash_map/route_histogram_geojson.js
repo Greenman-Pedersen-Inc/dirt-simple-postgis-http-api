@@ -114,17 +114,30 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
-            const queryArgs = request.query;
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'route_histogram_geojson',
+                JSON.stringify(request.query),
+                reply
+            );
 
+            const queryArgs = request.query;
+            fastify.pg.connect(onConnect);
+            
             function onConnect(err, client, release) {
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
                     reply.send({
                         statusCode: 500,
-                        error: err,
+                        error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
                 } else if (queryArgs.filter == undefined) {
+                    request.tracker.error('crash filter not submitted');
                     release();
                     reply.send({
                         statusCode: 500,
@@ -134,22 +147,27 @@ module.exports = function (fastify, opts, next) {
                 } else {
                     try {
                         client.query(sql(request.params, request.query), function onResult(err, result) {
-                            release();
                             if (err) {
+                                request.tracker.error(err);
+                                release();
                                 reply.send({
                                     statusCode: 500,
                                     error: err,
                                     message: 'unable to connect to database server'
                                 });
                             } else if (result.rows && result.rows.length > 0) {
+                                request.tracker.complete();
+                                release();
                                 reply.send(result.rows[0].route_metrics);
                             } else {
+                                request.tracker.error('no rows returned');
+                                release();
                                 reply.code(204);
                             }
                         });
                     } catch (error) {
+                        request.tracker.error(err);
                         release();
-
                         reply.send({
                             statusCode: 500,
                             error: error,
@@ -158,8 +176,6 @@ module.exports = function (fastify, opts, next) {
                     }
                 }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
     next();

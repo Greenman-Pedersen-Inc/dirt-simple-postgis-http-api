@@ -115,33 +115,54 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'sunglare',
+                'functional_class_stats',
+                JSON.stringify(request.query),
+                reply
+            );
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
+                if (err) {
                     return reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
                     return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need startyear'
-                    });
-                } else if (queryArgs.endYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need start year'
                     });
+                } else if (queryArgs.endYear == undefined) {
+                    return reply.send({
+                        statusCode: 400,
+                        error: 'Internal Server Error',
+                        message: 'need end year'
+                    });
                 }
-                client.query(sql(queryArgs), function onResult(err, result) {
+
+                request.tracker.start();
+
+                client.query(sql(queryArgs), function onResult(error, result) {
+                    if (error) {
+                        request.tracker.error(error);
+                        release();
+                        reply.send({
+                            statusCode: 500,
+                            error: error
+                        });
+                    }
+
                     release();
                     reply.send(err || { FunctionalClassData: result.rows });
                 });
+                request.tracker.complete();
             }
         }
     });

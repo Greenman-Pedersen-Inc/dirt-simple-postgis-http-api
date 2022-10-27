@@ -52,7 +52,7 @@ module.exports = function (fastify, opts, next) {
 
             function onConnect(err, client, release) {
                 if (err)
-                    return reply.send({
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
@@ -60,23 +60,30 @@ module.exports = function (fastify, opts, next) {
 
                 var queryArgs = request.query;
                 if (queryArgs.sri == undefined) {
-                    return reply.send({
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'need DLN'
                     });
                 }
-
-                client.query(sql(), [queryArgs.sri], function onResult(err, result) {
-                    release();
-                    if (err) {
-                        reply.send(err);
-                    } else if (result && result.rows) {
-                        reply.send(result.rows);
-                    } else {
-                        reply.code(204);
+                else {
+                    try {
+                        client.query(sql(), [queryArgs.sri], function onResult(err, result) {
+                            release();
+                            if (err) {
+                                reply.send(err);
+                            } else if (result && result.rows) {
+                                reply.send(result.rows);
+                            } else {
+                                reply.code(204);
+                            }
+                        });
                     }
-                });
+                    catch (err) {
+                        release();
+                        reply.code(500).send(err);
+                    }
+                }
             }
         }
     });

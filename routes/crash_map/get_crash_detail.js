@@ -1,13 +1,15 @@
 // get_crash_detail: Gets Accident, Vehicle, Occupant, Ped data in the Detailed Crash Information dialog
 
 const { transcribeKeys, transcribeKeysArray } = require('../../helper_functions/code_translations/translator_helper');
+const { viewableAttributes } = require('../../helper_functions/code_translations/accidents');
+const customTimeout = 10000;
 
 // *---------------*
 // route query
 // *---------------*
 function getQueries(queryArgs) {
     var queries = {};
-    queries.accidents = `SELECT * FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, 'accidents')}`; // ACCIDENTS query
+    queries.accidents = `SELECT ${viewableAttributes.join(', ')} FROM ard_accidents_geom_partition where ${getWhereClause(queryArgs, 'accidents')}`; // ACCIDENTS query
     queries.vehicles = `SELECT ${getColumns('vehicles')} FROM ard_vehicles_partition where ${getWhereClause(
         queryArgs,
         'vehicles'
@@ -22,7 +24,23 @@ function getQueries(queryArgs) {
 }
 
 function getWhereClause(queryArgs, table) {
-    if (queryArgs.crashid) return `crashid = '${queryArgs.crashid}'`;
+    if (queryArgs.crashid) { 
+        var queryString =  `crashid = '${queryArgs.crashid}'`;
+        if (queryArgs.year) {
+            if (table === 'accidents') {
+                queryString += ` and year ='${queryArgs.year}'`;
+            }
+            else if (table === 'vehicles' || table === 'pedestrians') {
+                queryString += ` and acc_year ='${queryArgs.year}'`;
+            }
+            else if (table === 'occupants') {
+                queryString += ` and veh_acc_year ='${queryArgs.year}'`;
+            }
+        }
+        return queryString;
+        
+    }
+    
     if (table === 'accidents') {
         return `mun_cty_co = '${queryArgs.county}' and mun_mu = '${queryArgs.municipality}' and acc_case = '${queryArgs.caseNumber}' and year ='${queryArgs.year}'`;
     } else if (table === 'vehicles' || table === 'pedestrians') {
@@ -64,7 +82,7 @@ const schema = {
         },
         year: {
             type: 'string',
-            description: 'year the crash occured',
+            description: 'year the crash occurred',
             example: '2020'
         },
         crashid: {
@@ -85,20 +103,35 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'crash_map',
+                'get_crash_detail',
+                JSON.stringify(request.query),
+                reply
+            );
+
             const queryArgs = request.query;
+            fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
+                client.connectionParameters.query_timeout = customTimeout;
+
+                request.tracker.start();
+
                 if (err) {
+                    request.tracker.error(err);
                     release();
-                    return reply.send({
+                    reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
                 } else if (queryArgs.caseNumber === undefined) {
                     if (queryArgs.crashid === undefined) {
+                        request.tracker.error('need crashid');
                         release();
-                        return reply.send({
+                        reply.send({
                             statusCode: 500,
                             error: 'Internal Server Error',
                             message: 'need crashid'
@@ -110,6 +143,7 @@ module.exports = function (fastify, opts, next) {
                         queryArgs.municipality === undefined ||
                         queryArgs.year === undefined
                     ) {
+                        request.tracker.error('need county, muni, or year values');
                         release();
                         return reply.send({
                             statusCode: 500,
@@ -118,7 +152,6 @@ module.exports = function (fastify, opts, next) {
                         });
                     }
                 }
-
                 try {
                     let promises = [];
                     let crashData;
@@ -134,7 +167,6 @@ module.exports = function (fastify, opts, next) {
                                 return reject(error);
                             }
                         });
-
                         promises.push(promise);
                     }
 
@@ -149,29 +181,29 @@ module.exports = function (fastify, opts, next) {
                                     crashData[table] = transcribeKeysArray(data);
                                 }
                             }
+                            request.tracker.complete();
                             release();
-                            return reply.send(crashData);
+                            reply.send(crashData);
                         })
                         .catch((error) => {
+                            request.tracker.error(error);
                             release();
-                            return reply.send({
+                            reply.send({
                                 statusCode: 500,
                                 error: error,
                                 message: 'issue with crash id queries'
                             });
                         });
                 } catch (error) {
+                    request.tracker.error(error);
                     release();
-
-                    return reply.send({
+                    reply.send({
                         statusCode: 500,
                         error: error,
                         message: request
                     });
                 }
             }
-
-            fastify.pg.connect(onConnect);
         }
     });
     next();

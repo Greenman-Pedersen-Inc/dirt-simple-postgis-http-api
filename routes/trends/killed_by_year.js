@@ -67,29 +67,42 @@ module.exports = function (fastify, opts, next) {
         schema: schema,
         preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
+            request.tracker = new fastify.RequestTracker(
+                request.headers.credentials,
+                'trends',
+                'killed_by_year',
+                JSON.stringify(request.query),
+                reply
+            );
             fastify.pg.connect(onConnect);
 
             function onConnect(err, client, release) {
-                if (err)
+                if (err) {
+                    release();
                     return reply.send({
                         statusCode: 500,
                         error: 'Internal Server Error',
                         message: 'unable to connect to database server'
                     });
+                }
                 var queryArgs = request.query;
                 if (queryArgs.startYear == undefined) {
+                    release();
                     return reply.send({
-                        statusCode: 500,
-                        error: 'Internal Server Error',
-                        message: 'need startyear'
-                    });
-                } else if (queryArgs.endYear == undefined) {
-                    return reply.send({
-                        statusCode: 500,
+                        statusCode: 400,
                         error: 'Internal Server Error',
                         message: 'need start year'
                     });
+                } else if (queryArgs.endYear == undefined) {
+                    release();
+                    return reply.send({
+                        statusCode: 400,
+                        error: 'Internal Server Error',
+                        message: 'need end year'
+                    });
                 }
+
+                request.tracker.start();
 
                 const table = `trends.crash_${queryArgs.attribute}_physcl_cndtn_code_01`;
                 var reportQueries = trendsHelper.getTrendsQueryObject(queryArgs, table);
@@ -115,19 +128,23 @@ module.exports = function (fastify, opts, next) {
 
                 Promise.all(promises)
                     .then((reportDataArray) => {
-                        release();
                         for (let i = 0; i < reportDataArray.length; i++) {
                             var data = reportDataArray[i].rows;
                             var category = Object.keys(reportQueries)[i];
                             returnData[category] = data;
                         }
 
+                        request.tracker.complete();
+                        release();
                         reply.send({ GraphData: returnData });
                     })
                     .catch((error) => {
+                        request.tracker.error(error);
                         release();
-                        // console.log("report error");
-                        // console.log(error);
+                        reply.send({
+                            statusCode: 500,
+                            error: error
+                        });
                     });
             }
         }

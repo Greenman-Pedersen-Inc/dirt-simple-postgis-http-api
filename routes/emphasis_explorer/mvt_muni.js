@@ -1,6 +1,8 @@
 // route query
 // geom_column: wkb_geometry
 // filter: (year >= 2017 AND year <= 2021)  GROUP BY muni_data.mun, muni_data.mun_mu, muni_data.county, muni_data.mun_cty_co, crash_data.wkb_geometry
+const customTimeout = 10000;
+
 const sql = (params, query) => {
     let queryText = `
      WITH mvtgeom as (
@@ -84,31 +86,55 @@ const sql = (params, query) => {
       url: '/emphasis-explorer/mvt-muni/:table/:z/:x/:y',
       schema: schema,
       handler: function(request, reply) {
-        fastify.pg.connect(onConnect)
+        request.tracker = new fastify.RequestTracker(
+          request.headers,
+          'emphasis_explorer',
+          'mvt_muni',
+          JSON.stringify(Object.assign(request.query, request.params)),
+          reply
+        );
+
+        fastify.pg.connect(onConnect);
   
         function onConnect(err, client, release) {
-          if (err)
-            return reply.send({
+          request.tracker.start();
+        client.connectionParameters.query_timeout = customTimeout;
+
+          if (err) {
+            request.tracker.error(err);
+            release();
+            reply.send({
               statusCode: 500,
               error: 'Internal Server Error',
               message: 'unable to connect to database server'
-            })
-  
-          client.query(sql(request.params, request.query), function onResult(
-            err,
-            result
-          ) {
-            release()
-            if (err) {
-              reply.send(err)
-            } else {
-              const mvt = result.rows[0].mvt
-              if (mvt.length === 0) {
-                reply.code(204)
-              }
-              reply.header('Content-Type', 'application/x-protobuf').send(mvt)
+            });
+          }
+          else {
+            try {
+              client.query(sql(request.params, request.query), function onResult(err, result) {
+                if (err) {
+                  reply.code(500).send(err);
+                  request.tracker.error(err);
+                  release();
+                }
+                else {
+                  const mvt = result.rows[0].mvt
+                  if (mvt.length === 0) {
+                    reply.code(204)
+                  }
+
+                  request.tracker.complete();
+                  reply.header('Content-Type', 'application/x-protobuf').send(mvt);
+                  release();
+                }
+              });
             }
-          })
+            catch (error) {
+              reply.code(500).send(error);
+              request.tracker.error(error);
+              release();
+            }
+          }
         }
       }
     })

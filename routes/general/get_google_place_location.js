@@ -79,6 +79,10 @@ module.exports = function (fastify, opts, next) {
                 promise.then((response) => {
                     release();
                     reply.send(err || { LocationResult: response });
+                })
+                .catch((error) => {
+                    reply.code(500).send(error);
+                    release();
                 });
             }
         }

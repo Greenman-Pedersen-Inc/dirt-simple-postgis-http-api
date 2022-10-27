@@ -20,6 +20,7 @@ const sql = (params, query) => {
             sig,
             type,
             intersection,
+            jurisdiction_type_code,
             tr_reg,
             el_reg,
             signal_offset,
@@ -31,18 +32,6 @@ const sql = (params, query) => {
             via,
             internal_id,
             agreement,
-            ad_12_1,
-            ad_12_2,
-            ad_12_3,
-            ad_12_4,
-            ad_12_5,
-            ad_12_6,
-            ad_12_7,
-            ad_12_8,
-            ad_12_9,
-            ad_12_10,
-            plan_1,
-            plan_date,
             directive,
             lat,
             long,
@@ -53,6 +42,18 @@ const sql = (params, query) => {
             mn,
             prefix,
             search,
+            ad_12_1,
+            ad_12_2,
+            ad_12_3,
+            ad_12_4,
+            ad_12_5,
+            ad_12_6,
+            ad_12_7,
+            ad_12_8,
+            ad_12_9,
+            ad_12_10,
+            plan_date,
+            plan_1,
             plan_2,
             plan_3,
             plan_4,
@@ -65,13 +66,8 @@ const sql = (params, query) => {
             parent_signal,
             parent_id,
             signal_timer,
-            --CASE
-                --WHEN signal_timer = true THEN 'True'
-                --ELSE 'False'
-            --END AS signal_timer,
             child_record,
-            jurisdiction_type_code,
-                internal_id "signal_id",
+                internal_id "internal_id",
                 ST_AsMVTGeom(
                     geom_mercator,
                     ST_TileEnvelope(${params.z}, ${params.x}, ${params.y})
@@ -122,37 +118,34 @@ module.exports = function (fastify, opts, next) {
         method: 'GET',
         url: '/mvt/signals/:z/:x/:y',
         schema: schema,
-
-        // preHandler: fastify.auth([fastify.verifyToken]),
+        preHandler: fastify.auth([fastify.verifyToken]),
         handler: function (request, reply) {
             request.tracker = new fastify.RequestTracker(
                 request.headers,
                 'crash_map',
                 'mvt_county',
-                JSON.stringify(Object.assign(request.query, request.params))
+                JSON.stringify(Object.assign(request.query, request.params)),
+                reply
             );
+            
+            fastify.pg.connect(onConnect);
 
             function onConnect(error, client, release) {
+                request.tracker.start();
+
                 if (error) {
-                    release();
                     reply.code(500).send(error);
                     request.tracker.error(error);
+                    release();
                 } else {
-                    // if (request.query.selected_filters == undefined) {
-                    //     // release();
-                    //     // reply.code(400).send('no crash filter submitted');
-                    //     // request.tracker.error('no crash filter submitted');
-                    // } 
-                    
-                    // else {
                         try {
                             client.query(sql(request.params, request.query), function onResult(error, result) {
-                                release();
-
                                 if (error) {
                                     reply.code(500).send(error);
                                     request.tracker.error(error);
-                                } else {
+                                    release();
+                                } 
+                                else {
                                     if (result) {
                                         if (result.rows && result.rows.length > 0) {
                                             if (result.rows[0].mvt) {
@@ -160,33 +153,36 @@ module.exports = function (fastify, opts, next) {
 
                                                 if (mvt.length === 0) {
                                                     reply.code(204);
+                                                    release();
                                                 }
 
                                                 reply.header('Content-Type', 'application/x-protobuf').send(mvt);
                                                 request.tracker.complete();
+                                                release();
                                             } else {
                                                 reply.code(500).send(error);
                                                 request.tracker.error(error);
+                                                release();
                                             }
                                         } else {
                                             reply.code(500).send(error);
                                             request.tracker.error(error);
+                                            release();
                                         }
                                     } else {
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
+                                        release();
                                     }
                                 }
                             });
                         } catch (error) {
-                            release();
                             reply.code(500).send(error);
                             request.tracker.error(error);
+                            release();
                         }
-                    // }
                 }
             }
-            fastify.pg.connect(onConnect);
         }
     });
     next();

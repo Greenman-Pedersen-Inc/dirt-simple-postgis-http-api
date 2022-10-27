@@ -538,7 +538,7 @@ function createSortClause(queryString) {
     if (queryString.sort == 'fatal-sort') {
         sortClause = 'ORDER BY fatal DESC, incapacitated DESC, mod_inj DESC, count DESC';
     } else if (queryString.sort == 'mp-sort') {
-        sortClause = 'ORDER BY milepost';
+        sortClause = 'ORDER BY rounded_mp';
     }
     return sortClause;
 }

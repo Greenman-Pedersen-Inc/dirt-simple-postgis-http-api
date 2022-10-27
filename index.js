@@ -1,3 +1,15 @@
+// This line must come before importing any instrumented module.
+// const tracer = require('dd-trace').init({
+//     env: 'stability-update',
+//     logInjection: true,
+//     profiling: true,
+//     'appsec.enabled': true
+// });
+
+const tracer = require('dd-trace').init({
+    env: 'prod'
+});
+
 const path = require('path');
 const config = require('./config');
 const fastify = require('fastify')({

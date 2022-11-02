@@ -27,7 +27,7 @@
     "jspdf": "^2.4.0",
     "jspdf-autotable": "^3.5.23",
     "jszip": "^3.9.1",
-    "node-windows": "^1.0.0-beta.6",
+    "node-windows": "^1.0.0-beta.8",
     "nodemailer": "^6.7.5",
     "octokit": "^1.7.1",
     "pdfkit": "^0.12.3",

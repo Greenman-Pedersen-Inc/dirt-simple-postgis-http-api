@@ -40,9 +40,7 @@ const sql = (params, query) => {
                         geom as cluster_geometry,
                         ST_ClusterDBSCAN(geom, ${metersPerPixel(params.z) * 15 * 2}, 1) OVER () AS cluster_id
                     FROM crash_data
-                ), complete_data as (
-                    SELECT
-                        cast(concat(cluster_id, ${params.z}::text, ${params.x}::text, ${
+                ), complete_data as (SELECT cast(concat(cluster_id, ${params.z}::text, ${params.x}::text, ${
             params.y
         }::text) as bigint) as cluster_reference,
                         array_to_json(array_agg(crashid)) as crash_array,
@@ -54,7 +52,6 @@ const sql = (params, query) => {
                         ) as geom
                     FROM cluster_data
                     GROUP BY cluster_id
-                    
                 )
 
                 SELECT ST_AsMVT(complete_data.*, 'ard_accidents_geom_partition', 4096, 'geom', 'cluster_reference') AS mvt from complete_data;
@@ -212,8 +209,7 @@ module.exports = function (fastify, opts, next) {
                                             request.tracker.error(error);
                                             release();
                                         }
-                                    } 
-                                    else {
+                                    } else {
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
                                         release();

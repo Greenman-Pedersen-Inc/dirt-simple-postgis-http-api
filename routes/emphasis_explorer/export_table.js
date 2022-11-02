@@ -159,7 +159,6 @@ module.exports = function (fastify, opts, next) {
                     try {
                         request.tracker.start();
                         client.query(sql(request.params, queryArgs), function onResult(err, result) {
-                            release();
                             let returnRows = [];
                             if (result) {
                                 const fileName = `Emphasis_Explorer${queryArgs.exportType}_${Date.now()}_${Math.floor(
@@ -231,8 +230,8 @@ module.exports = function (fastify, opts, next) {
                                             reply.code(200);
                                             reply.header('exportCount', result.rows.length);
                                             reply.sendFile(zipFileName, outputPath);
-                                            request.tracker.complete();
                                             release();
+                                            request.tracker.complete();
                                         }
                                     }
                                 );

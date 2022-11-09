@@ -11,6 +11,8 @@ const metersPerPixel = function (zoomLevel) {
 
 // route query
 const sql = (params, query) => {
+    const radialDistance = 16;
+    const zoomThreshold = 10;
     const accidentsTableName = 'ard_accidents_geom_partition';
     const parsed_filter = JSON.parse(query.selected_filters);
     const filter = makeCrashFilterQuery(parsed_filter, accidentsTableName);
@@ -18,7 +20,7 @@ const sql = (params, query) => {
     const fromClause = filter.fromClause;
 
     // when the map is zoomed really tight, only group the clusters that are very close together (5ft)
-    if (params.z > 15) {
+    if (params.z > zoomThreshold) {
         queryText = `
                 with crash_data as (
                     SELECT 
@@ -38,7 +40,9 @@ const sql = (params, query) => {
                         crashid,
                         sri,
                         geom as cluster_geometry,
-                        ST_ClusterDBSCAN(geom, ${metersPerPixel(params.z) * 15 * 2}, 1) OVER () AS cluster_id
+                        ST_ClusterDBSCAN(geom, ${
+                            metersPerPixel(params.z) * radialDistance * 2
+                        }, 1) OVER () AS cluster_id
                     FROM crash_data
                 ), complete_data as (
                     SELECT
@@ -97,7 +101,9 @@ const sql = (params, query) => {
                 ), merged_cluster_data as (
                     SELECT
                         crash_count,
-                        ST_ClusterDBSCAN(geom, ${metersPerPixel(params.z) * 15 * 2}, 1) OVER () AS cluster_id,
+                        ST_ClusterDBSCAN(geom, ${
+                            metersPerPixel(params.z) * radialDistance * 2
+                        }, 1) OVER () AS cluster_id,
                         crash_array,
                         sri_array,
                         geom
@@ -212,8 +218,7 @@ module.exports = function (fastify, opts, next) {
                                             request.tracker.error(error);
                                             release();
                                         }
-                                    } 
-                                    else {
+                                    } else {
                                         reply.code(500).send(error);
                                         request.tracker.error(error);
                                         release();

@@ -1581,7 +1581,7 @@ const filterDictonary = [
     },
     {
         title: 'Calculated SRI',
-        fieldName: 'calc_sri',
+        fieldName: 'merged_sri_2',
         query: function (input) {
             return createQueryClauseSingleton(this, tableName, input);
         },
@@ -1589,7 +1589,7 @@ const filterDictonary = [
     },
     {
         title: 'Calculated Milepost',
-        fieldName: 'calc_milepost',
+        fieldName: 'merged_milepost_2',
         query: function (input) {
             return createQueryClauseSingleton(this, tableName, input);
         },

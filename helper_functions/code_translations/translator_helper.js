@@ -31,10 +31,10 @@ function resolveFieldAlias(targetFieldName) {
 
 // transcribes fieldName keys into human-readble title as keys
 // dataObject is in format: [ {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}, {...}, {...} ]
-function transcribeKeysArray(dataRowsArray) {
+function transcribeKeysArray(dataRowsArray, translateValues = true, skipUntranslatedFields = true) {
     var transcribedRows = [];
     dataRowsArray.forEach(row => {
-        var returnRow = transcribeKeys(row);
+        var returnRow = transcribeKeys(row, translateValues, skipUntranslatedFields);
         transcribedRows.push(returnRow);
     });
     return transcribedRows;
@@ -42,7 +42,7 @@ function transcribeKeysArray(dataRowsArray) {
 
 // transcribes fieldName keys into human-readble title as keys
 // dataObject is in format: {"crashid": "11-07-2016-16-6761-AC","year": "2016","mun_cty_co": "11",...}
-function transcribeKeys(dataRowObject, translateValues = true) {
+function transcribeKeys(dataRowObject, translateValues = true, skipUntranslatedFields) {
     var returnRow = {}
 
     if (dataRowObject && Object.entries(dataRowObject)) {
@@ -84,7 +84,9 @@ function transcribeKeys(dataRowObject, translateValues = true) {
             }
 
             // don't output keys that are not found. they will not be included in the results
-            // if (!found) returnRow[key] = rowValue;
+            if (!found) {
+                if (!skipUntranslatedFields) returnRow[key] = rowValue;
+            }
         }
     }
 

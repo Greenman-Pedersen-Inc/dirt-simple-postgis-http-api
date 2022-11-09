@@ -20,7 +20,30 @@ const outputPath = path.join(__dirname, '../../output', folderName);
 // *---------------*
 const sql = (queryArgs) => {
 
-    const query = `SELECT ${queryArgs.table.includes('accidents') ? viewableAttributes.join(', ') : '*'} FROM ${queryArgs.table} WHERE ${queryArgs.whereClause}`;
+    // const query = `SELECT ${queryArgs.table.includes('accidents') ? viewableAttributes.join(', ') : '*'} FROM ${queryArgs.table} WHERE ${queryArgs.whereClause}`;
+    const query = `
+    SELECT *
+    FROM ard_accidents_geom_partition, ard_vehicles_partition
+    WHERE ard_accidents_geom_partition.year >= 2017 AND ard_accidents_geom_partition.year <= 2021 
+    AND ard_vehicles_partition.type_code IN ('24', '25', '26')
+    AND ard_accidents_geom_partition.road_sys_code::text <> '09'::text 
+    AND ard_accidents_geom_partition.crashid = ard_vehicles_partition.crashid 
+    AND (ard_vehicles_partition.contr_circum_code1::text <> '12'::text OR ard_vehicles_partition.contr_circum_code1 IS NULL) 
+    AND (ard_vehicles_partition.contr_circum_code2::text <> '12'::text OR ard_vehicles_partition.contr_circum_code2 IS NULL) 
+    AND (ard_accidents_geom_partition.tot_veh_involved = 1::numeric 
+    AND ((ard_vehicles_partition.first_event_code::text = ANY (ARRAY['05'::character varying::text, '06'::character varying::text])) 
+    OR (ard_vehicles_partition.second_event_code::text = ANY (ARRAY['05'::character varying::text, '06'::character varying::text])) 
+    OR (ard_vehicles_partition.third_event_code::text = ANY (ARRAY['05'::character varying::text, '06'::character varying::text])) 
+    OR (ard_vehicles_partition.fourth_event_code::text = ANY (ARRAY['05'::character varying::text, '06'::character varying::text])) 
+    OR ard_accidents_geom_partition.crash_type::text = '11'::text)
+    OR ard_accidents_geom_partition.tot_veh_involved > 1::numeric 
+    AND ((ard_vehicles_partition.first_event_code::text = ANY (ARRAY['05'::character varying::text, '06'::character varying::text, '07'::character varying::text])) 
+        OR (ard_vehicles_partition.second_event_code::text = ANY (ARRAY['05'::character varying::text, '06'::character varying::text, '07'::character varying::text])) 
+        OR (ard_vehicles_partition.third_event_code::text = ANY (ARRAY['05'::character varying::text, '06'::character varying::text, '07'::character varying::text])) 
+        OR (ard_vehicles_partition.fourth_event_code::text = ANY (ARRAY['05'::character varying::text, '06'::character varying::text, '07'::character varying::text])) 
+        OR (ard_accidents_geom_partition.crash_type::text = ANY (ARRAY['04'::character varying::text, '05'::character varying::text, '06'::character varying::text]))
+    ));
+    `;
 
     //console.log(query)
     return query;
@@ -85,15 +108,15 @@ module.exports = function (fastify, opts, next) {
                         message: 'unable to connect to database server'
                     });
                 }
-                else if (queryArgs.whereClause === undefined) {
-                    release();
+                // else if (queryArgs.whereClause === undefined) {
+                //     release();
 
-                    reply.send({
-                        statusCode: 400,
-                        error: 'Bad request',
-                        message: 'missing where clause'
-                    });
-                }
+                //     reply.send({
+                //         statusCode: 400,
+                //         error: 'Bad request',
+                //         message: 'missing where clause'
+                //     });
+                // }
                 else {
                     try {
                         client.query(sql(queryArgs), function onResult(err, result) {
@@ -115,7 +138,7 @@ module.exports = function (fastify, opts, next) {
                                 }
 
                                 if (result.hasOwnProperty('rows')) {
-                                    returnRows = transcribeKeysArray(result.rows);
+                                    returnRows = transcribeKeysArray(result.rows, true, false);
                                 }
 
                                 const csvFromArrayOfObjects = convertArrayToCSV(returnRows);
